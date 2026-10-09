@@ -13,6 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 ENGINE_MODULES = (
+    "errors",
     "units",
     "factors",
     "wetbulb",

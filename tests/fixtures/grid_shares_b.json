@@ -1,0 +1,16 @@
+{
+  "kind": "annual",
+  "source": "synthetic test fixture",
+  "period": "test",
+  "exported_at": null,
+  "annual_shares": {
+    "coal": 0.7,
+    "gas": 0.05,
+    "nuclear": 0.03,
+    "hydro": 0.1,
+    "solar": 0.06,
+    "wind": 0.05,
+    "other": 0.01
+  },
+  "s_avg_solar": 0.06
+}
