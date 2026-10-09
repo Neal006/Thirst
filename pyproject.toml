@@ -33,7 +33,7 @@ include = ["engine*", "handlers*"]
 engine = ["data/*.json"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src", "cli", "scripts"]
+pythonpath = ["src", "cli", "scripts", "tests"]
 testpaths = ["tests"]
 addopts = "-q --strict-markers --import-mode=importlib"
 markers = [
