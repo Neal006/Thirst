@@ -1,0 +1,3 @@
+# Lambda layer for ExplainFn only (decision D14). Pin the exact version that installs on arm64
+# during plan step 05.9 before the first deploy.
+strands-agents

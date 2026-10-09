@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+web/dist/
+
+# AWS SAM
+.aws-sam/
+samconfig.local.toml
+
+# Notebooks
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local config and secrets
+.env
+.env.*
+!.env.example
+
+# Claude Code worktrees and local settings
+.claude/

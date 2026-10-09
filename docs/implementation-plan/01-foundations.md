@@ -6,6 +6,21 @@ Nothing in later phases should wait on accounts, installs or permissions.
 
 [← Index](README.md)
 
+### Implementation status (9 Oct 2026)
+
+| Step | Status |
+|---|---|
+| 1.1 repo hygiene | **Done locally** (1.1.a was done on GitHub as `Neal006/Thirst`; 1.1.h branch protection still open) |
+| 1.2 skeleton | **Done locally**; `python scripts/check_skeleton.py` exits 0 (stubs only; `template.yaml` and `samconfig.toml` wait for 05.1) |
+| 1.3 Python tooling | **Done locally** (ruff, mypy, pytest, coverage pass; `make` was not available on the first dev box, so the Makefile has not been run yet) |
+| 1.4 Node tooling | **Done locally** on Node 22; `npm run lint`, `npm test -- --run` and `npm run build` pass |
+| 1.5 CI | **Written, not yet run on GitHub** |
+| 1.6 AWS and guardrails | **Open, needs a person** (account, SAM CLI, Docker, budgets, Bedrock, SSM secret) |
+| 1.7 data checks | 1.7.a **done** (`sample_forecast.json`); 1.7.b to 1.7.f **open** |
+| 1.8 GPU box | **Open, needs the GPU machine** |
+| 1.9 team and admin | **Open, needs a person** |
+| 1.10 AGENTS.md | **Done** (kept current in each change) |
+
 ---
 
 ## 1.1 Repository hygiene (lead: A, 15 min, P0)
@@ -79,7 +94,7 @@ thirst/
 
 ## 1.4 Node tooling (lead: C, 15 min, P0)
 
-- **1.4.a** Node **20 LTS**, npm 10.
+- **1.4.a** Node **22.12 or newer** (the lockfile's vitest 5, jest-dom 7 and jsdom 29 need it; the CI web job uses 22), npm 10+. `web/package.json` has `"engines": {"node": ">=22.12"}`.
 - **1.4.b** `npm create vite@latest web -- --template react-ts` (D17), then `cd web && npm i recharts react-router-dom` and `npm i -D vitest @testing-library/react @testing-library/jest-dom jsdom @playwright/test msw eslint prettier`.
 - **1.4.c** `web/.env.example`: `VITE_API_URL=http://127.0.0.1:3000` and `VITE_USE_MOCKS=false`.
 - **1.4.d** `npm run build` and `npm test -- --run` pass on the scaffold.
