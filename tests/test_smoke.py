@@ -10,14 +10,17 @@ import pytest
 
 PACKAGES = (
     "engine",
+    "engine.errors",
     "engine.units",
     "engine.factors",
     "engine.wetbulb",
     "engine.cooling",
     "engine.grid",
+    "engine.forecast",
     "engine.footprint",
     "engine.planner",
     "engine.score",
+    "engine.explain",
     "handlers",
     "handlers.api",
     "handlers.refresh",

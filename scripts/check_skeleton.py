@@ -19,9 +19,11 @@ ENGINE_MODULES = (
     "wetbulb",
     "cooling",
     "grid",
+    "forecast",
     "footprint",
     "planner",
     "score",
+    "explain",
 )
 HANDLER_MODULES = ("api", "refresh", "explain", "store", "security", "validation", "errors")
 CLI_MODULES = ("config", "client", "meter", "powercap", "runner", "sweep", "receipt")

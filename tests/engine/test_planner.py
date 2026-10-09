@@ -18,6 +18,7 @@ from weather_helpers import (
     ist,
     random_rows,
     request,
+    split_window_rows,
 )
 
 from engine import planner
@@ -314,17 +315,6 @@ def zigzag_rows() -> list[WeatherRow]:
     first = ist(2026, 10, 9, 21)
     return [
         WeatherRow(first + timedelta(hours=i), 40.0 if i % 2 else 22.0, 60.0, 0.0)
-        for i in range(72)
-    ]
-
-
-def split_window_rows() -> list[WeatherRow]:
-    """Two cool windows (21:00-00:59 and 03:00-06:59) with a hot spell between them."""
-    first = ist(2026, 10, 9, 21)
-    cool = {0, 1, 2, 3, 6, 7, 8, 9}
-    return [
-        WeatherRow(first + timedelta(hours=i), 22.0 if i in cool else 44.0,
-                   60.0 if i in cool else 50.0, 0.0)
         for i in range(72)
     ]
 

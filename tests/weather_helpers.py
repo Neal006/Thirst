@@ -46,6 +46,21 @@ def flat_rows(
     ]
 
 
+def split_window_rows() -> list[WeatherRow]:
+    """Two cool windows (21:00-00:59 and 03:00-06:59 on 9-10 Oct) with a hot spell between."""
+    first = ist(2026, 10, 9, 21)
+    cool = {0, 1, 2, 3, 6, 7, 8, 9}
+    return [
+        WeatherRow(
+            first + timedelta(hours=i),
+            22.0 if i in cool else 44.0,
+            60.0 if i in cool else 50.0,
+            0.0,
+        )
+        for i in range(72)
+    ]
+
+
 def random_rows(start: datetime, hours: int, seed: int) -> list[WeatherRow]:
     rng = random.Random(seed)  # noqa: S311 - test data, not security
     first = floor_hour(start)
