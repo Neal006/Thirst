@@ -17,7 +17,7 @@ Users: students and lab heads in college GPU labs, startups on rented GPUs. Buil
 
 ## Current State & Focus
 - Phase 01 (foundations), local part DONE: repo hygiene, skeleton (stubs only), Python and Node tooling, CI workflow, offline forecast data. 29 Python tests and 1 web test green.
-- Phase 01 still needs people: AWS account/SAM/Docker/budgets/Bedrock/SSM secret (1.6), CSEP/Ember/Aqueduct data (1.7.b–f), GPU box checks (1.8), team registration and deadline (1.9). CI has not run on GitHub yet.
+- Phase 01 still needs people: AWS account/SAM/Docker/budgets/Bedrock/SSM secret (1.6), CSEP/Ember/Aqueduct data (1.7.b–f), GPU box checks (1.8), team registration and deadline (1.9). CI (python, web, sam, secrets) passed on draft PR #1; the Makefile ran green on ubuntu.
 - Next: Phase 02 engine (B), Phase 05 backend (A) and Phase 06 frontend (C) in parallel.
 - Code freeze Sun 11 Oct 11:00 IST; submit Sun 14:00 to 16:00 IST. The exact deadline time is still to be checked on the schedule page.
 

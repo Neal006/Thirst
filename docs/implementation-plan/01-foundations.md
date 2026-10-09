@@ -12,9 +12,9 @@ Nothing in later phases should wait on accounts, installs or permissions.
 |---|---|
 | 1.1 repo hygiene | **Done locally** (1.1.a was done on GitHub as `Neal006/Thirst`; 1.1.h branch protection still open) |
 | 1.2 skeleton | **Done locally**; `python scripts/check_skeleton.py` exits 0 (stubs only; `template.yaml` and `samconfig.toml` wait for 05.1) |
-| 1.3 Python tooling | **Done locally** (ruff, mypy, pytest, coverage pass; `make` was not available on the first dev box, so the Makefile has not been run yet) |
+| 1.3 Python tooling | **Done locally** (ruff, mypy, pytest, coverage pass; `make` was not available on the first dev box, but `make check` ran green in CI on ubuntu) |
 | 1.4 Node tooling | **Done locally** on Node 22; `npm run lint`, `npm test -- --run` and `npm run build` pass |
-| 1.5 CI | **Written, not yet run on GitHub** |
+| 1.5 CI | **Done**: all four jobs passed on draft PR #1 (the `sam` job is a no-op until 05.1) |
 | 1.6 AWS and guardrails | **Open, needs a person** (account, SAM CLI, Docker, budgets, Bedrock, SSM secret) |
 | 1.7 data checks | 1.7.a **done** (`sample_forecast.json`); 1.7.b to 1.7.f **open** |
 | 1.8 GPU box | **Open, needs the GPU machine** |
