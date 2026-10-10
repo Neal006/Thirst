@@ -10,11 +10,14 @@ interface AlphaSliderProps {
 export function AlphaSlider({ value, onChange }: AlphaSliderProps) {
   const alpha = snapAlpha(value)
   return (
-    <div className="card">
+    <div className="card alpha-card">
       <label htmlFor="alpha-slider">
         <strong>Save carbon ←→ Save water</strong>
       </label>
       <div className="slider-row">
+        <span className="alpha-end alpha-end-co2" aria-hidden="true">
+          CO₂
+        </span>
         <input
           id="alpha-slider"
           type="range"
@@ -25,6 +28,9 @@ export function AlphaSlider({ value, onChange }: AlphaSliderProps) {
           aria-valuetext={alphaText(alpha)}
           onChange={(event) => onChange(snapAlpha(event.currentTarget.valueAsNumber))}
         />
+        <span className="alpha-end alpha-end-water" aria-hidden="true">
+          Water
+        </span>
         <output htmlFor="alpha-slider">{alphaWords(alpha)}</output>
       </div>
     </div>

@@ -1,0 +1,310 @@
+/* Game pieces shared by every page: titles, segmented controls, swatches, score rings,
+   podium cards, weight classes. Loaded globally from main.tsx. */
+
+.section-title {
+  font-size: clamp(2rem, 1.3rem + 3vw, 3.6rem);
+  font-weight: 850;
+  font-stretch: 68%;
+  text-transform: uppercase;
+  line-height: 0.95;
+  margin: 0;
+}
+
+.seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  background: var(--white);
+  overflow: hidden;
+}
+
+.seg-btn {
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 9px 14px;
+  min-height: 42px;
+  border: 0;
+  border-right: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.seg-btn:last-child {
+  border-right: 0;
+}
+
+.seg-btn:hover {
+  background: var(--surface-sunk);
+}
+
+.seg-btn[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--white);
+}
+
+.seg-tight .seg-btn {
+  min-width: 64px;
+  font-family: var(--mono);
+}
+
+.swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 5px;
+  vertical-align: -1px;
+  border: 1px solid var(--ink);
+}
+
+.swatch-grid {
+  background: var(--cobalt);
+}
+
+.swatch-site {
+  background: repeating-linear-gradient(45deg, var(--sky) 0 2px, var(--white) 2px 5px);
+}
+
+.swatch-co2 {
+  background: var(--carbon);
+}
+
+.swatch-run {
+  background: var(--signal);
+}
+
+
+/* ---------- board ---------- */
+
+.capture-formula {
+  display: inline-grid;
+  grid-template-columns: auto auto auto;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--ink);
+  background: var(--white);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.cf-name {
+  color: var(--cobalt);
+  font-stretch: 75%;
+  text-transform: uppercase;
+  font-weight: 850;
+}
+
+.cf-eq {
+  color: var(--text-faint);
+}
+
+.cf-frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 0.86rem;
+  font-weight: 500;
+}
+
+.cf-frac span:first-child {
+  padding-bottom: 3px;
+  border-bottom: 1.5px solid var(--ink);
+}
+
+.cf-frac span:last-child {
+  padding-top: 3px;
+}
+
+.cf-note {
+  grid-column: 1 / -1;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.podiums {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 860px) {
+  .podiums {
+    grid-template-columns: repeat(3, 1fr);
+    align-items: end;
+  }
+
+  .podium-1 {
+    order: -1;
+  }
+}
+
+.podium {
+  position: relative;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--white);
+  overflow: hidden;
+}
+
+.podium-1 {
+  border-color: var(--ink);
+  box-shadow: 5px 5px 0 var(--signal);
+}
+
+.podium-ghost {
+  display: block;
+  min-height: 116px;
+}
+
+.podium-rank {
+  position: absolute;
+  right: 10px;
+  bottom: -22px;
+  font-size: 6rem;
+  font-weight: 900;
+  font-stretch: 62%;
+  line-height: 1;
+  color: var(--surface-sunk);
+  pointer-events: none;
+}
+
+.podium-body {
+  position: relative;
+  min-width: 0;
+}
+
+.podium-name {
+  display: block;
+  font-weight: 750;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.podium-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.podium-foot {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.ring {
+  position: relative;
+  flex: none;
+  width: 72px;
+  height: 72px;
+}
+
+.ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.ring-track {
+  fill: none;
+  stroke: var(--surface-sunk);
+  stroke-width: 8;
+}
+
+.ring-fill {
+  fill: none;
+  stroke: var(--cobalt);
+  stroke-width: 8;
+  stroke-dashoffset: var(--ring-off);
+  animation: ring-in 1.2s var(--ease) both;
+}
+
+.ring-lead .ring-fill {
+  stroke: var(--ink);
+}
+
+@keyframes ring-in {
+  from {
+    stroke-dashoffset: var(--ring-len);
+  }
+}
+
+.ring-value {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+  font-weight: 900;
+  font-stretch: 65%;
+}
+
+.classes {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: end;
+  gap: 6px;
+}
+
+.class {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2px;
+  min-height: calc(46px + var(--i) * 20px);
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--white);
+}
+
+.class.is-here {
+  background: var(--signal);
+  border-color: var(--ink);
+}
+
+.class-id {
+  font-size: 1.3rem;
+  font-weight: 900;
+  font-stretch: 65%;
+  line-height: 1;
+}
+
+.class-label {
+  font-size: 0.74rem;
+  color: var(--ink-2);
+  line-height: 1.25;
+}
+
+.board-more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  font-size: 0.86rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring-fill {
+    animation: none;
+  }
+}
+

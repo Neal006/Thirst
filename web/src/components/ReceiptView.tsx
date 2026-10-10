@@ -4,6 +4,7 @@ import { formatClock, formatDay } from '../lib/format'
 import { capMethodLabel, methodLabel } from '../lib/receiptText'
 import { Range } from './Range'
 import { ReceiptColumn } from './ReceiptColumn'
+import { MeterBar } from './ScoreRing'
 
 interface ReceiptViewProps {
   receipt: ReceiptDetail
@@ -19,10 +20,13 @@ function CaptureBanner({ receipt }: { receipt: ReceiptDetail }) {
   }
   const percent = receipt.capture * 100
   return (
-    <p className="card plan-sentence">
-      You took <Range range={[percent, percent]} unit="%" tag={receipt.tags.water} /> of the possible
-      saving.
-    </p>
+    <div className="card capture-card">
+      <p className="plan-sentence">
+        You took <Range range={[percent, percent]} unit="%" tag={receipt.tags.water} /> of the possible
+        saving.
+      </p>
+      <MeterBar value={percent} max={100} tone="signal" />
+    </div>
   )
 }
 

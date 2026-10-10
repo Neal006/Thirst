@@ -6,20 +6,26 @@ import { ScoreBreakdown } from '../components/ScoreBreakdown'
 import { SimulatedChip } from '../components/SimulatedChip'
 import { Banner } from '../components/ui/Banner'
 import { Spinner } from '../components/ui/Spinner'
+import { useAssumptions } from '../hooks/useAssumptions'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useSite } from '../hooks/useSite'
 import type { MonthlyAbsolute, SiteResponse } from '../api/types'
+import { badgeSteps } from '../lib/badges'
 import { coolingLabel, divisionLabel } from '../lib/divisions'
 
 function Header({ site, badge }: { site: SiteResponse['site']; badge: string | null }) {
   return (
-    <section aria-label="Site details">
-      <h1>
-        {site.name} {site.simulated ? <SimulatedChip /> : null}
-      </h1>
-      <p>
-        {site.city} - {coolingLabel(site.cooling)} - {divisionLabel(site.division)} <Badge badge={badge} />
-      </p>
+    <section aria-label="Site details" className="page-head site-head">
+      <div>
+        <p className="eyebrow">Site · {site.division}</p>
+        <h1>
+          {site.name} {site.simulated ? <SimulatedChip /> : null}
+        </h1>
+        <p className="site-tags">
+          <span className="chip">{site.city}</span> <span className="chip">{coolingLabel(site.cooling)}</span>{' '}
+          <span className="chip">{divisionLabel(site.division)}</span> <Badge badge={badge} />
+        </p>
+      </div>
     </section>
   )
 }
@@ -28,7 +34,7 @@ function Monthly({ month }: { month: MonthlyAbsolute }) {
   return (
     <section className="card" aria-labelledby="month-heading">
       <h2 id="month-heading">Last 30 days</h2>
-      <ul className="stat-list">
+      <ul className="stat-list tiles">
         <li><span className="stat-label">GPU energy</span><Amount value={month.kwh} unit="kWh" tag="modelled" /></li>
         <li><span className="stat-label">Water used</span><Amount value={month.litres} unit="L" tag="modelled" /></li>
         <li><span className="stat-label">Stress-weighted water</span><Amount value={month.stress_litres} unit="L" tag="modelled" /></li>
@@ -43,6 +49,8 @@ export function SitePage() {
   const { siteId = '' } = useParams()
   usePageTitle('Site')
   const { state, reload } = useSite(siteId)
+  const assumptions = useAssumptions().state
+  const steps = badgeSteps(assumptions.status === 'ready' ? assumptions.data.factors : undefined)
   if (state.status === 'loading') return <Spinner label="Loading the site…" lines={5} />
   if (state.status === 'error') {
     return (
@@ -53,9 +61,9 @@ export function SitePage() {
   }
   const { site, score, monthly_absolute: month, recent_receipts: receipts } = state.data
   return (
-    <div>
+    <div className="site-page">
       <Header site={site} badge={score.badge} />
-      <ScoreBreakdown score={score} />
+      <ScoreBreakdown score={score} steps={steps} />
       {month ? <Monthly month={month} /> : null}
       <RecentReceipts siteId={site.site_id} receipts={receipts} />
     </div>

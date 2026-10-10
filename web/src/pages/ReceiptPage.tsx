@@ -10,7 +10,8 @@ export function ReceiptPage() {
   usePageTitle('Receipt')
   const { state, reload } = useReceipt(siteId, jobId)
   return (
-    <div>
+    <div className="receipt-page">
+      <p className="eyebrow">Water receipt · {jobId}</p>
       <h1>Your receipt</h1>
       {state.status === 'loading' ? <Spinner label="Loading your receipt…" lines={5} /> : null}
       {state.status === 'error' ? (

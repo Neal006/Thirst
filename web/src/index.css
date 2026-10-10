@@ -362,11 +362,7 @@ code {
 }
 
 .tag:hover {
-  background: currentColor;
-}
-
-.tag:hover {
-  color: var(--white) !important;
+  background: color-mix(in srgb, currentColor 14%, var(--white));
 }
 
 .tag-measured {

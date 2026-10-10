@@ -45,3 +45,22 @@ describe('ScoreBreakdown numbers', () => {
     expect(document.body).not.toHaveTextContent(/0\.0|NaN|undefined|Infinity/)
   })
 })
+
+describe('ScoreBreakdown badge ladder', () => {
+  const steps = [
+    { name: 'bronze', at: 45 },
+    { name: 'silver', at: 60 },
+    { name: 'gold', at: 75 },
+    { name: 'platinum', at: 90 },
+  ]
+
+  it('says how many points to the next badge', () => {
+    render(<MemoryRouter><ScoreBreakdown score={{ ...GOOD, value: 72.4 }} steps={steps} /></MemoryRouter>)
+    expect(screen.getByText(/points to/i)).toHaveTextContent('3 points to gold')
+  })
+
+  it('leaves the ladder out without thresholds', () => {
+    render(<MemoryRouter><ScoreBreakdown score={{ ...GOOD, value: 72.4 }} /></MemoryRouter>)
+    expect(screen.queryByText(/points to/i)).toBeNull()
+  })
+})
