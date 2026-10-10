@@ -28,6 +28,37 @@ describe('createDefaultClient', () => {
   it('builds a real client when an address is given', () => {
     expect(() => createDefaultClient({ VITE_API_URL: 'https://api.example.test' })).not.toThrow()
   })
+
+  describe('in a production build', () => {
+    it('refuses mock mode, so a stray variable cannot show fake data on the real site', () => {
+      expect(() =>
+        createDefaultClient({ PROD: true, VITE_USE_MOCKS: 'true', VITE_API_URL: 'https://a.test' }),
+      ).toThrow(/mock/i)
+    })
+
+    it('refuses an API address that is not https', () => {
+      expect(() => createDefaultClient({ PROD: true, VITE_API_URL: 'http://api.example.test' })).toThrow(
+        /https/,
+      )
+      expect(() => createDefaultClient({ PROD: true, VITE_API_URL: 'not a url' })).toThrow(/https/)
+    })
+
+    it('accepts an https address', () => {
+      expect(() =>
+        createDefaultClient({ PROD: true, VITE_API_URL: 'https://api.example.test' }),
+      ).not.toThrow()
+    })
+
+    it('still names the missing variable when there is no address', () => {
+      expect(() => createDefaultClient({ PROD: true })).toThrow(/VITE_API_URL/)
+    })
+  })
+
+  it('allows a plain http address while developing', () => {
+    expect(() =>
+      createDefaultClient({ PROD: false, VITE_API_URL: 'http://127.0.0.1:3000' }),
+    ).not.toThrow()
+  })
 })
 
 describe('errorMessage', () => {

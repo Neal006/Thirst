@@ -53,6 +53,18 @@ describe('api client', () => {
     })
   })
 
+  it('cuts a very long server message so an error banner cannot be flooded', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(400, { error: 'invalid_field', message: 'x'.repeat(5000) }))
+    const client = createClient({ baseUrl: 'https://api.test', fetchImpl })
+
+    const failure = (await client.post('/plan', {}).catch((e: unknown) => e)) as ApiError
+
+    expect(failure).toBeInstanceOf(ApiError)
+    expect(failure.message.length).toBe(300)
+  })
+
   it('gives a friendly message when the server answers with something that is not JSON', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response('<html>Bad gateway</html>', { status: 502 }))
     const client = createClient({ baseUrl: 'https://api.test', fetchImpl })

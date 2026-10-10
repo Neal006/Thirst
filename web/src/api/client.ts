@@ -4,6 +4,7 @@
 import type { ApiErrorBody } from './types'
 
 export const DEFAULT_TIMEOUT_MS = 10_000
+const MAX_SERVER_MESSAGE = 300
 
 const TRY_AGAIN = 'Something went wrong on our side. Please try again in a minute.'
 const TOO_SLOW = 'That took too long. Please try again.'
@@ -97,7 +98,9 @@ export function createClient(options: ClientOptions): ApiClient {
       }
       const data = await readJson(reply)
       if (!reply.ok) {
-        if (isErrorBody(data)) throw new ApiError(reply.status, data.error, data.message)
+        if (isErrorBody(data)) {
+          throw new ApiError(reply.status, data.error, data.message.slice(0, MAX_SERVER_MESSAGE))
+        }
         throw new ApiError(reply.status, 'unexpected_reply', TRY_AGAIN)
       }
       if (data === undefined) throw new ApiError(reply.status, 'unexpected_reply', TRY_AGAIN)
