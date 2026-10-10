@@ -1,0 +1,112 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { createMemoryRouter, RouterProvider } from 'react-router-dom'
+import { describe, expect, it } from 'vitest'
+import { ApiContext } from './api/context'
+import { mockFetch } from './api/mocks/mockFetch'
+import { EMPTY_SITE_ID } from './api/mocks/site'
+import { appRoutes } from './routes'
+import { clientWith, fetchSpy, jsonReply, type FetchFn } from './test/api'
+import { findUntaggedNumbers } from './test/honesty'
+import { distinctPlan } from './test/planFixture'
+
+const distinctApi: FetchFn = async (input, init) =>
+  new URL(String(input)).pathname === '/plan' ? jsonReply(200, distinctPlan()) : mockFetch(input, init)
+
+function renderAt(path: string, fetchImpl: FetchFn = distinctApi) {
+  const router = createMemoryRouter(appRoutes, { initialEntries: [path] })
+  return render(
+    <ApiContext.Provider value={clientWith(fetchSpy(fetchImpl))}>
+      <RouterProvider router={router} />
+    </ApiContext.Provider>,
+  )
+}
+
+describe('routes', () => {
+  it.each([
+    ['/leaderboard', /^Leaderboard$/],
+    ['/assumptions', /^Assumptions$/],
+    ['/sites/s_demoaaaaaa', /demo lab, chennai/i],
+    ['/receipts/s_abcdefghij/j_abcdefghijkl', /^Your receipt$/],
+  ])('deep link %s loads its page', async (path, heading) => {
+    renderAt(path)
+    expect(await screen.findByRole('heading', { level: 1, name: heading })).toBeInTheDocument()
+  })
+
+  it('shows a friendly page for an unknown address', async () => {
+    renderAt('/no/such/page')
+    expect(await screen.findByRole('heading', { name: /couldn't find that page/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /go to the planner/i })).toHaveAttribute('href', '/')
+  })
+
+  it('moves between pages with the navigation', async () => {
+    renderAt('/')
+    await userEvent.click(screen.getByRole('link', { name: 'Leaderboard' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Leaderboard' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('link', { name: 'Assumptions' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Assumptions' })).toBeInTheDocument()
+  })
+
+  it('sets the tab title for each page', async () => {
+    renderAt('/leaderboard')
+    await screen.findByRole('heading', { level: 1, name: 'Leaderboard' })
+    await waitFor(() => expect(document.title).toBe('Leaderboard - Thirst'))
+  })
+
+  it('"How do we know?" on the plan page goes to the assumptions', async () => {
+    renderAt('/')
+    await userEvent.click(await screen.findByRole('button', { name: 'Plan' }))
+    await screen.findByRole('region', { name: /your plan/i })
+    const link = screen.getAllByRole('link', { name: /how do we know/i })[0]
+    expect(link).toHaveAttribute('href', '/assumptions')
+  })
+})
+
+describe('G5: no number with a unit is shown without a tag (plan 6.4.c)', () => {
+  // `hasNumbers` guards against a vacuous pass: the page must really show numbers with units.
+  const honest = async (ready: () => Promise<unknown>, hasNumbers = true) => {
+    await ready()
+    await waitFor(() => expect(document.querySelector('.skeleton')).toBeNull())
+    if (hasNumbers) expect(document.body.textContent).toMatch(/\d\s?(%|kWh|kg|L)(?![A-Za-z])/)
+    expect(findUntaggedNumbers(document.body)).toEqual([])
+  }
+
+  it('the plan page with a plan, a moved slider and a stale-forecast banner', async () => {
+    const plan = distinctPlan({ tags: { ...distinctPlan().tags, forecast: 'cached' }, forecast_age_hours: 3, notes: ['no_room'] })
+    renderAt('/', async (input, init) =>
+      new URL(String(input)).pathname === '/plan' ? jsonReply(200, plan) : mockFetch(input, init),
+    )
+    await userEvent.click(await screen.findByRole('button', { name: 'Plan' }))
+    await honest(() => screen.findByRole('region', { name: /your plan/i }))
+    fireEvent.change(screen.getByRole('slider'), { target: { value: '0.8' } })
+    await honest(async () => {})
+  })
+
+  it('the plan page before a plan', async () => {
+    renderAt('/')
+    await honest(() => screen.findByLabelText(/gpu model/i), false)
+  })
+
+  it('the leaderboard', async () => {
+    renderAt('/leaderboard')
+    await honest(() => screen.findByRole('table'))
+  })
+
+  it('a site page with receipts and one without', async () => {
+    const view = renderAt('/sites/s_demoaaaaaa')
+    await honest(() => screen.findByRole('heading', { level: 1, name: /demo lab/i }))
+    view.unmount()
+    renderAt(`/sites/${EMPTY_SITE_ID}`)
+    await honest(() => screen.findByText(/no receipts yet/i), false)
+  })
+
+  it('a receipt', async () => {
+    renderAt('/receipts/s_abcdefghij/j_abcdefghijkl')
+    await honest(() => screen.findByRole('heading', { name: 'What you did' }))
+  })
+
+  it('the assumptions page', async () => {
+    renderAt('/assumptions')
+    await honest(() => screen.findByRole('heading', { name: 'Cooling' }), false)
+  })
+})

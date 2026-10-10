@@ -208,7 +208,7 @@ export function isAssumptionsResponse(v: unknown): v is AssumptionsResponse {
         isObj(f) && isStr(f.id) && isStr(f.group) && isStr(f.label) && isNum(f.value) && isStr(f.status),
     ) &&
     isArr(v.gpus) &&
-    v.gpus.every((g) => isObj(g) && isStr(g.id) && isNum(g.p_max_w)) &&
+    v.gpus.every((g) => isObj(g) && isStr(g.id) && isStr(g.label) && isNum(g.p_max_w)) &&
     isArr(v.cities) &&
     v.cities.every((c) => isObj(c) && isStr(c.id)) &&
     isObj(v.stress_weights) &&

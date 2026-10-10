@@ -21,7 +21,7 @@ export function TagChip({ tag, factor }: TagChipProps) {
       >
         {info.label}
       </Link>
-      <span id={helpId} className="visually-hidden">
+      <span id={helpId} hidden>
         {info.help}
       </span>
     </>

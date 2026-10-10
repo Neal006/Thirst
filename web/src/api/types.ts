@@ -139,6 +139,16 @@ export interface ReceiptResponse {
   url: string
 }
 
+/** GET /receipts/{site_id}/{job_id} (08 §3.4b): the POST reply plus these fields. Never the GPU count. */
+export interface ReceiptDetail extends ReceiptResponse {
+  start_ts?: string
+  end_ts?: string
+  method?: string
+  cap_applied?: boolean
+  cap_method?: string
+  gpu?: { name: string }
+}
+
 export interface MonthlyAbsolute {
   kwh: number
   facility_kwh: number
