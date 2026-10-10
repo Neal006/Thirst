@@ -9,4 +9,10 @@ description = "Published test vectors, not secrets"
 # tests/vectors/hmac.json holds the HMAC example from docs/implementation-plan/08 section 6. Its
 # server secret is the literal "test-secret-not-for-prod", so the derived token and signatures are
 # public test data. Every other file is still scanned.
-paths = ['''^tests/vectors/hmac\.json$''']
+# tests/cli/test_config.py and tests/cli/thirst_rig.py share one made-up 64-hex site token
+# (TOKEN = "93ec2d..."), used only against fakes and stubs; it has never been issued by a server.
+paths = [
+  '''^tests/vectors/hmac\.json$''',
+  '''^tests/cli/test_config\.py$''',
+  '''^tests/cli/thirst_rig\.py$''',
+]

@@ -29,6 +29,10 @@ HOME_ENV = "THIRST_HOME"
 URL_ENV = "THIRST_API_URL"
 CREDENTIAL_ENV = "THIRST_TOKEN"
 
+# The hosted service, used when neither --api-url nor THIRST_API_URL is given.
+DEFAULT_API_URL = "https://l6y3i40hh4.execute-api.ap-south-1.amazonaws.com"
+DEFAULT_WEB_URL = "https://main.dzxkrtlc7xqfx.amplifyapp.com"
+
 _SITE_ID = re.compile(r"s_[a-z2-7]{10}")
 _TOKEN = re.compile(r"[0-9a-f]{64}")
 _REGISTER_FIRST = "Run `thirst register` first."

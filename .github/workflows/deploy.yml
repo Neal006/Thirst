@@ -1,0 +1,83 @@
+name: Deploy
+
+# Runs after CI passes on main (and by hand from the Actions tab). AWS access comes from GitHub's
+# OIDC token and the thirst-github-deploy role, which only main of Neal006/Thirst can assume:
+# no AWS keys are stored in GitHub.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-south-1
+  AWS_ROLE: arn:aws:iam::857229543886:role/thirst-github-deploy
+  AMPLIFY_APP_ID: dzxkrtlc7xqfx
+  STACK: thirst-dev
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Build the Strands layer (linux/arm64 wheels)
+        run: python scripts/build_layer.py
+
+      - name: Build and deploy the API stack
+        run: |
+          sam build
+          sam deploy
+
+      - name: Read the API address
+        id: api
+        run: |
+          url=$(aws cloudformation describe-stacks --stack-name "$STACK" \
+            --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text)
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test the API
+        run: bash scripts/smoke.sh "${{ steps.api.outputs.url }}"
+
+      - name: Build and publish the website
+        run: |
+          npm --prefix web ci
+          python scripts/deploy_web.py --app-id "$AMPLIFY_APP_ID" --api-url "${{ steps.api.outputs.url }}"
+
+      - name: Summary
+        run: |
+          {
+            echo "### Deployed"
+            echo "- Website: https://main.${AMPLIFY_APP_ID}.amplifyapp.com"
+            echo "- API: ${{ steps.api.outputs.url }}"
+          } >> "$GITHUB_STEP_SUMMARY"

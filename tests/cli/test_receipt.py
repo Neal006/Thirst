@@ -376,7 +376,8 @@ def test_saved_receipts_are_private() -> None:
     assert stat.S_IMODE(path.stat().st_mode) == 0o600
 
 
-def test_show_rebuilds_the_scored_text_from_disk() -> None:
+def test_show_rebuilds_the_scored_text_from_disk(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("THIRST_WEB_URL", "")
     body = receipt.build_body(facts(), summary(*SEVEN))
     receipt.save_receipt(body, FIXTURE, status="posted")
 
@@ -410,3 +411,11 @@ def test_corrupt_saved_receipt_is_a_plain_error() -> None:
         receipt.render_saved(JOB)
 
     assert "not valid" in err.value.message
+
+
+def test_show_links_to_the_hosted_site_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("THIRST_WEB_URL", raising=False)
+    body = receipt.build_body(facts(), summary(*SEVEN))
+    receipt.save_receipt(body, FIXTURE, status="posted")
+
+    assert f"{config.DEFAULT_WEB_URL}/receipts/" in receipt.render_saved(JOB)

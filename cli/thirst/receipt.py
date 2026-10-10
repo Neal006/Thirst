@@ -293,7 +293,7 @@ def render_saved(job_id: str) -> str:
     """Text for ``thirst receipt show <job_id>``."""
     saved = load_receipt(job_id)
     body, response, status = saved["body"], saved.get("response"), saved.get("status")
-    web_url = os.environ.get("THIRST_WEB_URL", "")
+    web_url = os.environ.get("THIRST_WEB_URL", config.DEFAULT_WEB_URL)
     if isinstance(response, dict):
         return format_scored(body, response, web_url)
     if status == "duplicate":

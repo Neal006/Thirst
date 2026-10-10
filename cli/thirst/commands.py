@@ -36,7 +36,7 @@ CLOCK_SKEW_LIMIT_S = 60
 
 
 def cmd_register(args: argparse.Namespace, ctx: Context) -> int:
-    api_url = args.api_url or ctx.env.get(config.URL_ENV)
+    api_url = args.api_url or ctx.env.get(config.URL_ENV) or config.DEFAULT_API_URL
     if not api_url:
         raise ConfigError(
             "Tell Thirst where the API is: pass --api-url, or set THIRST_API_URL "

@@ -31,8 +31,8 @@ from .http import MAX_BODY_RECEIPT, MAX_BODY_SMALL
 
 CACHE_SECONDS = 20  # site pages and leaderboards (PRD 6.2.7: on the board within a minute)
 # Anyone can register a site and a site's token can sign receipts, so work and storage are capped.
-MAX_SITES_PER_DAY = 100  # new sites per IST day, whole service
-MAX_RECEIPTS_PER_SITE_PER_DAY = 200
+MAX_SITES_PER_DAY = 1000  # new sites per IST day, whole service (far above judging traffic)
+MAX_RECEIPTS_PER_SITE_PER_DAY = 2000
 LEADERBOARD_MAX_ROWS = 100
 RECEIPT_MAX_AGE = timedelta(days=30)  # older receipts could never be scored into the 30-day window
 CLOCK_SKEW = timedelta(seconds=security.MAX_SKEW_SECONDS)

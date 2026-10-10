@@ -139,7 +139,7 @@ def test_cors_and_throttling(template: dict[str, Any]) -> None:
     }
     assert cors["MaxAge"] == 600
     limits = api["DefaultRouteSettings"]
-    assert limits["ThrottlingRateLimit"] == 10 and limits["ThrottlingBurstLimit"] == 20
+    assert limits["ThrottlingRateLimit"] == 200 and limits["ThrottlingBurstLimit"] == 400
 
 
 def test_refresh_runs_hourly_with_one_retry(template: dict[str, Any]) -> None:

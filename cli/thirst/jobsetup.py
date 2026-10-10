@@ -19,7 +19,7 @@ def load_client(ctx: Context) -> tuple[config.Config, ApiClient]:
 
 
 def web_url(env: Mapping[str, str]) -> str:
-    return env.get("THIRST_WEB_URL", "")
+    return env.get("THIRST_WEB_URL", config.DEFAULT_WEB_URL)
 
 
 @dataclass(frozen=True)
