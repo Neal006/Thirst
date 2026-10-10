@@ -1,0 +1,12 @@
+# Used by the CI "secrets" job (gitleaks-action reads this file automatically).
+title = "Thirst gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Published test vectors, not secrets"
+# tests/vectors/hmac.json holds the HMAC example from docs/implementation-plan/08 section 6. Its
+# server secret is the literal "test-secret-not-for-prod", so the derived token and signatures are
+# public test data. Every other file is still scanned.
+paths = ['''^tests/vectors/hmac\.json$''']
