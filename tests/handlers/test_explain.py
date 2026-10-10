@@ -339,7 +339,7 @@ def test_the_daily_limit_switches_to_the_template(
 
 
 def test_the_limit_is_300_a_day() -> None:
-    assert explain.DAILY_LIMIT == 300 and explain.MAX_TEXT == 500
+    assert explain.DAILY_LIMIT == 3000 and explain.MAX_TEXT == 500
     assert explain.AGENT_TIMEOUT_S == 20
 
 

@@ -1,4 +1,3 @@
-# Lambda layer for ExplainFn only (decision D14). Pinned to the version that resolved on
-# 2026-10-10; re-check that it installs for linux/arm64 with `sam build --use-container`
-# before the first deploy (plan step 05.9).
+# Lambda layer for ExplainFn only (decision D14). Built for linux/arm64 without Docker by
+# `python scripts/build_layer.py` (prebuilt manylinux aarch64 wheels into ./python/).
 strands-agents==1.59.0

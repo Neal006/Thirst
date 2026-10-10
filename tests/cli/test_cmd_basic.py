@@ -59,7 +59,8 @@ def test_register_private_site(rig: CliRig) -> None:
     assert rig.api.sites[0]["public"] is False
 
 
-def test_register_needs_an_api_url(rig: CliRig) -> None:
+def test_register_needs_an_api_url(rig: CliRig, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(config, "DEFAULT_API_URL", "")
     args = [a for a in register_args() if a not in ("--api-url", URL)]
 
     code = rig.main(*args)
@@ -67,6 +68,16 @@ def test_register_needs_an_api_url(rig: CliRig) -> None:
     assert code == 3
     assert "THIRST_API_URL" in rig.errors
     assert rig.api.sites == []
+
+
+def test_register_uses_the_hosted_api_by_default(
+    rig: CliRig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(config, "DEFAULT_API_URL", URL)
+    args = [a for a in register_args() if a not in ("--api-url", URL)]
+
+    assert rig.main(*args) == 0
+    assert config.load().api_url == URL
 
 
 def test_register_reads_the_api_url_from_the_environment(rig: CliRig) -> None:

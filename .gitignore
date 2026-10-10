@@ -18,6 +18,7 @@ web/dist/
 # AWS SAM
 .aws-sam/
 samconfig.local.toml
+layers/strands/python/
 
 # Notebooks
 .ipynb_checkpoints/

@@ -7,6 +7,8 @@
   <img src="https://img.shields.io/badge/made%20for-WeMakeDevs%20%C3%97%20AWS-ffcc00?labelColor=0b1620" alt="Made for WeMakeDevs x AWS">
   <img src="https://img.shields.io/badge/track-02%20Heat%20%26%20Water-0a5cff?labelColor=0b1620" alt="Track 02 Heat and Water">
   <img src="https://img.shields.io/badge/licence-MIT-0b1620" alt="MIT licence">
+  <a href="https://pypi.org/project/thirst/"><img src="https://img.shields.io/pypi/v/thirst?label=pip%20install%20thirst&color=0a5cff&labelColor=0b1620" alt="PyPI"></a>
+  <a href="https://main.dzxkrtlc7xqfx.amplifyapp.com"><img src="https://img.shields.io/badge/live-website-ffcc00?labelColor=0b1620" alt="Live website"></a>
 </p>
 
 <h3 align="center">Run your GPU job at the right hour and the right speed.<br>Take less water from India's thirstiest cities. Prove it with a receipt.</h3>
@@ -79,12 +81,12 @@ Nobody running a 6-hour training job sees this. Thirst makes it visible, gives y
 
 Open the site, pick your city, and look at the water clock. Then press **Plan a job**.
 
-> 🌐 **Live link:** coming with the AWS deploy. Until then, run it locally (see [For developers](#for-developers)).
+> 🌐 **Live:** **https://main.dzxkrtlc7xqfx.amplifyapp.com**
 
 ### On your GPU machine
 
 ```bash
-pip install "git+https://github.com/Neal006/Thirst#subdirectory=cli"   # soon: pip install thirst
+pip install thirst
 
 thirst register --name "CSE GPU Lab" --city Chennai --cooling room_ac --gpus 4
 thirst run --hours 6 --deadline "2026-10-12 09:00" --pausable -- python train.py
@@ -224,6 +226,8 @@ npm --prefix web ci
 python scripts/local_api.py                                  # real API on :3000, in-memory DB, live weather
 cd web && VITE_API_URL=http://127.0.0.1:3000 npm run dev      # site on :5173
 ```
+
+Deploys run from GitHub Actions after CI passes on `main` (`.github/workflows/deploy.yml`, AWS access through OIDC, no stored keys). By hand: `python scripts/build_layer.py && sam build && sam deploy --profile thirst`, then `python scripts/deploy_web.py --app-id dzxkrtlc7xqfx --api-url <ApiUrl> --profile thirst`.
 
 Checks: `make check` (or the commands in the [`Makefile`](Makefile) on Windows) and `npm --prefix web test -- --run`.
 Deep dives: [`Idea.md`](Idea.md) (why) · [`prd.md`](prd.md) (what) · [`trd.md`](trd.md) (how) · [`docs/implementation-plan/`](docs/implementation-plan/README.md) · [`AGENTS.md`](AGENTS.md).

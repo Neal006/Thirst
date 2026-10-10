@@ -217,10 +217,20 @@ def test_pause_really_stops_the_process_and_resume_continues_it(tmp_path: Path) 
         child.wait(10)
 
 
+# A training script that cleans up on SIGTERM (checkpoint, close files). Linux kills a stopped
+# process at once for a SIGTERM it does not handle, but a handled one waits for SIGCONT.
+HANDLES_SIGTERM = (
+    "import signal, sys\n"
+    "signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))\n"
+) + COUNTER
+
+
 @POSIX_ONLY
 def test_a_stopped_process_needs_sigcont_before_sigterm(tmp_path: Path) -> None:
     counter = tmp_path / "count.txt"
-    child = process.spawn_child([PYTHON, "-c", COUNTER, str(counter)], dict(os.environ), None)
+    child = process.spawn_child(
+        [PYTHON, "-c", HANDLES_SIGTERM, str(counter)], dict(os.environ), None
+    )
     try:
         time.sleep(0.3)
         child.pause()

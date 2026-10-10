@@ -1,0 +1,19 @@
+# Shared by local deploys (`sam deploy --profile thirst`) and the GitHub Deploy workflow.
+# AlarmEmail is left out on purpose: the stack keeps the value it was first deployed with.
+version = 0.1
+
+[default.global.parameters]
+stack_name = "thirst-dev"
+region = "ap-south-1"
+
+[default.build.parameters]
+cached = true
+
+[default.deploy.parameters]
+resolve_s3 = true
+s3_prefix = "thirst-dev"
+capabilities = "CAPABILITY_IAM CAPABILITY_AUTO_EXPAND"
+confirm_changeset = false
+fail_on_empty_changeset = false
+parameter_overrides = "Stage=\"dev\" AllowedOrigins=\"https://main.dzxkrtlc7xqfx.amplifyapp.com,http://localhost:5173\" ServerSecretParam=\"/thirst/server_secret\""
+tags = "project=\"thirst\""

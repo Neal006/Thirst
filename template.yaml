@@ -115,8 +115,8 @@ Resources:
           - x-thirst-site
         MaxAge: 600
       DefaultRouteSettings:
-        ThrottlingRateLimit: 10
-        ThrottlingBurstLimit: 20
+        ThrottlingRateLimit: 200
+        ThrottlingBurstLimit: 400
 
   ApiFn:
     Type: AWS::Serverless::Function
@@ -184,9 +184,8 @@ Resources:
       ContentUri: layers/strands/
       CompatibleRuntimes: [python3.12]
       CompatibleArchitectures: [arm64]
-    Metadata:
-      BuildMethod: python3.12
-      BuildArchitecture: arm64
+    # No BuildMethod: run `python scripts/build_layer.py` first; it fills layers/strands/python/
+    # with linux/arm64 wheels, and SAM packages the folder as it is (no Docker needed).
 
   ExplainFn:
     Type: AWS::Serverless::Function
@@ -213,7 +212,8 @@ Resources:
               - Effect: Allow
                 Action: [bedrock:InvokeModel, bedrock:InvokeModelWithResponseStream]
                 Resource:
-                  - !Sub arn:${AWS::Partition}:bedrock:*::foundation-model/${BedrockModelId}
+                  # A cross-region profile (apac./global.) routes to the model in other regions.
+                  - !Sub arn:${AWS::Partition}:bedrock:*::foundation-model/*
                   - !Sub arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:inference-profile/${BedrockModelId}
           - !Ref AWS::NoValue
       Events:
