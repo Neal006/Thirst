@@ -12,7 +12,7 @@ export function RouteError() {
       <h1>Something went wrong</h1>
       <p>This page ran into a problem. Your other pages still work.</p>
       <p>
-        <Link to="/">Go to the planner</Link> or <Link to="/leaderboard">see the leaderboard</Link>.
+        <Link to="/plan">Go to the planner</Link> or <Link to="/leaderboard">see the leaderboard</Link>.
       </p>
     </section>
   )

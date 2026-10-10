@@ -10,10 +10,16 @@ afterEach(() => {
 })
 
 describe('App', () => {
-  it('shows the layout and the planner at /', async () => {
+  it('shows the layout and the home page at /', async () => {
     const router = createMemoryRouter(appRoutes, { initialEntries: ['/'] })
     render(<App client={clientWith(fetchSpy())} router={router} />)
     expect(screen.getByRole('navigation', { name: /main/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: /every gpu hour drinks water twice/i })).toBeInTheDocument()
+  })
+
+  it('shows the planner at /plan', async () => {
+    const router = createMemoryRouter(appRoutes, { initialEntries: ['/plan'] })
+    render(<App client={clientWith(fetchSpy())} router={router} />)
     expect(await screen.findByRole('heading', { level: 1, name: /when should your gpu job run/i })).toBeInTheDocument()
     expect(await screen.findByLabelText(/gpu model/i)).toBeInTheDocument()
   })

@@ -203,11 +203,11 @@ def _saved_text(actual: Mapping[str, Any], base: Mapping[str, Any]) -> str | Non
     return " and ".join(parts) + " compared with starting right away (modelled)"
 
 
-def _footprint_rows(scoring: Mapping[str, Any]) -> list[str]:
+def _footprint_rows(scoring: Mapping[str, Any], tag: str) -> list[str]:
     actual, base = scoring.get("actual") or {}, scoring.get("base") or {}
     rows = []
     if "E_gpu_kwh" in actual:
-        rows.append(_row("Energy", f"{actual['E_gpu_kwh']:.2f} kWh GPU (measured)"))
+        rows.append(_row("Energy", f"{actual['E_gpu_kwh']:.2f} kWh GPU ({tag})"))
     if "litres" in actual:
         text = f"{actual['litres']:.1f} L (modelled)"
         if "litres" in base:
@@ -234,7 +234,7 @@ def _score_text(site_score: Mapping[str, Any] | None) -> str:
 
 def format_scored(body: Mapping[str, Any], response: Mapping[str, Any], web_url: str = "") -> str:
     """The terminal receipt from the server's scored response."""
-    lines = _header(body) + _footprint_rows(response.get("scoring") or {})
+    lines = _header(body) + _footprint_rows(response.get("scoring") or {}, _tag(body))
     capture = response.get("capture")
     if response.get("no_room") or capture is None:
         lines.append(_row("Capture", "Little room to save on this job, so no capture score"))
