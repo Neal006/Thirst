@@ -286,6 +286,15 @@ def test_the_server_numbers_are_printed_not_local_estimates() -> None:
     assert "9.00 kWh GPU (measured)" in receipt.format_scored(body, changed)
 
 
+def test_modelled_energy_is_not_labelled_measured() -> None:
+    body = receipt.build_body(facts(), summary(*SEVEN, method="modelled"))
+
+    text = receipt.format_scored(body, FIXTURE)
+
+    assert "kWh GPU (modelled)" in text
+    assert "(measured)" not in text
+
+
 def test_no_room_is_explained() -> None:
     body = receipt.build_body(facts(), summary(*SEVEN))
     changed = {**FIXTURE, "capture": None, "no_room": True}
