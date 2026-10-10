@@ -5,15 +5,32 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "thirst"
 version = "0.3.0"
-description = "Thirst CLI: plan, run and measure GPU jobs for water and carbon."
+description = "Run GPU jobs at the right hour and speed to use less water and CO2, with a measured receipt."
+readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
+authors = [{ name = "Team hello_world" }]
+keywords = ["gpu", "sustainability", "water", "carbon", "nvml", "scheduling", "india"]
+classifiers = [
+  "Environment :: Console",
+  "Intended Audience :: Science/Research",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: Microsoft :: Windows",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: System :: Hardware",
+]
 dependencies = [
   "nvidia-ml-py>=12",
   "httpx>=0.27",
   "tomli>=2; python_version < '3.11'",
   "tomli-w>=1",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Neal006/Thirst"
+Source = "https://github.com/Neal006/Thirst"
+Issues = "https://github.com/Neal006/Thirst/issues"
 
 [project.optional-dependencies]
 sweep = ["torch", "torchvision"]

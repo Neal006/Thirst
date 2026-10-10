@@ -72,6 +72,12 @@ export function ParetoChart({ entries, tags, selectedAlpha, onSelect }: ParetoCh
 
   return (
     <figure className="chart-figure">
+      <div className="chart-head">
+        <h3>Water vs CO₂ trade-off</h3>
+        <span className="chart-units">
+          <span>yellow dot: your pick</span>
+        </span>
+      </div>
       <div
         className="chart-box"
         role="img"
@@ -80,8 +86,8 @@ export function ParetoChart({ entries, tags, selectedAlpha, onSelect }: ParetoCh
         <ResponsiveContainer width="100%" height={HEIGHT} initialDimension={INITIAL}>
           <ScatterChart margin={{ top: 8, right: 16, bottom: 20, left: 4 }}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis type="number" dataKey="x" name="Stress-weighted water" domain={['auto', 'auto']} tick={{ fontSize: 11 }} label={{ value: 'stress-weighted litres', position: 'insideBottom', offset: -10, fontSize: 11 }} />
-            <YAxis type="number" dataKey="y" name="CO₂" domain={['auto', 'auto']} width={44} tick={{ fontSize: 11 }} label={{ value: 'kg CO₂', angle: -90, position: 'insideLeft', fontSize: 11 }} />
+            <XAxis type="number" dataKey="x" name="Stress-weighted water" domain={['auto', 'auto']} tick={{ fontSize: 12 }} label={{ value: 'stress-weighted litres →', position: 'insideBottom', offset: -10, fontSize: 12 }} />
+            <YAxis type="number" dataKey="y" name="CO₂" domain={['auto', 'auto']} width={48} tick={{ fontSize: 12 }} label={{ value: 'kg CO₂ →', angle: -90, position: 'insideLeft', fontSize: 12 }} />
             <Tooltip content={tooltip} cursor={false} />
             <Scatter
               data={dots}
@@ -98,10 +104,9 @@ export function ParetoChart({ entries, tags, selectedAlpha, onSelect }: ParetoCh
                     cx={cx}
                     cy={cy}
                     r={isSelected ? SELECTED_RADIUS : DOT_RADIUS}
-                    fill="var(--water)"
-                    fillOpacity={isSelected ? 1 : 0.55}
-                    stroke={isSelected ? 'var(--level-line)' : 'none'}
-                    strokeWidth={3}
+                    fill={isSelected ? 'var(--signal)' : 'var(--cobalt-soft)'}
+                    stroke={isSelected ? 'var(--ink)' : 'var(--cobalt)'}
+                    strokeWidth={isSelected ? 2.5 : 1.5}
                     cursor="pointer"
                     onClick={() => onSelect(dot.alpha)}
                   />

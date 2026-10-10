@@ -5,32 +5,8 @@ import { DIVISIONS } from '../../lib/divisions'
 import { ratedFirst } from '../../lib/leaderboardView'
 import { Amount } from '../Amount'
 import { Badge } from '../Badge'
+import { ScoreRing } from '../ScoreRing'
 import { SimulatedChip } from '../SimulatedChip'
-
-const RING = 2 * Math.PI * 34
-
-function ScoreRing({ score }: { score: number | null }) {
-  const share = score === null ? 0 : Math.max(0, Math.min(1, score / 100))
-  return (
-    <div className="ring">
-      <svg viewBox="0 0 80 80" aria-hidden="true" focusable="false">
-        <circle className="ring-track" cx="40" cy="40" r="34" />
-        <circle
-          className="ring-fill"
-          cx="40"
-          cy="40"
-          r="34"
-          strokeDasharray={RING}
-          style={{ '--ring-off': RING * (1 - share), '--ring-len': RING } as React.CSSProperties}
-        />
-      </svg>
-      <span className="ring-value">
-        {score === null ? '–' : Math.round(score)}
-        <span className="visually-hidden"> out of 100</span>
-      </span>
-    </div>
-  )
-}
 
 function Podium({ row, place }: { row: LeaderboardRow; place: number }) {
   return (
@@ -38,7 +14,7 @@ function Podium({ row, place }: { row: LeaderboardRow; place: number }) {
       <span className="podium-rank" aria-hidden="true">
         {place}
       </span>
-      <ScoreRing score={row.score} />
+      <ScoreRing score={row.score} lead={place === 1} />
       <div className="podium-body">
         <Link className="podium-name" to={`/sites/${encodeURIComponent(row.site_id)}`}>
           <span className="visually-hidden">Rank {place}: </span>
