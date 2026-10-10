@@ -102,6 +102,17 @@ def test_decode_body_handles_plain_and_base64() -> None:
     assert err.value.status == 400
 
 
+def test_a_body_that_is_not_valid_text_is_a_400_not_a_crash() -> None:
+    # a lone surrogate cannot be encoded as UTF-8
+    with pytest.raises(ApiError) as err:
+        security.raw_body({"body": "abc\ud800", "isBase64Encoded": False})
+    assert (err.value.status, err.value.code) == (400, "invalid_field")
+    # bytes that arrived through surrogateescape round-trip to the original bytes
+    assert (
+        security.raw_body({"body": b"\xff\xfe".decode("utf-8", "surrogateescape")}) == b"\xff\xfe"
+    )
+
+
 def test_empty_secret_is_refused() -> None:
     with pytest.raises(ValueError, match="secret"):
         security.site_token(b"", SITE)

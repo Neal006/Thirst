@@ -1,3 +1,4 @@
-# Lambda layer for ExplainFn only (decision D14). Pin the exact version that installs on arm64
-# during plan step 05.9 before the first deploy.
-strands-agents
+# Lambda layer for ExplainFn only (decision D14). Pinned to the version that resolved on
+# 2026-10-10; re-check that it installs for linux/arm64 with `sam build --use-container`
+# before the first deploy (plan step 05.9).
+strands-agents==1.59.0

@@ -373,6 +373,8 @@ class PlanRepo:
             "inputs": plan["inputs"],
             "base": plan["base"],
             "best": plan["best"],
+            "notes": plan.get("notes", []),
+            "tags": plan.get("tags", {}),
             "factor_version": plan["factor_version"],
             "ttl": int((submit + PLAN_TTL).timestamp()),
         }
@@ -388,6 +390,8 @@ class PlanRepo:
         if item is None:
             return None
         out = dict(from_ddb({k: v for k, v in item.items() if not k.endswith("_gz")}))
+        out.setdefault("notes", [])  # plans stored before notes and tags were kept
+        out.setdefault("tags", {})
         out["pareto"] = _gunzip(item["pareto_gz"])
         out["forecast_snapshot"] = _gunzip(item["forecast_snapshot_gz"])
         return out

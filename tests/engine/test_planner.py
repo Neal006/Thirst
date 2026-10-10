@@ -308,6 +308,40 @@ def test_forced_non_pausable_adds_a_note_and_never_pauses(fx: Factors) -> None:
         assert pause_gaps(entry["schedule"]) == 0
 
 
+# force_now (thirst run --now) -------------------------------------------------------------
+
+
+def test_force_now_makes_chosen_the_base_plan_everywhere(fx: Factors) -> None:
+    result = run(fx, force_now=True, alpha=0.3, pausable=True)
+    base, chosen = result["base"], result["chosen"]
+    for key in ("kind", "start", "finish", "schedule", "totals", "level_summary", "gpu_kwh"):
+        assert chosen[key] == base[key], key
+    assert chosen["alpha"] == 0.3
+    zero = {"water_pct": [0, 0], "co2_pct": [0, 0], "energy_pct": [0, 0]}
+    assert chosen["savings_ranges"] == zero
+    assert result["savings_ranges"] == chosen["savings_ranges"]
+    assert "start_now_forced" in result["notes"]
+    # the series shading and the level line describe the base plan, not a shifted one
+    assert [s["state"] for s in result["series"]] == [o["state"] for o in base["series_overlay"]]
+    assert [s["level"] for s in result["series"]] == [o["level"] for o in base["series_overlay"]]
+    assert result["series"][0]["state"] == "run"
+
+
+def test_force_now_keeps_the_pareto_set_and_best_intact(fx: Factors) -> None:
+    normal, forced = run(fx, alpha=0.3), run(fx, alpha=0.3, force_now=True)
+    assert forced["pareto"] == normal["pareto"] and len(forced["pareto"]) == 11
+    assert forced["best"] == normal["best"] and forced["base"] == normal["base"]
+    assert forced["chosen"] is not forced["base"]  # a copy, not an alias
+
+
+def test_force_now_is_off_by_default_and_must_be_a_bool(fx: Factors) -> None:
+    assert "start_now_forced" not in run(fx)["notes"]
+    assert run(fx)["inputs"]["force_now"] is False
+    with pytest.raises(EngineError) as err:
+        run(fx, force_now="yes")
+    assert err.value.code == "invalid_field"
+
+
 # extra behaviour ---------------------------------------------------------------------------
 
 

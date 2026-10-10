@@ -12,6 +12,7 @@
     "pausable": true,
     "pausable_allowed": true,
     "alpha": 0.5,
+    "force_now": false,
     "site_id": "s_abcdefghij"
   },
   "base": {

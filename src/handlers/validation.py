@@ -152,6 +152,7 @@ class PlanInput:
             submit_ts=submit_ts,
             site_id=self.site_id,
             pausable_allowed=self.pausable_allowed,
+            force_now=self.force_now,
         )
 
 

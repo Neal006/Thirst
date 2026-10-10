@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 
+import api_helpers
 import boto3
 import pytest
+from api_helpers import Client, Clock
 from moto import mock_aws
 
 from handlers import security, store
@@ -37,6 +39,9 @@ def aws(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
                 BillingMode="PAY_PER_REQUEST",
                 **spec.create_args(),
             )
+        boto3.client("ssm", region_name=REGION).put_parameter(
+            Name="/thirst/server_secret", Value=api_helpers.SECRET, Type="SecureString"
+        )
         yield
     security.load_secret.cache_clear()
     store.get_tables.cache_clear()
@@ -45,3 +50,20 @@ def aws(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
 @pytest.fixture
 def tables(aws: None) -> store.Tables:
     return store.get_tables()
+
+
+@pytest.fixture
+def clock(aws: None) -> Clock:
+    return Clock(api_helpers.NOW)
+
+
+@pytest.fixture
+def client(
+    aws: None, tables: store.Tables, clock: Clock, monkeypatch: pytest.MonkeyPatch
+) -> Client:
+    from handlers import api
+
+    api.reset_caches()
+    monkeypatch.setattr(api, "_now", clock)
+    api_helpers.seed_weather(tables)
+    return Client(api.handler, clock, tables)

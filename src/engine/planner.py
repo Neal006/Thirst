@@ -50,6 +50,7 @@ class PlanRequest:
     submit_ts: datetime
     site_id: str | None = None
     pausable_allowed: bool = True  # False forces a non-pausable plan (D15)
+    force_now: bool = False  # True: chosen is the Base plan (``thirst run --now``)
 
 
 @dataclass(frozen=True, slots=True)
@@ -297,6 +298,8 @@ def _validate(req: PlanRequest) -> None:
         raise EngineError("invalid_field", "alpha: use a step of 0.1 from 0 to 1.")
     if not isinstance(req.pausable, bool) or not isinstance(req.pausable_allowed, bool):
         raise EngineError("invalid_field", "pausable: use true or false.")
+    if not isinstance(req.force_now, bool):
+        raise EngineError("invalid_field", "force_now: use true or false.")
     if req.pue_user is not None and not _is_number(req.pue_user):
         raise EngineError("invalid_field", "pue: use a number from 1.0 to 3.0.")
     for name in ("submit_ts", "deadline"):
@@ -548,6 +551,7 @@ def _inputs(req: PlanRequest) -> dict[str, Any]:
         "pausable": req.pausable,
         "pausable_allowed": req.pausable_allowed,
         "alpha": req.alpha,
+        "force_now": req.force_now,
         "site_id": req.site_id,
     }
 
@@ -565,6 +569,10 @@ def plan(req: PlanRequest, snap: ForecastSnapshot, fx: Factors | None = None) ->
     j_best = _objective(env.ctx, best_plan, _kwh_cost(env.ctx, _j_weights(fx)))
     idx = int(round(req.alpha * ALPHA_STEPS + 1e-9))
     chosen, chosen_plan, chosen_totals = copy.deepcopy(pareto[idx]), plans[idx], entries[idx][1]
+    if req.force_now:  # the user starts now: the Base plan, with no saving against itself
+        chosen = {"alpha": pareto[idx]["alpha"], **copy.deepcopy(base_entry)}
+        chosen["notes"] = [*chosen["notes"], "start_now_forced"]
+        chosen_plan, chosen_totals = env.base, base_totals
     days = [chosen_totals[n].person_days(env.fs[n]) for n in _SETS]
     return {
         "plan_id": "",

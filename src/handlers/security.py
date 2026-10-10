@@ -77,7 +77,10 @@ def raw_body(event: Mapping[str, Any]) -> bytes:
             return base64.b64decode(body, validate=True)
         except (binascii.Error, ValueError):
             raise ApiError(400, "invalid_field", "body: could not be decoded.") from None
-    return str(body).encode("utf-8")
+    try:
+        return str(body).encode("utf-8", "surrogateescape")
+    except UnicodeEncodeError:
+        raise ApiError(400, "invalid_field", "body: could not be read as text.") from None
 
 
 def _ssm_client() -> Any:

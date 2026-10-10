@@ -157,6 +157,11 @@ def test_to_request_uses_the_server_time_as_submit() -> None:
     assert req.pausable_allowed is True and req.site_id is None
 
 
+def test_force_now_reaches_the_engine_request() -> None:
+    assert plan(force_now=True).to_request(NOW).force_now is True
+    assert plan().to_request(NOW).force_now is False
+
+
 def test_pausable_allowed_false_forces_a_non_pausable_request() -> None:
     req = plan(pausable=True, pausable_allowed=False).to_request(NOW)
     assert req.pausable_allowed is False

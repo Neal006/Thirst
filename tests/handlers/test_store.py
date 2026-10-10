@@ -300,6 +300,18 @@ def test_plan_round_trip_restores_every_stored_part(
     assert got["best"]["gpu_kwh"] == pytest.approx(engine_plan["best"]["gpu_kwh"])
     assert got["inputs"]["gpu_model"] == engine_plan["inputs"]["gpu_model"]
     assert got["factor_version"] == engine_plan["factor_version"]
+    assert got["notes"] == engine_plan["notes"] and got["tags"] == engine_plan["tags"]
+
+
+def test_plans_stored_before_notes_existed_still_load(
+    tables: store.Tables, engine_plan: dict[str, Any]
+) -> None:
+    PlanRepo(tables.plans).put(engine_plan, site_id=None)
+    tables.plans.update_item(
+        Key={"plan_id": "p_abcdefghij"}, UpdateExpression="REMOVE notes, tags"
+    )
+    got = PlanRepo(tables.plans).get("p_abcdefghij")
+    assert got is not None and got["notes"] == [] and got["tags"] == {}
 
 
 def test_a_stored_plan_scores_a_receipt_like_the_original(
