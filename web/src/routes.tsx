@@ -1,6 +1,7 @@
 import type { RouteObject } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { AssumptionsPage } from './pages/AssumptionsPage'
+import { LandingPage } from './pages/LandingPage'
 import { LeaderboardPage } from './pages/LeaderboardPage'
 import { NotFound } from './pages/NotFound'
 import { PlanPage } from './pages/PlanPage'
@@ -9,7 +10,7 @@ import { RouteError } from './pages/RouteError'
 import { SitePage } from './pages/SitePage'
 
 /**
- * Plan (/), receipt, leaderboard, site and assumptions (anchors like /assumptions#tau_70).
+ * Home (/), plan (/plan), receipt, leaderboard, site and assumptions (anchors like /assumptions#tau_70).
  *
  * A page that throws is caught by the error element of the group around the pages, so the header
  * and navigation stay. The root one is the last resort for a failure in the layout itself.
@@ -25,7 +26,8 @@ export function createAppRoutes(extraPages: RouteObject[] = []): RouteObject[] {
         {
           errorElement: <RouteError />,
           children: [
-            { index: true, element: <PlanPage /> },
+            { index: true, element: <LandingPage /> },
+            { path: 'plan', element: <PlanPage /> },
             { path: 'receipts/:siteId/:jobId', element: <ReceiptPage /> },
             { path: 'leaderboard', element: <LeaderboardPage /> },
             { path: 'sites/:siteId', element: <SitePage /> },

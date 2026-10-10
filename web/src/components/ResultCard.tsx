@@ -41,7 +41,7 @@ export function ResultCard({ response, entry }: ResultCardProps) {
   const startsNow = Date.parse(entry.start) === Date.parse(response.submit_ts)
   const [daysLo, daysHi] = personDaysRange(response, entry)
   return (
-    <section className="card" aria-labelledby="plan-heading">
+    <section className="card result-card" aria-labelledby="plan-heading">
       <h2 id="plan-heading">Your plan</h2>
       <p className="plan-sentence">
         {startsNow ? (
@@ -57,7 +57,8 @@ export function ResultCard({ response, entry }: ResultCardProps) {
             , pause <strong>{p.from} to {p.to}</strong>
           </span>
         ))}
-        , done by <strong>{formatClock(entry.finish)}</strong>.
+        , done by <strong>{formatClock(entry.finish)}</strong>
+        {formatDay(entry.finish) !== formatDay(entry.start) ? <> ({formatDay(entry.finish)})</> : null}.
       </p>
       <SavingLine response={response} entry={entry} />
       {Number.isFinite(daysLo) && Number.isFinite(daysHi) ? (

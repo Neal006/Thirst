@@ -2,7 +2,7 @@
 // alone. The checks mirror the server (08 section 3.1) so a bad value never costs a request.
 
 import type { CityRow, GpuRow, PlanRequestBody } from '../api/types'
-import { defaultDeadline, istLocalToIso, istLocalToMs } from './deadline'
+import { defaultDeadline, istLocalToIso, istLocalToMs, msToIstLocal } from './deadline'
 import { formatClock, formatDay } from './format'
 
 export const COOLING_OPTIONS = [
@@ -78,6 +78,72 @@ export function defaultValues(
     city: pick(cities, DEFAULT_CITY),
     cooling: 'room_ac',
     pue: DEFAULT_PUE,
+  }
+}
+
+export interface Preset {
+  id: string
+  label: string
+  hint: string
+  gpuModel: string
+  gpuCount: number
+  workHours: number
+  pausable: boolean
+  /** Hours from now to the deadline, or null for the usual "tomorrow 09:00". */
+  deadlineInHours: number | null
+}
+
+/** One-click examples. Multi-GPU runs are not pausable: distributed jobs can't pause yet. */
+export const PRESETS: readonly Preset[] = [
+  {
+    id: 'overnight',
+    label: 'Overnight fine-tune',
+    hint: '2 × RTX 4090 · 6 h · by 9 AM',
+    gpuModel: 'RTX-4090',
+    gpuCount: 2,
+    workHours: 6,
+    pausable: true,
+    deadlineInHours: null,
+  },
+  {
+    id: 'quick',
+    label: 'Quick experiment',
+    hint: '1 × RTX 3090 · 2 h · by 9 AM',
+    gpuModel: 'RTX-3090',
+    gpuCount: 1,
+    workHours: 2,
+    pausable: true,
+    deadlineInHours: null,
+  },
+  {
+    id: 'pretrain',
+    label: 'Two-day pretrain',
+    hint: '8 × A100 · 30 h · not pausable',
+    gpuModel: 'A100-PCIE-40GB',
+    gpuCount: 8,
+    workHours: 30,
+    pausable: false,
+    deadlineInHours: 46,
+  },
+]
+
+const IST_MS = 5.5 * HOUR_MS
+
+/** The preset's form values, keeping the city and cooling the person already picked. */
+export function presetValues(preset: Preset, current: JobFormValues, nowMs: number): JobFormValues {
+  let deadline = defaultDeadline(nowMs)
+  if (preset.deadlineInHours !== null) {
+    // whole IST hour, so it stays inside the 48-hour planning window
+    const at = Math.floor((nowMs + preset.deadlineInHours * HOUR_MS + IST_MS) / HOUR_MS) * HOUR_MS - IST_MS
+    deadline = msToIstLocal(at)
+  }
+  return {
+    ...current,
+    gpuModel: preset.gpuModel,
+    gpuCount: String(preset.gpuCount),
+    workHours: String(preset.workHours),
+    pausable: preset.pausable,
+    deadline,
   }
 }
 

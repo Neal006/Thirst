@@ -228,3 +228,15 @@ describe('PlanPage with a reply that has the wrong shape', () => {
     expect(document.body).not.toHaveTextContent(/undefined|NaN/)
   })
 })
+
+describe('PlanPage opened from a link', () => {
+  it('starts with the city named in the address', async () => {
+    renderWithApi(<PlanPage />, { path: '/plan?city=Mumbai' })
+    expect(await screen.findByLabelText(/^city/i)).toHaveDisplayValue('Mumbai')
+  })
+
+  it('ignores a city it does not know', async () => {
+    renderWithApi(<PlanPage />, { path: '/plan?city=Atlantis' })
+    expect(await screen.findByLabelText(/^city/i)).toHaveDisplayValue('Chennai')
+  })
+})

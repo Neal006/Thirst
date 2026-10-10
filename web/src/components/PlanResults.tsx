@@ -19,8 +19,22 @@ export function PlanResults({ plan }: { plan: PlanController }) {
   const { status, response, selected } = plan
   if (status === 'idle') {
     return (
-      <EmptyState title="Plan your job">
+      <EmptyState title="Plan your job" className="empty-plan">
         <p>Fill in the form and press Plan. You will see when to start, how fast to run, and what it saves.</p>
+        <ul className="empty-steps">
+          <li>
+            <b>When to start</b>
+            The hours with the least water and CO₂ per kWh, before your deadline.
+          </li>
+          <li>
+            <b>How fast to run</b>
+            A GPU power cap that does the same work with less energy.
+          </li>
+          <li>
+            <b>What it saves</b>
+            Water and CO₂ as honest ranges, with a slider between the two.
+          </li>
+        </ul>
       </EmptyState>
     )
   }

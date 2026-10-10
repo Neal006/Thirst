@@ -26,7 +26,7 @@ describe('Layout', () => {
   it('shows the three main links in the navigation', () => {
     renderAt('/')
     const nav = screen.getByRole('navigation', { name: /main/i })
-    expect(within(nav).getByRole('link', { name: 'Plan' })).toHaveAttribute('href', '/')
+    expect(within(nav).getByRole('link', { name: 'Plan' })).toHaveAttribute('href', '/plan')
     expect(within(nav).getByRole('link', { name: 'Leaderboard' })).toHaveAttribute(
       'href',
       '/leaderboard',
@@ -45,6 +45,11 @@ describe('Layout', () => {
       'page',
     )
     expect(within(nav).getByRole('link', { name: 'Plan' })).not.toHaveAttribute('aria-current')
+  })
+
+  it('links the brand to the home page', () => {
+    renderAt('/leaderboard')
+    expect(screen.getByRole('link', { name: /thirst home/i })).toHaveAttribute('href', '/')
   })
 
   it('renders the page inside the main landmark', () => {

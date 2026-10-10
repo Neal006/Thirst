@@ -2,9 +2,12 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { CityRow, GpuRow, PlanRequestBody } from '../api/types'
 import {
   defaultValues,
+  presetValues,
+  PRESETS,
   validateJobForm,
   type FieldErrors,
   type JobFormValues,
+  type Preset,
 } from '../lib/jobForm'
 import { CoolingFields } from './CoolingFields'
 import { ErrorSummary } from './ErrorSummary'
@@ -38,14 +41,24 @@ export function JobForm({
     () => getDraft?.() ?? defaultValues(now(), gpus, cities),
   )
   const [errors, setErrors] = useState<FieldErrors>({})
+  const [preset, setPreset] = useState<string | null>(null)
   // Counts failed submits: each one moves focus to the first invalid field, even if the same one.
   const [failedSubmits, setFailedSubmits] = useState(0)
   const formRef = useRef<HTMLFormElement>(null)
-  const set = (patch: Partial<JobFormValues>) => {
-    const next = { ...values, ...patch }
+  const update = (next: JobFormValues) => {
     setValues(next)
     onValuesChange?.(next)
   }
+  const set = (patch: Partial<JobFormValues>) => {
+    setPreset(null)
+    update({ ...values, ...patch })
+  }
+  const applyPreset = (p: Preset) => {
+    setPreset(p.id)
+    setErrors({})
+    update(presetValues(p, values, now()))
+  }
+  const presets = PRESETS.filter((p) => gpus.some((g) => g.id === p.gpuModel))
 
   useEffect(() => {
     if (failedSubmits === 0) return
@@ -67,6 +80,27 @@ export function JobForm({
   return (
     <form ref={formRef} onSubmit={handleSubmit} noValidate aria-label="Your job">
       <ErrorSummary errors={errors} />
+      {presets.length > 0 ? (
+        <div className="presets" role="group" aria-labelledby="presets-label">
+          <span id="presets-label" className="presets-label">
+            Quick fill
+          </span>
+          <div className="preset-list">
+            {presets.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className="preset"
+                aria-pressed={preset === p.id}
+                title={p.hint}
+                onClick={() => applyPreset(p)}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <FormField id="gpu-model" label="GPU model" error={errors.gpuModel}>
         {(c) => (
           <select {...c} value={values.gpuModel} onChange={(e) => set({ gpuModel: e.target.value })}>

@@ -22,6 +22,16 @@ describe('ResultCard', () => {
     expect(card).toHaveTextContent('done by 13:10')
   })
 
+  it('leaves the finish day out when the job ends on its start day', () => {
+    expect(renderCard(distinctPlan())).toHaveTextContent(/done by 13:10\./)
+  })
+
+  it('names the finish day when the job ends on another day', () => {
+    const plan = distinctPlan()
+    const card = renderCard(plan, { ...plan.chosen, finish: '2026-10-11T17:20:00+05:30' })
+    expect(card).toHaveTextContent(/done by 17:20 \(Sun 11 Oct\)\./)
+  })
+
   it('says "now" when the plan starts at once', () => {
     const plan = distinctPlan()
     const entry = { ...plan.chosen, start: plan.submit_ts }

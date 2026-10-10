@@ -36,7 +36,12 @@ describe('routes', () => {
   it('shows a friendly page for an unknown address', async () => {
     renderAt('/no/such/page')
     expect(await screen.findByRole('heading', { name: /couldn't find that page/i })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /go to the planner/i })).toHaveAttribute('href', '/')
+    expect(screen.getByRole('link', { name: /go to the planner/i })).toHaveAttribute('href', '/plan')
+  })
+
+  it('opens the planner at /plan', async () => {
+    renderAt('/plan')
+    expect(await screen.findByRole('heading', { level: 1, name: /when should your gpu job run/i })).toBeInTheDocument()
   })
 
   it('moves between pages with the navigation', async () => {
@@ -54,7 +59,7 @@ describe('routes', () => {
   })
 
   it('"How do we know?" on the plan page goes to the assumptions', async () => {
-    renderAt('/')
+    renderAt('/plan')
     await userEvent.click(await screen.findByRole('button', { name: 'Plan' }))
     await screen.findByRole('region', { name: /your plan/i })
     const link = screen.getAllByRole('link', { name: /how do we know/i })[0]
@@ -84,7 +89,7 @@ describe('a page that crashes', () => {
     const spy = quietly()
     renderBroken()
     expect(await screen.findByRole('heading', { name: /something went wrong/i })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /go to the planner/i })).toHaveAttribute('href', '/')
+    expect(screen.getByRole('link', { name: /go to the planner/i })).toHaveAttribute('href', '/plan')
     spy.mockRestore()
   })
 
@@ -125,7 +130,7 @@ describe('G5: no number with a unit is shown without a tag (plan 6.4.c)', () => 
 
   it('the plan page with a plan, a moved slider and a stale-forecast banner', async () => {
     const plan = distinctPlan({ tags: { ...distinctPlan().tags, forecast: 'cached' }, forecast_age_hours: 3, notes: ['no_room'] })
-    renderAt('/', async (input, init) =>
+    renderAt('/plan', async (input, init) =>
       new URL(String(input)).pathname === '/plan' ? jsonReply(200, plan) : mockFetch(input, init),
     )
     await userEvent.click(await screen.findByRole('button', { name: 'Plan' }))
@@ -134,8 +139,17 @@ describe('G5: no number with a unit is shown without a tag (plan 6.4.c)', () => 
     await honest(async () => {})
   })
 
-  it('the plan page before a plan', async () => {
+  it('the home page with the live forecast, facts and the board preview', async () => {
     renderAt('/')
+    await honest(async () => {
+      await screen.findAllByText('Best start')
+      await screen.findByText('Start now')
+      await screen.findByRole('list', { name: /top small labs/i })
+    })
+  })
+
+  it('the plan page before a plan', async () => {
+    renderAt('/plan')
     await honest(() => screen.findByLabelText(/gpu model/i), false)
   })
 
