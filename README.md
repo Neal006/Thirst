@@ -34,6 +34,19 @@ python scripts/check_skeleton.py       # repo layout sanity check
 
 Without `make` (plain Windows), run the commands in the [`Makefile`](Makefile) directly.
 
+### Run it locally (no AWS account needed)
+
+```bash
+python scripts/local_api.py                       # real API on http://127.0.0.1:3000 (in-memory DynamoDB,
+                                                  # live Open-Meteo weather, 8 simulated sites); --offline skips the weather
+cd web && VITE_API_URL=http://127.0.0.1:3000 npm run dev   # http://127.0.0.1:5173
+THIRST_API_URL=http://127.0.0.1:3000 thirst register --name "My Lab" --city Chennai --cooling room_ac --gpus 1
+THIRST_API_URL=http://127.0.0.1:3000 thirst run --hours 0.02 --deadline "2026-10-12 09:00" --now --modelled -- python -c "import time; time.sleep(60)"
+```
+
+Data is lost when the local API stops, and its server secret changes on every start, so register again
+(`--force`) after a restart.
+
 ## Licence
 
 MIT. See [`LICENSE`](LICENSE). Data sources and their licences are listed in
