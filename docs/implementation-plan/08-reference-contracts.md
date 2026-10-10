@@ -149,7 +149,7 @@ Response 200 (abridged; the full shape is in `tests/fixtures/plan_response.json`
               "schedule": [ {"slot": "2026-10-10T01:00+05:30", "level": 0.85, "state": "run", "fraction": 1.0} ],
               "totals": {}, "savings_ranges": {"water_pct": [14, 29], "co2_pct": [9, 18], "energy_pct": [10, 13]} },
   "pareto": [ { "alpha": 0.0, "start": "...", "finish": "...", "level_summary": "...", "schedule": [], "totals": {}, "savings_ranges": {}, "point": {"W_l": 0, "C_kg": 0},
-                "series_overlay": [ {"slot": "2026-10-09T21:00+05:30", "level": 0.0, "state": "idle_or_off"} ] } ],
+                "series_overlay": [ {"slot": "2026-10-09T21:00+05:30", "level": 0.0, "state": "off"} ] } ],
   "series": [ {"slot": "2026-10-09T21:00+05:30", "direct_l_per_kwh": 0.0, "grid_l_per_kwh": 2.4, "co2_kg_per_kwh": 0.71, "temp_c": 29.1, "tw_c": 25.3, "level": 0.0, "state": "off"} ],
   "person_days_range": [0.1, 0.2],
   "tags": {"energy": "modelled", "water": "modelled", "co2": "modelled", "tau": "measured", "forecast": "live"},
@@ -160,6 +160,7 @@ Response 200 (abridged; the full shape is in `tests/fixtures/plan_response.json`
 
 - Totals are `[low, central, high]` triples. Savings are `[min%, max%]` integers.
 - `pareto` always has 11 entries in alpha order (D11). `chosen` equals `pareto[int(round(alpha*10 + 1e-9))]`; the client uses `Math.round(alpha*10)`.
+- **Extra keys the engine returns (implemented in 02.7, D27):** top-level `best` (the J-optimal plan used by the score; same shape as a Pareto entry), `j_best`, `points` (unique `{W_l, C_kg, alphas[]}`), `factor_version`, `forecast_snapshot` (the 48-slot snapshot JSON, < 30 KB). Every plan entry (`base`, `best`, each `pareto[]`) also has `kind` (`base | non_pausable | pausable`), `savings_central` (floats), `point`, `gpu_kwh` (48 central-set kWh per slot, used to score receipts) and `notes`. Totals carry `E_gpu_kwh` as well. The compact JSON is about 75 KB (about 4 KB gzipped); the snapshot alone is about 4 KB.
 - `series` (48 rows) carries the intensities **plus** the chosen plan's `level`/`state` per slot (`state` ∈ `off | run | pause`). Each Pareto entry's `series_overlay` (48 rows, `level` + `state` only) lets the slider redraw the shading and the level line without a request.
 - Errors: 400 `invalid_field`/`unknown_city`/`unknown_gpu`/`deadline_in_past`, 404 `site_not_found`, 413 `body_too_large`, 422 `deadline_too_soon`, 503 `try_again`.
 
@@ -174,7 +175,7 @@ Response 201: `{ "site_id": "s_abcdefghij", "token": "<hex>", "division": "D1" }
 { "site": {"site_id":"s_…","name":"CSE GPU Lab","org":null,"city":"Chennai","cooling":"room_ac","division":"D1","simulated":false,"public":true},
   "score": { "value": 78, "provisional": true, "badge": "gold", "A": 41.2, "B": "not_rated", "C": 13.4,
              "C_parts": {"measured_share": 9.4, "coverage": 0, "public": 5}, "flex_share": 0.62, "reason": null },
-  "monthly_absolute": { "kwh": [], "litres": [], "stress_litres": [], "kg_co2": [], "person_days": [] },
+  "monthly_absolute": { "kwh": 0, "facility_kwh": 0, "litres": 0, "stress_litres": 0, "kg_co2": 0, "person_days": 0 },
   "recent_receipts": [ {"job_id":"j_…","end_ts":"…","kwh":7.4,"capture":0.86,"no_room":false,"method":"nvml_energy"} ] }
 ```
 `score.value` is `null` with `reason: "needs_flexible_receipt"` when there are no flexible receipts (D10). The exact GPU count is **never** returned (TRD 5.9).
@@ -232,6 +233,18 @@ The web form fills its GPU and city lists from this response (06.2.a).
 
 Request: `{ "text": "≤ 500 chars" }` or `{ "plan_id": "p_…" }`.
 Response: `{ "form": {…} | null, "explanation": "3 sentences", "source": "agent" | "template", "note": "daily_limit" | null }`.
+
+### 3.8 As built (Phase 05; where the code is more exact than the text above)
+
+- **Ids.** Site ids are `s_` + 10 characters of `[a-z2-7]`, plan ids `p_` + 10, job ids `j_` + 12. The base32 alphabet has no `0`, `1`, `8` or `9`, so the example `s_sim000001` in 05.10 is not a valid id: seeded demo sites are `s_simaaaaaaa` … `s_simaaaaaah` (D30).
+- **`POST /plan`** also returns `plan_id` (server-made), `forecast_age_hours` (whole hours since the forecast was issued, `null` when the table holds no forecast) and never returns `forecast_snapshot`. `inputs` echoes `force_now`. With `force_now: true`, `chosen` is the Base entry plus a `start_now_forced` note, and `series` and `savings_ranges` follow it (D31).
+- **`POST /receipts` check order** (so that nothing is learned without the token): required headers → body size → signature over the raw bytes → site lookup (404) → JSON and field validation → `site_id` equals the header → `end_ts` not more than 10 min in the future → plan exists (404), belongs to the site (403), starts no earlier than the plan's first hour (422) → plausibility (422) → scoring → one transaction writing the `job#<job_id>` guard and the receipt (409 on a duplicate). A bad signature for an unknown site is the same 401 as for a known one. Receipts with `method: unverified` are stored with `scored: false` and never counted.
+- **`POST /sites`**: `coverage_declared` defaults to 0 and `public` to true; `org` is optional.
+- **`POST /explain`** also returns `note` values `agent_disabled` (no model configured and the request was free text, so `form` is null), `agent_failed`, `agent_rejected` (the agent stated a percentage that is not in the plan) and `daily_limit` (300 agent calls per IST day; template requests never use the quota). Free text is capped at 500 characters (400 `text_too_long`); the model's tool arguments go through the same validation as `POST /plan` (D33). `agent_rejected` also covers any number that is not in the plan facts and words such as "ninety" or "percent".
+- **`chosen` and `force_now`.** `chosen` equals `pareto[round(alpha*10)]` except when `force_now` is true, where it is the Base entry (see above).
+- **Limits (D34).** 429 `rate_limited` when more than 100 sites are created in an IST day, or a site posts more than 200 receipts in an IST day. `POST /receipts` answers 400 `invalid_field` when `end_ts` is more than 30 days old. `GET /leaderboard` returns at most 100 rows. Plans made without `site_id` are stored for 2 hours (not 14 days); a plan past its ttl is `plan_not_found`.
+- **Times.** Receipt `start_ts` and `end_ts` are cut to whole seconds; a slot whose hour starts at or after `end_ts` is `slot_out_of_range`. Out-of-range dates and huge numbers are 400 `invalid_field`.
+- **Caches.** Site pages and leaderboards are cached 20 s per warm Lambda instance and invalidated on every receipt write. `Cache-Control` is `no-store` on every response except `GET /assumptions`, which is `max-age=300`.
 
 ---
 

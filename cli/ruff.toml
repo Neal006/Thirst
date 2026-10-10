@@ -1,0 +1,4 @@
+# The CLI runs on lab machines with Python 3.10+ (cli/pyproject.toml), so ruff must not
+# "upgrade" CLI code to 3.11/3.12-only syntax. Everything else is inherited from the root config.
+extend = "../pyproject.toml"
+target-version = "py310"

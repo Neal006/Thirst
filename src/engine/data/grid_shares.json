@@ -1,0 +1,17 @@
+{
+  "kind": "annual",
+  "status": "placeholder",
+  "source": "Approximate FY2023-24 national mix, PLACEHOLDER until Ember data (plan 1.7.d)",
+  "period": "FY2023-24",
+  "exported_at": null,
+  "annual_shares": {
+    "coal": 0.745,
+    "gas": 0.02,
+    "nuclear": 0.025,
+    "hydro": 0.085,
+    "solar": 0.06,
+    "wind": 0.04,
+    "other": 0.025
+  },
+  "s_avg_solar": 0.06
+}

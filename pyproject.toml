@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "thirst-engine"
+version = "0.3.0"
+description = "Thirst: water and carbon planner, receipt and rating for GPU jobs in India (engine + Lambda handlers)."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+# The engine is pure Python with no runtime dependencies (decision D16).
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "pytest-cov",
+  "hypothesis",
+  "ruff",
+  "mypy",
+  "boto3",
+  "moto[dynamodb,ssm]>=5",
+  "aws-lambda-powertools",
+  "freezegun",
+  "pyyaml",  # tests/handlers/test_template.py reads template.yaml
+  "strands-agents==1.59.0",  # same pin as layers/strands/requirements.txt; /explain wiring test
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["engine*", "handlers*"]
+
+[tool.setuptools.package-data]
+engine = ["data/*.json"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "cli", "scripts", "tests"]
+testpaths = ["tests"]
+addopts = "-q --strict-markers --import-mode=importlib"
+markers = [
+  "gpu: needs an NVIDIA GPU",
+  "aws: needs real AWS credentials and a deployed stack",
+  "slow: performance checks, run in CI",
+]
+
+[tool.coverage.run]
+source = ["src", "cli/thirst"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["web", "notebooks"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106"]
+"scripts/**" = ["S101"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src"]
+
+[[tool.mypy.overrides]]
+module = ["boto3", "boto3.*", "botocore", "botocore.*"]
+ignore_missing_imports = true

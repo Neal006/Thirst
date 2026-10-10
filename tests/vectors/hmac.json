@@ -1,0 +1,9 @@
+{
+  "server_secret": "test-secret-not-for-prod",
+  "site_id": "s_abcdefghij",
+  "token": "93ec2d429dfd3e011895ec55f2c376fed4534e588f27488ecc3bf1074433d80f",
+  "ts": 1760030000,
+  "body": "{\"job_id\":\"j_aaaaaaaaaaaa\",\"site_id\":\"s_abcdefghij\"}",
+  "signature": "f969e9b3fea80e79e243c8f7c82ad61e3b79b113a8d46ad635e4641f0ad8f515",
+  "signature_trailing_space": "d62b451ad1b317247175753360ecd53887d309fb50ae048424d891fba1ab4e0c"
+}

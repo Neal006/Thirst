@@ -1,0 +1,176 @@
+{
+  "models": [
+    {
+      "id": "RTX-4090",
+      "label": "NVIDIA GeForce RTX 4090",
+      "p_max_w": 450,
+      "p_idle_w": 45.0,
+      "nvml_name_patterns": [
+        "RTX 4090"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA product page (board power); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/",
+      "notes": "Re-verify board power in plan 1.7."
+    },
+    {
+      "id": "RTX-4080",
+      "label": "NVIDIA GeForce RTX 4080",
+      "p_max_w": 320,
+      "p_idle_w": 32.0,
+      "nvml_name_patterns": [
+        "RTX 4080"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA product page (board power); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/",
+      "notes": "Re-verify board power in plan 1.7."
+    },
+    {
+      "id": "RTX-3090",
+      "label": "NVIDIA GeForce RTX 3090",
+      "p_max_w": 350,
+      "p_idle_w": 35.0,
+      "nvml_name_patterns": [
+        "RTX 3090"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA product page (board power); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/",
+      "notes": "Re-verify board power in plan 1.7."
+    },
+    {
+      "id": "RTX-3060",
+      "label": "NVIDIA GeForce RTX 3060",
+      "p_max_w": 170,
+      "p_idle_w": 17.0,
+      "nvml_name_patterns": [
+        "RTX 3060"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA product page (board power); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/",
+      "notes": "Re-verify board power in plan 1.7."
+    },
+    {
+      "id": "RTX-A6000",
+      "label": "NVIDIA RTX A6000",
+      "p_max_w": 300,
+      "p_idle_w": 30.0,
+      "nvml_name_patterns": [
+        "RTX A6000"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA product page (board power); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/",
+      "notes": "Re-verify board power in plan 1.7."
+    },
+    {
+      "id": "L4",
+      "label": "NVIDIA L4",
+      "p_max_w": 72,
+      "p_idle_w": 7.2,
+      "nvml_name_patterns": [
+        "NVIDIA L4"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA product page (board power); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/",
+      "notes": "Re-verify board power in plan 1.7."
+    },
+    {
+      "id": "L40S",
+      "label": "NVIDIA L40S",
+      "p_max_w": 350,
+      "p_idle_w": 35.0,
+      "nvml_name_patterns": [
+        "L40S"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA product page (board power); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/",
+      "notes": "Re-verify board power in plan 1.7."
+    },
+    {
+      "id": "T4",
+      "label": "NVIDIA Tesla T4",
+      "p_max_w": 70,
+      "p_idle_w": 7.0,
+      "nvml_name_patterns": [
+        "Tesla T4",
+        "NVIDIA T4"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA product page (board power); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/",
+      "notes": "Re-verify board power in plan 1.7."
+    },
+    {
+      "id": "A100-PCIE-40GB",
+      "label": "NVIDIA A100 PCIe 40GB",
+      "p_max_w": 250,
+      "p_idle_w": 25.0,
+      "nvml_name_patterns": [
+        "A100-PCIE-40GB"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA product page (board power); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/",
+      "notes": "Re-verify board power in plan 1.7."
+    },
+    {
+      "id": "A100-PCIE-80GB",
+      "label": "NVIDIA A100 PCIe 80GB",
+      "p_max_w": 300,
+      "p_idle_w": 30.0,
+      "nvml_name_patterns": [
+        "A100-PCIE-80GB"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA product page (board power); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/",
+      "notes": "Re-verify board power in plan 1.7."
+    },
+    {
+      "id": "A100-SXM",
+      "label": "NVIDIA A100 SXM",
+      "p_max_w": 400,
+      "p_idle_w": 40.0,
+      "nvml_name_patterns": [
+        "A100-SXM4",
+        "A100-SXM"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA product page (board power); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/",
+      "notes": "Re-verify board power in plan 1.7."
+    },
+    {
+      "id": "H100-PCIE",
+      "label": "NVIDIA H100 PCIe",
+      "p_max_w": 350,
+      "p_idle_w": 35.0,
+      "nvml_name_patterns": [
+        "H100 PCIe"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA product page (board power); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/",
+      "notes": "Re-verify board power in plan 1.7."
+    },
+    {
+      "id": "H100-SXM",
+      "label": "NVIDIA H100 SXM",
+      "p_max_w": 700,
+      "p_idle_w": 70.0,
+      "nvml_name_patterns": [
+        "H100 SXM",
+        "H100 80GB HBM3"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA product page (board power); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/",
+      "notes": "Re-verify board power in plan 1.7."
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+version: 1
+applications:
+  - appRoot: web
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            # package.json needs Node 22.12+ (vite 8, vitest 5); the default build image may be older.
+            - nvm install 22
+            - nvm use 22
+            - npm ci
+        build:
+          commands:
+            # A production build refuses VITE_USE_MOCKS=true and a non-https VITE_API_URL.
+            - test -n "$VITE_API_URL" || (echo "VITE_API_URL is not set" && exit 1)
+            - npm run build
+      artifacts:
+        baseDirectory: dist
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
+    customHeaders:
+      - pattern: '**'
+        headers:
+          - key: Strict-Transport-Security
+            value: max-age=31536000; includeSubDomains
+          - key: X-Content-Type-Options
+            value: nosniff
+          - key: Referrer-Policy
+            value: strict-origin-when-cross-origin
+          - key: X-Frame-Options
+            value: DENY
+          # style-src needs 'unsafe-inline' because Recharts sets inline style attributes.
+          - key: Content-Security-Policy
+            value: "default-src 'self'; connect-src 'self' https://*.execute-api.ap-south-1.amazonaws.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"

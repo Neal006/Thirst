@@ -1,0 +1,318 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Thirst - water and carbon planner, receipts and rating for GPU jobs (ap-south-1)
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedPattern: "^[a-z][a-z0-9-]{1,10}$"
+  AllowedOrigins:
+    Type: CommaDelimitedList
+    Default: "http://localhost:5173"
+    Description: Browser origins allowed by CORS. Add the Amplify domain after the first web deploy.
+  BedrockModelId:
+    Type: String
+    Default: ""
+    Description: Leave empty to serve the template explanation only.
+  BedrockRegion:
+    Type: String
+    Default: ap-south-1
+  ServerSecretParam:
+    Type: String
+    Default: /thirst/server_secret
+    Description: SSM SecureString holding the server secret (created by hand in step 1.6.f).
+  AlarmEmail:
+    Type: String
+    Default: ""
+    Description: Where the error alarm is mailed. Leave empty to create the alarm without an email.
+
+Conditions:
+  HasBedrockModel: !Not [!Equals [!Ref BedrockModelId, ""]]
+  HasAlarmEmail: !Not [!Equals [!Ref AlarmEmail, ""]]
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Architectures: [arm64]
+    MemorySize: 512
+    Timeout: 10
+    Tracing: Active
+    Environment:
+      Variables:
+        TABLE_WEATHER: !Ref WeatherTbl
+        TABLE_SITES: !Ref SitesTbl
+        TABLE_PLANS: !Ref PlansTbl
+        TABLE_RECEIPTS: !Ref ReceiptsTbl
+        SERVER_SECRET_PARAM: !Ref ServerSecretParam
+        POWERTOOLS_SERVICE_NAME: thirst
+        POWERTOOLS_METRICS_NAMESPACE: Thirst
+        LOG_LEVEL: INFO
+
+Resources:
+  # ------------------------------------------------------------------ tables (TRD 8)
+  WeatherTbl:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub thirst-${Stage}-weather
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: city, AttributeType: S }
+        - { AttributeName: hour, AttributeType: S }
+      KeySchema:
+        - { AttributeName: city, KeyType: HASH }
+        - { AttributeName: hour, KeyType: RANGE }
+      TimeToLiveSpecification: { AttributeName: ttl, Enabled: true }
+
+  SitesTbl:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub thirst-${Stage}-sites
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: site_id, AttributeType: S }
+      KeySchema:
+        - { AttributeName: site_id, KeyType: HASH }
+
+  PlansTbl:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub thirst-${Stage}-plans
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: plan_id, AttributeType: S }
+      KeySchema:
+        - { AttributeName: plan_id, KeyType: HASH }
+      TimeToLiveSpecification: { AttributeName: ttl, Enabled: true }
+
+  ReceiptsTbl:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub thirst-${Stage}-receipts
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: site_id, AttributeType: S }
+        - { AttributeName: sk, AttributeType: S }
+      KeySchema:
+        - { AttributeName: site_id, KeyType: HASH }
+        - { AttributeName: sk, KeyType: RANGE }
+
+  # ------------------------------------------------------------------ API
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins: !Ref AllowedOrigins
+        AllowMethods: [GET, POST, OPTIONS]
+        AllowHeaders:
+          - content-type
+          - x-thirst-timestamp
+          - x-thirst-signature
+          - x-thirst-site
+        MaxAge: 600
+      DefaultRouteSettings:
+        ThrottlingRateLimit: 10
+        ThrottlingBurstLimit: 20
+
+  ApiFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.api.handler
+      # The API never deletes (only scripts/seed.py does) and never writes the weather table.
+      Policies:
+        - DynamoDBReadPolicy: { TableName: !Ref WeatherTbl }
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:Scan]
+              Resource: [!GetAtt SitesTbl.Arn]
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem]
+              Resource: [!GetAtt PlansTbl.Arn]
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:Query]
+              Resource: [!GetAtt ReceiptsTbl.Arn]
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action: ssm:GetParameter
+              Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ServerSecretParam}
+            - Effect: Allow
+              Action: kms:Decrypt
+              Resource: "*"
+              Condition:
+                StringEquals:
+                  kms:ViaService: !Sub ssm.${AWS::Region}.amazonaws.com
+      Events:
+        Plan: { Type: HttpApi, Properties: { ApiId: !Ref HttpApi, Method: POST, Path: /plan } }
+        SiteCreate: { Type: HttpApi, Properties: { ApiId: !Ref HttpApi, Method: POST, Path: /sites } }
+        SiteGet: { Type: HttpApi, Properties: { ApiId: !Ref HttpApi, Method: GET, Path: "/sites/{site_id}" } }
+        ReceiptCreate: { Type: HttpApi, Properties: { ApiId: !Ref HttpApi, Method: POST, Path: /receipts } }
+        ReceiptGet: { Type: HttpApi, Properties: { ApiId: !Ref HttpApi, Method: GET, Path: "/receipts/{site_id}/{job_id}" } }
+        Leaderboard: { Type: HttpApi, Properties: { ApiId: !Ref HttpApi, Method: GET, Path: /leaderboard } }
+        Assumptions: { Type: HttpApi, Properties: { ApiId: !Ref HttpApi, Method: GET, Path: /assumptions } }
+
+  # ------------------------------------------------------------------ hourly weather (TRD 9)
+  RefreshFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.refresh.handler
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref WeatherTbl }
+      Events:
+        Hourly:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: rate(1 hour)
+            RetryPolicy: { MaximumRetryAttempts: 1 }
+
+  # ------------------------------------------------------------------ explanation (TRD 10)
+  StrandsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub thirst-${Stage}-strands
+      ContentUri: layers/strands/
+      CompatibleRuntimes: [python3.12]
+      CompatibleArchitectures: [arm64]
+    Metadata:
+      BuildMethod: python3.12
+      BuildArchitecture: arm64
+
+  ExplainFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.explain.handler
+      Timeout: 29
+      Layers: [!Ref StrandsLayer]
+      Environment:
+        Variables:
+          BEDROCK_MODEL_ID: !Ref BedrockModelId
+          BEDROCK_REGION: !Ref BedrockRegion
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:UpdateItem]
+              Resource: [!GetAtt PlansTbl.Arn]
+        - DynamoDBReadPolicy: { TableName: !Ref WeatherTbl }
+        - !If
+          - HasBedrockModel
+          - Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [bedrock:InvokeModel, bedrock:InvokeModelWithResponseStream]
+                Resource:
+                  - !Sub arn:${AWS::Partition}:bedrock:*::foundation-model/${BedrockModelId}
+                  - !Sub arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:inference-profile/${BedrockModelId}
+          - !Ref AWS::NoValue
+      Events:
+        Explain: { Type: HttpApi, Properties: { ApiId: !Ref HttpApi, Method: POST, Path: /explain } }
+
+  # ------------------------------------------------------------------ logs and alarm (TRD 12)
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${ApiFn}
+      RetentionInDays: 7
+
+  RefreshLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${RefreshFn}
+      RetentionInDays: 7
+
+  ExplainLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${ExplainFn}
+      RetentionInDays: 7
+
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+
+  AlarmSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasAlarmEmail
+    Properties:
+      TopicArn: !Ref AlarmTopic
+      Protocol: email
+      Endpoint: !Ref AlarmEmail
+
+  ApiErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: ApiFn had 5 or more errors in 5 minutes
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - { Name: FunctionName, Value: !Ref ApiFn }
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlarmTopic]
+
+  # The handler catches its own errors and answers 503, so Lambda "Errors" stays 0: watch the API.
+  Api5xxAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: The API answered 5 or more server errors in 5 minutes
+      Namespace: AWS/ApiGateway
+      MetricName: 5xx
+      Dimensions:
+        - { Name: ApiId, Value: !Ref HttpApi }
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlarmTopic]
+
+  # Published by RefreshFn. No data at all means the schedule did not run, which is also bad.
+  RefreshFailedAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: The hourly weather refresh failed two hours in a row
+      Namespace: Thirst
+      MetricName: RefreshFailed
+      Dimensions:
+        - { Name: service, Value: thirst }
+      Statistic: Sum
+      Period: 3600
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: breaching
+      AlarmActions: [!Ref AlarmTopic]
+
+Outputs:
+  ApiUrl:
+    Description: Base URL of the HTTP API
+    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}
+  StackRegion:
+    Value: !Ref AWS::Region
+  WeatherTable:
+    Value: !Ref WeatherTbl
+  SitesTable:
+    Value: !Ref SitesTbl
+  PlansTable:
+    Value: !Ref PlansTbl
+  ReceiptsTable:
+    Value: !Ref ReceiptsTbl
+  RefreshFunction:
+    Value: !Ref RefreshFn
