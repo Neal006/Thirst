@@ -104,4 +104,15 @@ describe('ReceiptPage', () => {
   it('uses the fixture the engine produced', () => {
     expect(receiptFixture.capture).toBeGreaterThan(0.9)
   })
+
+  it.each(['water', 'co2'])('shows a plain-words error when tags.%s is missing', async (tag) => {
+    renderReceipt(async (input, init) => {
+      const reply = await mockFetch(input, init)
+      const body = (await reply.json()) as { tags: Record<string, unknown> }
+      delete body.tags[tag]
+      return jsonReply(200, body)
+    })
+    expect(await screen.findByRole('alert')).toHaveTextContent(/could not read/i)
+    expect(document.body).not.toHaveTextContent(/undefined|NaN/)
+  })
 })

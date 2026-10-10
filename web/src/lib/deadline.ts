@@ -31,7 +31,10 @@ export function istLocalToIso(local: string): string | null {
   return istLocalToMs(local) === null ? null : `${local}:00+05:30`
 }
 
-/** Tomorrow at 09:00 India time (PRD F1). */
+/**
+ * Tomorrow at 09:00 India time (PRD F1). Only a starting value from the browser clock: the server
+ * checks the deadline that is sent against its own clock.
+ */
 export function defaultDeadline(nowMs: number): string {
   const tomorrow = msToIstLocal(nowMs + DAY_MS).slice(0, 10)
   return `${tomorrow}T${DEFAULT_HOUR}`

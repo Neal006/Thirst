@@ -1,4 +1,6 @@
+import { useRef } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
+import { useRouteFocus } from '../hooks/useRouteFocus'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Plan', end: true },
@@ -8,6 +10,8 @@ const NAV_ITEMS = [
 
 /** The frame around every page: skip link, header with navigation, main area and footer. */
 export function Layout() {
+  const mainRef = useRef<HTMLElement>(null)
+  useRouteFocus(mainRef)
   return (
     <div className="app-shell">
       <a className="skip-link" href="#main">
@@ -29,7 +33,7 @@ export function Layout() {
           </ul>
         </nav>
       </header>
-      <main id="main" tabIndex={-1} className="app-main">
+      <main id="main" ref={mainRef} tabIndex={-1} className="app-main">
         <Outlet />
       </main>
       <footer className="app-footer">

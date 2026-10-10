@@ -20,8 +20,17 @@ const HELP: Record<string, string> = {
   design_choice: 'A choice we made on purpose, not a measurement.',
 }
 
+const UNKNOWN: TagInfo = {
+  label: 'unknown',
+  className: 'tag tag-unknown',
+  anchor: 'legend-heading',
+  help: 'The server did not say how sure this number is. Explained on the Assumptions page.',
+}
+
 export function tagInfo(tag: FactorStatus): TagInfo {
-  const name = String(tag)
+  // The type says string, but a reply can still hold anything: never print "undefined".
+  if (typeof tag !== 'string' || tag.trim() === '') return UNKNOWN
+  const name = tag
   return {
     label: name.replace(/_/g, ' '),
     className: `tag tag-${name.replace(/_/g, '-')}`,

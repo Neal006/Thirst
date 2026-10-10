@@ -1,11 +1,11 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ApiContext } from './api/context'
 import { mockFetch } from './api/mocks/mockFetch'
 import { EMPTY_SITE_ID } from './api/mocks/site'
-import { appRoutes } from './routes'
+import { appRoutes, createAppRoutes } from './routes'
 import { clientWith, fetchSpy, jsonReply, type FetchFn } from './test/api'
 import { findUntaggedNumbers } from './test/honesty'
 import { distinctPlan } from './test/planFixture'
@@ -59,6 +59,58 @@ describe('routes', () => {
     await screen.findByRole('region', { name: /your plan/i })
     const link = screen.getAllByRole('link', { name: /how do we know/i })[0]
     expect(link).toHaveAttribute('href', '/assumptions')
+  })
+})
+
+describe('a page that crashes', () => {
+  function Boom(): never {
+    throw new Error('secret internal detail at line 42')
+  }
+
+  function renderBroken(path = '/boom') {
+    const routes = createAppRoutes([{ path: 'boom', element: <Boom /> }])
+    const router = createMemoryRouter(routes, { initialEntries: [path] })
+    return render(
+      <ApiContext.Provider value={clientWith(fetchSpy(distinctApi))}>
+        <RouterProvider router={router} />
+      </ApiContext.Provider>,
+    )
+  }
+
+  // React logs a crash to the console; keep the test output clean.
+  const quietly = () => vi.spyOn(console, 'error').mockImplementation(() => {})
+
+  it('shows a plain-words message and a way back instead of a blank page', async () => {
+    const spy = quietly()
+    renderBroken()
+    expect(await screen.findByRole('heading', { name: /something went wrong/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /go to the planner/i })).toHaveAttribute('href', '/')
+    spy.mockRestore()
+  })
+
+  it('does not show the error text or a stack to the person', async () => {
+    const spy = quietly()
+    renderBroken()
+    await screen.findByRole('heading', { name: /something went wrong/i })
+    expect(document.body).not.toHaveTextContent(/secret internal detail|line 42|Error:|at /)
+    spy.mockRestore()
+  })
+
+  it('keeps the navigation, so the person can leave the broken page', async () => {
+    const spy = quietly()
+    renderBroken()
+    await screen.findByRole('heading', { name: /something went wrong/i })
+    await userEvent.click(screen.getByRole('link', { name: 'Leaderboard' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Leaderboard' })).toBeInTheDocument()
+    spy.mockRestore()
+  })
+
+  it('goes back to a working planner from the message', async () => {
+    const spy = quietly()
+    renderBroken()
+    await userEvent.click(await screen.findByRole('link', { name: /go to the planner/i }))
+    expect(await screen.findByRole('heading', { level: 1, name: /when should your gpu job run/i })).toBeInTheDocument()
+    spy.mockRestore()
   })
 })
 

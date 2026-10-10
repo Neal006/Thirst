@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import planFixture from '../api/mocks/fixtures/plan_response.json'
 import { isPlanResponse } from '../api/guards'
+import { distinctPlan } from '../test/planFixture'
 import type { OverlayRow, PlanResponse, SeriesRow } from '../api/types'
 import {
   alphaFromIndex,
@@ -8,6 +9,7 @@ import {
   alphaWords,
   buildChartData,
   deadlineSlot,
+  buildSummary,
   lowWindows,
   personDaysRange,
   snapAlpha,
@@ -15,6 +17,7 @@ import {
 
 if (!isPlanResponse(planFixture)) throw new Error('plan fixture does not match the types')
 const plan: PlanResponse = planFixture
+const distinctSample = (): PlanResponse => distinctPlan()
 
 function seriesRow(hour: number, direct: number, grid: number, co2: number): SeriesRow {
   const slot = `2026-10-10T${String(hour).padStart(2, '0')}:00:00+05:30`
@@ -140,12 +143,78 @@ describe('lowWindows', () => {
     const co2 = h >= 11 && h <= 13 ? 0.2 : 0.8
     return seriesRow(h, water, 0, co2)
   })
+  const SUBMIT_DAY = '2026-10-10T08:30:00+05:30'
 
   it('names the three lowest hours for water and for CO2', () => {
-    expect(lowWindows(rows)).toEqual({ water: '12:00 to 15:00', co2: '11:00 to 14:00' })
+    expect(lowWindows(rows, SUBMIT_DAY)).toEqual({ water: '12:00 to 15:00', co2: '11:00 to 14:00' })
   })
 
   it('is null for a series shorter than the window', () => {
-    expect(lowWindows(rows.slice(0, 2))).toEqual({ water: null, co2: null })
+    expect(lowWindows(rows.slice(0, 2), SUBMIT_DAY)).toEqual({ water: null, co2: null })
+  })
+
+  describe('when the series spans 48 hours', () => {
+    // 48 hourly rows from 10 Oct 00:00 IST; the cheapest hours are on 11 Oct, 03:00 to 06:00.
+    const start = Date.parse('2026-10-10T00:00:00+05:30')
+    const span = Array.from({ length: 48 }, (_, i) => {
+      const slot = new Date(start + i * 3_600_000).toISOString()
+      const cheap = i >= 27 && i <= 29 ? 0.1 : 1
+      return { ...seriesRow(0, cheap, 0, cheap), slot }
+    })
+
+    it('adds the day when the window is not on the submit day', () => {
+      expect(lowWindows(span, SUBMIT_DAY).water).toBe('Sun 11 Oct 03:00 to 06:00')
+      expect(lowWindows(span, SUBMIT_DAY).co2).toBe('Sun 11 Oct 03:00 to 06:00')
+    })
+
+    it('leaves the day out when the window is on the submit day', () => {
+      expect(lowWindows(span, '2026-10-11T01:00:00+05:30').water).toBe('03:00 to 06:00')
+    })
+
+    it('adds the day to the end when a window runs past midnight', () => {
+      const late = span.map((row, i) => ({ ...row, direct_l_per_kwh: i >= 22 && i <= 24 ? 0.1 : 1 }))
+      expect(lowWindows(late, SUBMIT_DAY).water).toBe('22:00 to Sun 11 Oct 01:00')
+    })
+
+    it('always names the day when the submit time cannot be read', () => {
+      expect(lowWindows(span, 'soon').water).toBe('Sun 11 Oct 03:00 to 06:00')
+    })
+  })
+})
+
+describe('buildSummary: the chart in words for screen readers', () => {
+  const response = distinctSample()
+
+  it('names the hours covered and when the plan runs', () => {
+    const { text } = buildSummary(response, response.chosen)
+    expect(text).toMatch(/48 hours from Fri 9 Oct 21:00 to Sun 11 Oct 20:00/)
+    expect(text).toMatch(/plan runs .*Sat 10 Oct/)
+  })
+
+  it('has one row per hour with the time and the numbers', () => {
+    const { rows } = buildSummary(response, response.chosen)
+    expect(rows).toHaveLength(48)
+    expect(rows[0].time).toBe('Fri 9 Oct 21:00')
+    expect(rows[0]).toMatchObject({ direct: response.series[0].direct_l_per_kwh, co2: response.series[0].co2_kg_per_kwh })
+  })
+
+  it('says off, paused or the power level for each hour', () => {
+    const { rows } = buildSummary(response, response.chosen)
+    const powers = new Set(rows.map((r) => r.power))
+    expect(powers.has('off')).toBe(true)
+    expect([...powers].some((p) => /^\d+%$/.test(p))).toBe(true)
+  })
+
+  it('says so when the plan does not run in the window', () => {
+    const idle = { ...response.chosen, series_overlay: response.chosen.series_overlay.map((r) => ({ ...r, state: 'off' as const, level: 0 })) }
+    expect(buildSummary(response, idle).text).toMatch(/does not run/i)
+  })
+
+  it('never prints NaN or undefined', () => {
+    const bad = { ...response, series: response.series.map((r, i) => (i === 2 ? { ...r, direct_l_per_kwh: Number.NaN } : r)) }
+    const { text, rows } = buildSummary(bad, response.chosen)
+    expect(JSON.stringify(rows)).not.toMatch(/NaN|undefined/)
+    expect(text).not.toMatch(/NaN|undefined/)
+    expect(Number.isFinite(rows[2].direct)).toBe(true)
   })
 })

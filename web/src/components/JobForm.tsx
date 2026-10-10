@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { CityRow, GpuRow, PlanRequestBody } from '../api/types'
 import {
   defaultValues,
@@ -7,6 +7,7 @@ import {
   type JobFormValues,
 } from '../lib/jobForm'
 import { CoolingFields } from './CoolingFields'
+import { ErrorSummary } from './ErrorSummary'
 import { FormField } from './FormField'
 
 interface JobFormProps {
@@ -17,13 +18,39 @@ interface JobFormProps {
   onSubmit: (body: PlanRequestBody) => void
   /** The clock, replaceable in tests. */
   now?: () => number
+  /** Asked once, when the form mounts: a draft kept by the parent to start from, if it has one. */
+  getDraft?: () => JobFormValues | undefined
+  /** Called with all values after every change, so the parent can keep the draft. */
+  onValuesChange?: (values: JobFormValues) => void
 }
 
 /** F1: the job description. Checks the input here, so a bad value makes no request. */
-export function JobForm({ gpus, cities, busy, onSubmit, now = Date.now }: JobFormProps) {
-  const [values, setValues] = useState<JobFormValues>(() => defaultValues(now(), gpus, cities))
+export function JobForm({
+  gpus,
+  cities,
+  busy,
+  onSubmit,
+  now = Date.now,
+  getDraft,
+  onValuesChange,
+}: JobFormProps) {
+  const [values, setValues] = useState<JobFormValues>(
+    () => getDraft?.() ?? defaultValues(now(), gpus, cities),
+  )
   const [errors, setErrors] = useState<FieldErrors>({})
-  const set = (patch: Partial<JobFormValues>) => setValues((current) => ({ ...current, ...patch }))
+  // Counts failed submits: each one moves focus to the first invalid field, even if the same one.
+  const [failedSubmits, setFailedSubmits] = useState(0)
+  const formRef = useRef<HTMLFormElement>(null)
+  const set = (patch: Partial<JobFormValues>) => {
+    const next = { ...values, ...patch }
+    setValues(next)
+    onValuesChange?.(next)
+  }
+
+  useEffect(() => {
+    if (failedSubmits === 0) return
+    formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+  }, [failedSubmits])
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -33,11 +60,13 @@ export function JobForm({ gpus, cities, busy, onSubmit, now = Date.now }: JobFor
       onSubmit(result.body)
     } else {
       setErrors(result.errors)
+      setFailedSubmits((n) => n + 1)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate aria-label="Your job">
+    <form ref={formRef} onSubmit={handleSubmit} noValidate aria-label="Your job">
+      <ErrorSummary errors={errors} />
       <FormField id="gpu-model" label="GPU model" error={errors.gpuModel}>
         {(c) => (
           <select {...c} value={values.gpuModel} onChange={(e) => set({ gpuModel: e.target.value })}>

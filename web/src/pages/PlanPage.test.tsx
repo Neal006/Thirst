@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mockFetch } from '../api/mocks/mockFetch'
@@ -152,19 +152,79 @@ describe('PlanPage while loading and when it fails', () => {
   })
 })
 
+/** A matchMedia stub whose answer can change later, like a window that is resized. */
+function controllableViewport(initial: boolean) {
+  let matches = initial
+  const listeners = new Set<() => void>()
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    get matches() {
+      return matches
+    },
+    media: query,
+    addEventListener: (_type: string, listener: () => void) => listeners.add(listener),
+    removeEventListener: (_type: string, listener: () => void) => listeners.delete(listener),
+  }))
+  return (next: boolean) => {
+    matches = next
+    act(() => listeners.forEach((listener) => listener()))
+  }
+}
+
 describe('PlanPage on a phone', () => {
+  it('keeps what was typed in the form after planning, under "Change job"', async () => {
+    controllableViewport(true)
+    const spy = fetchSpy(distinctApi())
+    renderWithApi(<PlanPage />, { spy })
+    fireEvent.change(await screen.findByLabelText(/how many gpus/i), { target: { value: '8' } })
+    await userEvent.selectOptions(screen.getByLabelText(/^city$/i), 'Mumbai')
+    fireEvent.change(screen.getByLabelText(/deadline/i), { target: { value: '2030-01-05T17:30' } })
+    await userEvent.click(screen.getByRole('button', { name: 'Plan' }))
+    await screen.findByRole('region', { name: /your plan/i })
+
+    await userEvent.click(screen.getByText('Change job'))
+    expect(screen.getByLabelText(/how many gpus/i)).toHaveValue(8)
+    expect(screen.getByLabelText(/^city$/i)).toHaveValue('Mumbai')
+    expect(screen.getByLabelText(/deadline/i)).toHaveValue('2030-01-05T17:30')
+  })
+
+  it('keeps the form values when the window is resized across the phone width', async () => {
+    const resize = controllableViewport(false)
+    renderWithApi(<PlanPage />, { spy: fetchSpy(distinctApi()) })
+    fireEvent.change(await screen.findByLabelText(/how many gpus/i), { target: { value: '8' } })
+    await userEvent.click(screen.getByRole('button', { name: 'Plan' }))
+    await screen.findByRole('region', { name: /your plan/i })
+
+    resize(true)
+    await userEvent.click(screen.getByText('Change job'))
+    expect(screen.getByLabelText(/how many gpus/i)).toHaveValue(8)
+
+    resize(false)
+    expect(screen.getByLabelText(/how many gpus/i)).toHaveValue(8)
+  })
+
   it('puts the card first and the form under "Change job"', async () => {
-    vi.stubGlobal('matchMedia', (query: string) => ({
-      matches: true,
-      media: query,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-    }))
+    controllableViewport(true)
     await planIt()
     const details = screen.getByText('Change job').closest('details')
     expect(details).not.toBeNull()
     expect(details).not.toHaveAttribute('open')
     const order = card().compareDocumentPosition(details as Element)
     expect(order & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+})
+
+describe('PlanPage with a reply that has the wrong shape', () => {
+  it.each([
+    ['without the water tag', ['tags', 'water']],
+    ['without the deadline in its inputs', ['inputs', 'deadline']],
+    ['without gpu_kwh in an entry', ['chosen', 'gpu_kwh']],
+  ])('shows a plain-words error for a plan %s, not "undefined"', async (_name, path) => {
+    const bad = structuredClone(distinctPlan()) as unknown as Record<string, Record<string, unknown>>
+    delete bad[path[0]][path[1]]
+    renderWithApi(<PlanPage />, { spy: fetchSpy(distinctApi(bad as never)) })
+    await userEvent.click(await screen.findByRole('button', { name: 'Plan' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(/could not read/i)
+    expect(screen.queryByRole('region', { name: /your plan/i })).not.toBeInTheDocument()
+    expect(document.body).not.toHaveTextContent(/undefined|NaN/)
   })
 })

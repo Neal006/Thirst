@@ -25,6 +25,20 @@ describe('tag labels', () => {
     expect(info.className).not.toContain('measured')
   })
 
+  it.each([undefined, null, 5, '', {}])('falls back to "unknown" for %p, never "undefined"', (value) => {
+    const info = tagInfo(value as unknown as Tag)
+    expect(info.label).toBe('unknown')
+    expect(info.className).toBe('tag tag-unknown')
+    expect(`${info.label} ${info.className} ${info.anchor} ${info.help}`).not.toMatch(/undefined|null|object/i)
+    expect(info.help.length).toBeGreaterThan(10)
+  })
+
+  it('renders an "unknown" chip for a missing tag', () => {
+    inRouter(<TagChip tag={undefined as unknown as Tag} />)
+    expect(screen.getByRole('link', { name: 'unknown' })).toBeInTheDocument()
+    expect(document.body).not.toHaveTextContent(/undefined/)
+  })
+
   it('writes design_choice in plain words', () => {
     expect(tagInfo('design_choice' as Tag).label).toBe('design choice')
   })

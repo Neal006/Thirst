@@ -145,4 +145,27 @@ describe('SitePage errors', () => {
     renderSite('s_zzzzzzzzzz')
     expect(await screen.findByRole('alert')).toHaveTextContent("We couldn't find that site.")
   })
+
+  it('shows a plain-words error when a part of the C score is missing', async () => {
+    renderSite(
+      's_demoaaaaaa',
+      withSite((site) => {
+        const score = site.score as { C_parts: Record<string, unknown> }
+        return { ...site, score: { ...score, C_parts: { measured_share: 5 } } }
+      }),
+    )
+    expect(await screen.findByRole('alert')).toHaveTextContent(/could not read/i)
+    expect(document.body).not.toHaveTextContent(/undefined|NaN/)
+  })
+
+  it('shows a plain-words error when a recent receipt has no energy figure', async () => {
+    renderSite(
+      's_demoaaaaaa',
+      withSite((site) => ({
+        ...site,
+        recent_receipts: [{ job_id: 'j_abcdefghijkl', end_ts: '2026-10-09T08:00:00+05:30' }],
+      })),
+    )
+    expect(await screen.findByRole('alert')).toHaveTextContent(/could not read/i)
+  })
 })

@@ -117,4 +117,14 @@ describe('AssumptionsPage', () => {
     renderPage('/assumptions', async () => jsonReply(503, { error: 'try_again', message: 'Something went wrong on our side. Please try again.' }))
     expect(await screen.findByRole('alert')).toHaveTextContent(/something went wrong on our side/i)
   })
+
+  it.each([
+    ['a city without a stress category', { cities: [{ id: 'Chennai', stress_weight: 2, status: 'placeholder' }] }],
+    ['a source without a name', { sources: [{ url: 'https://a.test', licence: 'x', used_for: 'y' }] }],
+    ['a GPU without a sweep status', { gpus: [{ id: 'A', label: 'A', p_max_w: 100, p_idle_w: 10 }] }],
+  ])('shows a plain-words error instead of crashing for %s', async (_name, patch) => {
+    renderPage('/assumptions', async () => jsonReply(200, { ...MOCK_ASSUMPTIONS, ...patch }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(/could not read/i)
+    expect(document.body).not.toHaveTextContent(/undefined/)
+  })
 })

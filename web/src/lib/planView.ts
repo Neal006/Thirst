@@ -1,8 +1,8 @@
 // Pure helpers for the Plan page (plan 6.3): chart data, the slider's alpha, the person-days
-// range of the selected Pareto entry and the text summary of the chart for screen readers.
+// range of the selected Pareto entry and buildSummary, the chart in words for screen readers.
 
 import type { OverlayRow, ParetoEntry, PlanResponse, SeriesRow } from '../api/types'
-import { formatClock, levelPercent } from './format'
+import { formatClock, formatDay, levelPercent, paceBlocks } from './format'
 
 const ALPHA_STEPS = 10
 const DEFAULT_ALPHA = 0.5
@@ -86,7 +86,23 @@ export function deadlineSlot(series: readonly SeriesRow[], deadlineIso: string):
   return hit?.slot ?? null
 }
 
-function cheapestWindow(series: readonly SeriesRow[], cost: (row: SeriesRow) => number): string | null {
+const slotEnd = (slot: string): string => new Date(Date.parse(slot) + HOUR_MS).toISOString()
+
+/** "Sun 11 Oct 03:00 to 06:00". The day is left out for a start on the submit day. */
+function windowText(startIso: string, endIso: string, submitIso: string): string {
+  const submitDay = formatDay(submitIso)
+  const startDay = formatDay(startIso)
+  const endDay = formatDay(endIso)
+  const from = startDay === submitDay ? formatClock(startIso) : `${startDay} ${formatClock(startIso)}`
+  const to = endDay === startDay ? formatClock(endIso) : `${endDay} ${formatClock(endIso)}`
+  return `${from} to ${to}`
+}
+
+function cheapestWindow(
+  series: readonly SeriesRow[],
+  cost: (row: SeriesRow) => number,
+  submitIso: string,
+): string | null {
   if (series.length < WINDOW_HOURS) return null
   let best = 0
   let bestCost = Number.POSITIVE_INFINITY
@@ -97,14 +113,70 @@ function cheapestWindow(series: readonly SeriesRow[], cost: (row: SeriesRow) => 
       bestCost = total
     }
   }
-  const end = new Date(Date.parse(series[best + WINDOW_HOURS - 1].slot) + HOUR_MS).toISOString()
-  return `${formatClock(series[best].slot)} to ${formatClock(end)}`
+  return windowText(series[best].slot, slotEnd(series[best + WINDOW_HOURS - 1].slot), submitIso)
 }
 
-/** The three-hour windows with the least water and the least CO2 per kWh. */
-export function lowWindows(series: readonly SeriesRow[]): { water: string | null; co2: string | null } {
+/**
+ * The three-hour windows with the least water and the least CO2 per kWh. The series spans 48
+ * hours, so a window that is not on the day of `submitIso` says which day it is.
+ */
+export function lowWindows(
+  series: readonly SeriesRow[],
+  submitIso: string,
+): { water: string | null; co2: string | null } {
   return {
-    water: cheapestWindow(series, (r) => finiteOr(r.direct_l_per_kwh, 0) + finiteOr(r.grid_l_per_kwh, 0)),
-    co2: cheapestWindow(series, (r) => finiteOr(r.co2_kg_per_kwh, 0)),
+    water: cheapestWindow(
+      series,
+      (r) => finiteOr(r.direct_l_per_kwh, 0) + finiteOr(r.grid_l_per_kwh, 0),
+      submitIso,
+    ),
+    co2: cheapestWindow(series, (r) => finiteOr(r.co2_kg_per_kwh, 0), submitIso),
   }
+}
+
+export interface SummaryRow {
+  /** The hour, with its day, as in "Sat 10 Oct 06:00". */
+  time: string
+  direct: number
+  grid: number
+  co2: number
+  /** "70%" while running, otherwise "paused" or "off". */
+  power: string
+}
+
+export interface ChartSummary {
+  text: string
+  rows: SummaryRow[]
+}
+
+function powerText(slot: OverlayRow | undefined): string {
+  if (slot?.state === 'run') return `${finiteOr(levelPercent(slot.level), 0)}%`
+  return slot?.state === 'pause' ? 'paused' : 'off'
+}
+
+/**
+ * The plan chart as text: a sentence about the hours covered and when the plan runs, and one row
+ * per hour. Screen readers cannot read a picture, so the same data goes out as a table.
+ */
+export function buildSummary(response: PlanResponse, entry: ParetoEntry): ChartSummary {
+  const { series } = response
+  const rows = buildChartData(series, entry.series_overlay).map((point, i) => ({
+    time: `${formatDay(point.slot)} ${formatClock(point.slot)}`,
+    direct: point.direct,
+    grid: point.grid,
+    co2: point.co2,
+    power: powerText(entry.series_overlay[i]),
+  }))
+  const runs = paceBlocks(entry.series_overlay, 'run').map((block) => {
+    const first = series[block.from]?.slot
+    const last = series[block.to]?.slot
+    return first && last ? windowText(first, slotEnd(last), '') : null
+  })
+  const runText = runs.filter((r): r is string => r !== null)
+  const plan = runText.length > 0 ? `Your plan runs from ${runText.join(', then from ')}.` : 'Your plan does not run in this window.'
+  const covered =
+    series.length > 0
+      ? `Water and CO₂ per kWh for ${series.length} hours from ${rows[0].time} to ${formatDay(series[series.length - 1].slot)} ${formatClock(series[series.length - 1].slot)}.`
+      : 'There is no hourly data.'
+  return { text: `${covered} ${plan}`, rows }
 }

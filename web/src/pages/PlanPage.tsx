@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { JobForm } from '../components/JobForm'
 import { PlanResults } from '../components/PlanResults'
 import { Banner } from '../components/ui/Banner'
@@ -6,6 +7,7 @@ import { PHONE_QUERY, useMediaQuery } from '../hooks/useMediaQuery'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useAssumptions } from '../hooks/useAssumptions'
 import { usePlan } from '../hooks/usePlan'
+import type { JobFormValues } from '../lib/jobForm'
 
 /** F1 to F5: the form, and the plan with its charts and slider. */
 export function PlanPage() {
@@ -13,6 +15,9 @@ export function PlanPage() {
   const assumptions = useAssumptions()
   const plan = usePlan()
   const phone = useMediaQuery(PHONE_QUERY)
+  // On a phone the form moves under the plan, which mounts a new JobForm. The draft is kept here
+  // (a ref: typing must not re-render the charts) and read by the new form when it mounts.
+  const draft = useRef<JobFormValues | undefined>(undefined)
   const { state } = assumptions
 
   let form
@@ -31,6 +36,10 @@ export function PlanPage() {
         cities={state.data.cities}
         busy={plan.status === 'loading'}
         onSubmit={plan.submit}
+        getDraft={() => draft.current}
+        onValuesChange={(values) => {
+          draft.current = values
+        }}
       />
     )
   }
@@ -52,9 +61,7 @@ export function PlanPage() {
           </>
         ) : (
           <>
-            <section className="card" aria-label="Your job">
-              {form}
-            </section>
+            <div className="card">{form}</div>
             <div>{results}</div>
           </>
         )}

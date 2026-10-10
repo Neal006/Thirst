@@ -261,6 +261,10 @@ code {
   color: var(--tag-design-choice);
 }
 
+.tag-unknown {
+  color: var(--text-muted);
+}
+
 .tag-unverified {
   color: var(--tag-unverified);
   border-style: dotted;

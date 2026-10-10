@@ -114,6 +114,36 @@ describe('validateJobForm: bad input gets a plain message next to its field', ()
     expect(errorsFor({ deadline: '2026-10-11T02:00' }).deadline).toBeUndefined()
   })
 
+  describe('clock skew: the server has the last word on the deadline', () => {
+    // NOW is 20:00 IST. The browser clock may be a few minutes off, so a deadline that is only
+    // slightly too soon or just past is sent, and the server's own message decides.
+    it('lets a deadline up to 10 minutes short of now plus the work hours go to the server', () => {
+      // 1 hour of work: 20:00 + 1 h = 21:00, so 20:55 is 5 minutes short.
+      expect(errorsFor({ workHours: '1', deadline: '2026-10-10T20:55' }).deadline).toBeUndefined()
+      expect(errorsFor({ workHours: '1', deadline: '2026-10-10T20:50' }).deadline).toBeUndefined()
+    })
+
+    it('still refuses a deadline more than 10 minutes short, and says when is earliest', () => {
+      const message = errorsFor({ workHours: '1', deadline: '2026-10-10T20:49' }).deadline
+      expect(message).toMatch(/1 hours/)
+      expect(message).toMatch(/Sat 10 Oct 21:00/)
+    })
+
+    it('treats "in the past" as an error only beyond 10 minutes, when the hours are unknown', () => {
+      expect(errorsFor({ workHours: '', deadline: '2026-10-10T19:55' }).deadline).toBeUndefined()
+      expect(errorsFor({ workHours: '', deadline: '2026-10-10T19:49' }).deadline).toMatch(/in the past/i)
+    })
+
+    it('builds the request for a deadline inside the slack', () => {
+      const result = validateJobForm(withValues({ workHours: '1', deadline: '2026-10-10T20:55' }), NOW, gpus, cities)
+      expect(result.ok && result.body.deadline).toBe('2026-10-10T20:55:00+05:30')
+    })
+
+    it('still checks the format here', () => {
+      expect(errorsFor({ deadline: '2026-10-10 20:55' }).deadline).toMatch(/pick a deadline/i)
+    })
+  })
+
   it('rejects a GPU or city that is not in the lists', () => {
     expect(errorsFor({ gpuModel: 'Nope' }).gpuModel).toMatch(/pick a gpu/i)
     expect(errorsFor({ gpuModel: '' }).gpuModel).toMatch(/pick a gpu/i)

@@ -26,6 +26,11 @@ const DEFAULT_GPU = 'RTX-4090'
 const DEFAULT_CITY = 'Chennai'
 const DEFAULT_PUE = '1.4'
 const HOUR_MS = 3_600_000
+/**
+ * How far the browser clock may be off before the form refuses a deadline. The server checks the
+ * deadline against its own clock (deadline_in_past, deadline_too_soon) and has the last word.
+ */
+const CLOCK_SKEW_MS = 10 * 60_000
 
 export interface JobFormValues {
   gpuModel: string
@@ -41,6 +46,17 @@ export interface JobFormValues {
 
 export type FieldName = keyof JobFormValues
 export type FieldErrors = Partial<Record<FieldName, string>>
+
+/** The fields in the order the form shows them, so messages and focus follow the page. */
+const FIELD_ORDER: readonly FieldName[] = ['gpuModel', 'gpuCount', 'workHours', 'deadline', 'city', 'pue']
+
+/** The error messages, top of the form first. */
+export function orderedMessages(errors: FieldErrors): string[] {
+  return FIELD_ORDER.flatMap((name) => {
+    const message = errors[name]
+    return message ? [message] : []
+  })
+}
 
 export type ValidationResult =
   | { ok: true; body: PlanRequestBody }
@@ -80,8 +96,8 @@ function earliest(nowMs: number, hours: number): string {
 function deadlineError(text: string, nowMs: number, hours: number | null): string | undefined {
   const deadlineMs = istLocalToMs(text)
   if (deadlineMs === null) return 'Pick a deadline: a date and a time in India time.'
-  if (deadlineMs <= nowMs) return 'The deadline is in the past. Pick a later one.'
-  if (hours !== null && deadlineMs < nowMs + hours * HOUR_MS) {
+  if (deadlineMs < nowMs - CLOCK_SKEW_MS) return 'The deadline is in the past. Pick a later one.'
+  if (hours !== null && deadlineMs < nowMs + hours * HOUR_MS - CLOCK_SKEW_MS) {
     return `This job needs ${hours} hours at full power. Pick a deadline after ${earliest(nowMs, hours)} (India time).`
   }
   return undefined

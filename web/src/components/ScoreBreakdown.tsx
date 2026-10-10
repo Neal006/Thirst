@@ -1,7 +1,7 @@
 import type { SiteResponse } from '../api/types'
 import { Range } from './Range'
 
-const one = (value: number): string => (Number.isFinite(value) ? value.toFixed(1) : '0.0')
+const one = (value: number): string => (Number.isFinite(value) ? value.toFixed(1) : '--')
 
 /** F10: A Behaviour, B Facility efficiency (never rated in v0), C Measurement and openness. */
 export function ScoreBreakdown({ score }: { score: SiteResponse['score'] }) {

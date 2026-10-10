@@ -15,7 +15,8 @@ import {
 import type { ParetoEntry, PlanResponse } from '../api/types'
 import { PHONE_QUERY, useMediaQuery } from '../hooks/useMediaQuery'
 import { formatAmount, formatClock, formatDay, paceBlocks } from '../lib/format'
-import { buildChartData, deadlineSlot, lowWindows, type ChartPoint } from '../lib/planView'
+import { buildChartData, buildSummary, deadlineSlot, lowWindows, type ChartPoint } from '../lib/planView'
+import { ChartDataTable } from './ChartDataTable'
 import { ChartTooltip } from './ChartTooltip'
 import { TagChip } from './TagChip'
 
@@ -45,7 +46,8 @@ export function PlanChart({ response, entry }: PlanChartProps) {
   const data = useMemo(() => buildChartData(response.series, entry.series_overlay), [response.series, entry])
   const blocks = useMemo(() => paceBlocks(entry.series_overlay, 'run'), [entry])
   const deadline = deadlineSlot(response.series, response.inputs.deadline)
-  const best = useMemo(() => lowWindows(response.series), [response.series])
+  const best = useMemo(() => lowWindows(response.series, response.submit_ts), [response.series, response.submit_ts])
+  const summary = useMemo(() => buildSummary(response, entry), [response, entry])
   const { tags } = response
 
   const tooltip = ({ active, payload }: TooltipContentProps) => {
@@ -90,6 +92,7 @@ export function PlanChart({ response, entry }: PlanChartProps) {
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+      <ChartDataTable summary={summary} tags={tags} />
       <figcaption>
         {best.water && best.co2 ? (
           <>

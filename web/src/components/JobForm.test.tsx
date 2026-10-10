@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MOCK_ASSUMPTIONS } from '../api/mocks/assumptions'
 import type { PlanRequestBody } from '../api/types'
+import { defaultValues } from '../lib/jobForm'
 import { JobForm } from './JobForm'
 
 const { gpus, cities } = MOCK_ASSUMPTIONS
@@ -62,6 +63,26 @@ describe('JobForm defaults', () => {
     expect(field(/pue/i)).toHaveValue(1.4)
     await userEvent.selectOptions(field(/^cooling/i), 'room_ac')
     expect(screen.queryByLabelText(/pue/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('JobForm draft', () => {
+  it('reports every change, so a parent can keep the values across a remount', async () => {
+    const onValuesChange = vi.fn()
+    render(
+      <JobForm gpus={gpus} cities={cities} busy={false} onSubmit={() => {}} now={() => NOW} onValuesChange={onValuesChange} />,
+    )
+    await userEvent.selectOptions(field(/^city/i), 'Pune')
+    expect(onValuesChange).toHaveBeenLastCalledWith(expect.objectContaining({ city: 'Pune', gpuCount: '2' }))
+  })
+
+  it('starts from the values it is given', () => {
+    const initial = { ...defaultValues(NOW, gpus, cities), gpuCount: '8', city: 'Pune' }
+    render(
+      <JobForm gpus={gpus} cities={cities} busy={false} onSubmit={() => {}} now={() => NOW} getDraft={() => initial} />,
+    )
+    expect(field(/how many gpus/i)).toHaveValue(8)
+    expect(field(/^city/i)).toHaveDisplayValue('Pune')
   })
 })
 
@@ -164,6 +185,45 @@ describe('JobForm bad input', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Plan' }))
     expect(field(/how many gpus/i)).toBeValid()
     expect(onSubmit).toHaveBeenCalledTimes(1)
+  })
+
+  it('announces the problems in an alert and moves focus to the first invalid field', async () => {
+    const { onSubmit } = setup()
+    // The deadline is wrong too, but it comes after the GPU count in the form.
+    fireEvent.change(field(/^deadline/i), { target: { value: '' } })
+    await userEvent.clear(field(/how many gpus/i))
+    await userEvent.type(field(/how many gpus/i), '0')
+    await userEvent.click(screen.getByRole('button', { name: 'Plan' }))
+    expect(onSubmit).not.toHaveBeenCalled()
+
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent(/2 problems/i)
+    expect(alert).toHaveTextContent(/whole number of GPUs/i)
+    expect(alert).toHaveTextContent(/pick a deadline/i)
+    expect(field(/how many gpus/i)).toHaveFocus()
+  })
+
+  it('says "1 problem" for a single error and removes the alert once the form is valid', async () => {
+    const { onSubmit } = setup()
+    await userEvent.clear(field(/hours of work/i))
+    await userEvent.click(screen.getByRole('button', { name: 'Plan' }))
+    expect(screen.getByRole('alert')).toHaveTextContent(/1 problem\b/i)
+    expect(field(/hours of work/i)).toHaveFocus()
+
+    await userEvent.type(field(/hours of work/i), '3')
+    await userEvent.click(screen.getByRole('button', { name: 'Plan' }))
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('moves focus again when the same mistake is submitted twice', async () => {
+    setup()
+    await userEvent.clear(field(/how many gpus/i))
+    await userEvent.click(screen.getByRole('button', { name: 'Plan' }))
+    expect(field(/how many gpus/i)).toHaveFocus()
+    await userEvent.click(field(/^city/i))
+    await userEvent.click(screen.getByRole('button', { name: 'Plan' }))
+    expect(field(/how many gpus/i)).toHaveFocus()
   })
 
   it('never shows NaN, undefined or Infinity', async () => {

@@ -39,6 +39,11 @@ function niceNumber(value: number): string {
   return text === '-0' ? '0' : text
 }
 
+/** A plain number for a table cell whose column heading carries the unit; "--" when unusable. */
+export function formatNumber(value: number): string {
+  return Number.isFinite(value) ? niceNumber(value) : '--'
+}
+
 export function formatAmount(value: number, unit: string): string {
   if (!Number.isFinite(value)) return `-- ${unit}`
   return `${niceNumber(value)} ${unit}`

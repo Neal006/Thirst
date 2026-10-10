@@ -129,7 +129,7 @@ describe('site and assumptions guards', () => {
           { id: 'tau_70', group: 'gpu', label: 'x', value: 1, low: 1, high: 1, unit: '', status: 'placeholder' },
         ],
         gpus: [{ id: 'RTX-4090', label: 'RTX 4090', p_max_w: 450, p_idle_w: 25, sweep_status: 'placeholder' }],
-        cities: [{ id: 'Chennai', stress_category: 'extremely_high', stress_weight: 2 }],
+        cities: [{ id: 'Chennai', stress_category: 'extremely_high', stress_weight: 2, status: 'placeholder' }],
         stress_weights: {},
         sources: [],
       }),

@@ -22,6 +22,7 @@ const nullable = (check: (v: unknown) => boolean) => (v: unknown) => v === null 
 
 const SLOTS = 48
 const PARETO_ENTRIES = 11
+const ALPHA_TOLERANCE = 1e-9
 
 function isTotals(v: unknown): boolean {
   return (
@@ -62,6 +63,8 @@ function isPlanEntry(v: unknown): boolean {
     isObj(v.point) &&
     isNum(v.point.W_l) &&
     isNum(v.point.C_kg) &&
+    isArr(v.gpu_kwh) &&
+    v.gpu_kwh.every(isNum) &&
     isArr(v.series_overlay) &&
     v.series_overlay.length === SLOTS &&
     v.series_overlay.every(isOverlayRow) &&
@@ -80,26 +83,32 @@ function isSeriesRow(v: unknown): boolean {
   )
 }
 
+/** The slider position i maps to entry i, so the 11 alphas must be 0, 0.1 ... 1 in that order. */
+const isParetoEntry = (e: unknown, i: number): boolean =>
+  isPlanEntry(e) &&
+  isNum((e as Obj).alpha) &&
+  Math.abs((e as Obj).alpha as number - i / (PARETO_ENTRIES - 1)) < ALPHA_TOLERANCE
+
 export function isPlanResponse(v: unknown): v is PlanResponse {
   return (
     isObj(v) &&
     isStr(v.plan_id) &&
     isStr(v.submit_ts) &&
     isObj(v.inputs) &&
+    isStr(v.inputs.deadline) &&
     isPlanEntry(v.base) &&
     isPlanEntry(v.best) &&
     isPlanEntry(v.chosen) &&
     isNum((v.chosen as Obj).alpha) &&
     isArr(v.pareto) &&
     v.pareto.length === PARETO_ENTRIES &&
-    v.pareto.every((e) => isPlanEntry(e) && isNum((e as Obj).alpha)) &&
+    v.pareto.every(isParetoEntry) &&
     isArr(v.series) &&
     v.series.length === SLOTS &&
     v.series.every(isSeriesRow) &&
     numbers(v.person_days_range, 2) &&
     isObj(v.tags) &&
-    isStr(v.tags.forecast) &&
-    isStr(v.tags.tau) &&
+    ['energy', 'water', 'co2', 'tau', 'forecast'].every((k) => isStr((v.tags as Obj)[k])) &&
     isArr(v.notes) &&
     isStr(v.factor_version)
   )
@@ -133,11 +142,27 @@ export function isReceiptResponse(v: unknown): v is ReceiptResponse {
     isBool(v.no_room) &&
     isBool(v.flexible) &&
     isObj(v.tags) &&
-    isStr(v.tags.energy) &&
+    ['energy', 'water', 'co2'].every((k) => isStr((v.tags as Obj)[k])) &&
     isObj(v.site_score) &&
     nullable(isNum)(v.site_score.value) &&
     isBool(v.site_score.provisional) &&
     isStr(v.url)
+  )
+}
+
+function isCParts(v: unknown): boolean {
+  return isObj(v) && ['measured_share', 'coverage', 'public'].every((k) => isNum(v[k]))
+}
+
+function isRecentReceipt(v: unknown): boolean {
+  return (
+    isObj(v) &&
+    isStr(v.job_id) &&
+    isStr(v.end_ts) &&
+    isNum(v.kwh) &&
+    nullable(isNum)(v.capture) &&
+    isBool(v.no_room) &&
+    isStr(v.method)
   )
 }
 
@@ -191,10 +216,11 @@ export function isSiteResponse(v: unknown): v is SiteResponse {
     v.score.B === 'not_rated' &&
     isNum(v.score.A) &&
     isNum(v.score.C) &&
-    isObj(v.score.C_parts) &&
+    isCParts(v.score.C_parts) &&
     isNum(v.score.flex_share) &&
     nullable(isMonthly)(v.monthly_absolute) &&
-    isArr(v.recent_receipts)
+    isArr(v.recent_receipts) &&
+    v.recent_receipts.every(isRecentReceipt)
   )
 }
 
@@ -208,10 +234,18 @@ export function isAssumptionsResponse(v: unknown): v is AssumptionsResponse {
         isObj(f) && isStr(f.id) && isStr(f.group) && isStr(f.label) && isNum(f.value) && isStr(f.status),
     ) &&
     isArr(v.gpus) &&
-    v.gpus.every((g) => isObj(g) && isStr(g.id) && isStr(g.label) && isNum(g.p_max_w)) &&
+    v.gpus.every(
+      (g) => isObj(g) && isStr(g.id) && isStr(g.label) && isNum(g.p_max_w) && isStr(g.sweep_status),
+    ) &&
     isArr(v.cities) &&
-    v.cities.every((c) => isObj(c) && isStr(c.id)) &&
+    v.cities.every(
+      (c) =>
+        isObj(c) && isStr(c.id) && isStr(c.stress_category) && isNum(c.stress_weight) && isStr(c.status),
+    ) &&
     isObj(v.stress_weights) &&
-    isArr(v.sources)
+    isArr(v.sources) &&
+    v.sources.every(
+      (s) => isObj(s) && isStr(s.name) && isStr(s.url) && isStr(s.licence) && isStr(s.used_for),
+    )
   )
 }
