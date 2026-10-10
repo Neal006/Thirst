@@ -7,6 +7,7 @@ recomputed from the raw weather with ``intensities()`` when ranges are needed.
 from __future__ import annotations
 
 import json
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
@@ -16,12 +17,15 @@ from typing import Any
 from . import cooling as cooling_mod
 from . import grid as grid_mod
 from .cooling import Cooling
+from .errors import EngineError
 from .factors import DATA_DIR, Factors, FactorSet, get_city
 from .units import IST, WINDOW_SLOTS, ensure_ist, floor_hour, slot0_capacity, slot_starts
 from .wetbulb import stull_tw_checked
 
 SAMPLE_PATH = DATA_DIR / "sample_forecast.json"
 _ROUND = 5
+# plausible bounds for hourly surface weather; anything outside is bad data, not weather
+_WEATHER_LIMITS = {"temp_c": (-50.0, 60.0), "rh_pct": (0.0, 100.0), "rad_wm2": (0.0, 1500.0)}
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,7 +38,20 @@ class WeatherRow:
     rad_wm2: float
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "hour", floor_hour(self.hour))  # raises if naive
+        try:
+            hour = floor_hour(self.hour)
+        except (ValueError, AttributeError):
+            raise EngineError(
+                "invalid_field", "weather hour must be a time with a timezone offset."
+            ) from None
+        object.__setattr__(self, "hour", hour)
+        for name, (low, high) in _WEATHER_LIMITS.items():
+            value = getattr(self, name)
+            ok = isinstance(value, int | float) and not isinstance(value, bool)
+            if not ok or not math.isfinite(value) or not low <= value <= high:
+                raise EngineError(
+                    "invalid_field", f"weather {name} must be a number from {low} to {high}."
+                )
 
 
 @dataclass(frozen=True, slots=True)

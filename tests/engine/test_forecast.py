@@ -38,7 +38,7 @@ def test_snapshot_has_48_slots_of_every_array(fx: Factors) -> None:
 
 def test_wet_bulb_never_exceeds_dry_bulb(fx: Factors) -> None:
     s = snap(fx, diurnal_rows(SUBMIT))
-    assert all(tw <= t + 0.5 for tw, t in zip(s.derived.tw, s.temp_c, strict=True))
+    assert all(tw <= t for tw, t in zip(s.derived.tw, s.temp_c, strict=True))
 
 
 def test_room_ac_has_no_direct_water_and_cooling_tower_does(fx: Factors) -> None:
@@ -85,7 +85,7 @@ def test_unknown_city_is_an_engine_error(fx: Factors) -> None:
 
 
 def test_naive_weather_hours_are_rejected() -> None:
-    with pytest.raises(ValueError, match="timezone"):
+    with pytest.raises(EngineError, match="timezone"):
         WeatherRow(hour=SUBMIT.replace(tzinfo=None), temp_c=30, rh_pct=60, rad_wm2=0)
 
 

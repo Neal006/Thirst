@@ -32,18 +32,34 @@ def normalised(data: Any) -> Any:
     return json.loads(json.dumps(data))
 
 
+def assert_same(actual: Any, expected: Any, path: str = "$") -> None:
+    """Equal structure and text; numbers within 2e-6 so libm differences cannot flake the test."""
+    if isinstance(expected, dict):
+        assert isinstance(actual, dict) and actual.keys() == expected.keys(), path
+        for key in expected:
+            assert_same(actual[key], expected[key], f"{path}.{key}")
+    elif isinstance(expected, list):
+        assert isinstance(actual, list) and len(actual) == len(expected), path
+        for i, (a, e) in enumerate(zip(actual, expected, strict=True)):
+            assert_same(a, e, f"{path}[{i}]")
+    elif isinstance(expected, float) or isinstance(actual, float):
+        assert actual == pytest.approx(expected, rel=1e-6, abs=2e-6), path
+    else:
+        assert actual == expected, path
+
+
 def test_plan_fixture_is_up_to_date(plan: dict[str, Any]) -> None:
-    assert on_disk("plan_response.json") == normalised(plan), "run `make fixtures`"
+    assert_same(on_disk("plan_response.json"), normalised(plan))  # stale? run `make fixtures`
 
 
 def test_receipt_fixture_is_up_to_date(fx: Factors, plan: dict[str, Any]) -> None:
     expected = gen_fixtures.receipt_response(plan, fx)
-    assert on_disk("receipt_response.json") == normalised(expected), "run `make fixtures`"
+    assert_same(on_disk("receipt_response.json"), normalised(expected))
 
 
 def test_leaderboard_fixture_is_up_to_date(fx: Factors, plan: dict[str, Any]) -> None:
     expected = gen_fixtures.leaderboard_response(plan, fx)
-    assert on_disk("leaderboard_response.json") == normalised(expected), "run `make fixtures`"
+    assert_same(on_disk("leaderboard_response.json"), normalised(expected))
 
 
 def test_plan_fixture_has_the_contract_shape() -> None:

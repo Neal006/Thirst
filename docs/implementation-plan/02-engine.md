@@ -8,6 +8,19 @@ Every function takes its inputs explicitly (time, factors, forecast). That makes
 
 [← Index](README.md) · Contracts used here: [08 §2 data files](08-reference-contracts.md#2-data-file-schemas)
 
+### Implementation status (9 Oct 2026)
+
+| Step | Status |
+|---|---|
+| 2.1 units, 2.3 wet-bulb, 2.4 cooling, 2.5 grid | **Done** (tests first; Stull reference points and property tests) |
+| 2.2 factors and data files | **Done**, but values marked `placeholder` stay so until plan 1.7: city water-stress categories, the annual national mix (`grid_shares.json`), GPU idle power, gas/nuclear water factors, and the whole power-cap sweep (`powercap_sweep.json` is empty) |
+| 2.6 forecast and footprint | **Done** |
+| 2.7 planner | **Done**: also returns `best` (D27); fixtures written by `scripts/gen_fixtures.py` (2.7.k) and `explain_template` is in `explain.py` (2.7.l) |
+| 2.8 score | **Done** (receipt scoring, site score, badges, divisions, page and leaderboard views); fixtures for receipt and leaderboard written |
+| 2.9 review and freeze | **Done**: ECC code and Python reviews run; CRITICAL and HIGH findings fixed (input hardening, read-only caches, private-site view, factor-version hash). Engine coverage 99%. Open: tight-deadline pausable plans do not escalate levels (note `pause_no_room`) |
+
+Differences from the text below: the engine also has `errors.py`, `forecast.py` and `explain.py`; `forecast_snapshot` stores raw weather rounded to 5 decimals; the pausable plan keeps only its last run slot partial.
+
 ---
 
 ## 2.0 Module map and conventions

@@ -50,8 +50,10 @@ def cop(t_c: float, rated: float, fs: FactorSet) -> float:
 
 def pue(kind: Cooling, t_c: float, fs: FactorSet, pue_user: float | None = None) -> float:
     """Power usage effectiveness: facility energy per unit of IT energy."""
-    if pue_user is not None and not PUE_USER_MIN <= pue_user <= PUE_USER_MAX:
-        raise EngineError("invalid_field", "pue must be between 1.0 and 3.0.")
+    if pue_user is not None:
+        is_number = isinstance(pue_user, int | float) and not isinstance(pue_user, bool)
+        if not is_number or not PUE_USER_MIN <= pue_user <= PUE_USER_MAX:
+            raise EngineError("invalid_field", "pue must be a number from 1.0 to 3.0.")
     if kind is Cooling.EVAPORATIVE:
         return pue_user if pue_user is not None else fs["pue_evaporative_default"]
     return 1.0 + 1.0 / cop(t_c, rated_cop(kind, fs), fs) + fs["pue_misc"]

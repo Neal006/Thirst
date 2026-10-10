@@ -25,7 +25,7 @@ humidities = st.floats(min_value=10, max_value=95, allow_nan=False)
 
 @given(temp_c=temps, rh=humidities)
 def test_wet_bulb_never_exceeds_dry_bulb_in_valid_range(temp_c: float, rh: float) -> None:
-    assert stull_tw(temp_c, rh) <= temp_c + 0.5  # Stull's fit is good to about +-0.3 degC
+    assert stull_tw(temp_c, rh) <= temp_c  # scanned: the fit stays at least 0.5 degC below dry-bulb
 
 
 @given(

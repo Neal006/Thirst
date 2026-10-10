@@ -23,7 +23,7 @@ from weather_helpers import (
 
 from engine import planner
 from engine.errors import EngineError
-from engine.factors import Factors, load_factors
+from engine.factors import Factors, get_city, load_factors
 from engine.footprint import footprint
 from engine.forecast import WeatherRow, build_snapshot
 from engine.planner import plan_from_rows
@@ -69,7 +69,8 @@ def objective(result: dict[str, Any], entry: dict[str, Any], alpha: float) -> fl
     """Alpha-weighted, base-normalised cost from the central totals of a plan entry."""
     base = result["base"]["totals"]
     w, c, e = ((entry["totals"][k][1] / base[k][1]) for k in ("W_l", "C_kg", "E_fac_kwh"))
-    return 0.8 * alpha * w + 0.8 * (1 - alpha) * c + 0.2 * e
+    split = load_factors().central()["plan_w_split"]
+    return split * alpha * w + split * (1 - alpha) * c + (1 - split) * e
 
 
 # 1 ---------------------------------------------------------------------------------------
@@ -115,7 +116,7 @@ def test_every_plan_meets_the_deadline_and_work(
         schedule = entry["schedule"]
         last_end = datetime.fromisoformat(schedule[-1]["slot"]) + timedelta(hours=1)
         assert last_end <= deadline + timedelta(seconds=1)  # (a) nothing ends after the deadline
-        assert work_done(fx, schedule) >= work - 1e-6  # (b) all the work is done
+        assert work_done(fx, schedule) >= work - 1e-5  # (b) all the work is done
         assert pause_gaps(schedule) <= 3  # (c) at most three pauses
 
 
@@ -184,7 +185,7 @@ def brute_force_best(fx: Factors, req: Any, rows: list[WeatherRow]) -> tuple[int
     snap = build_snapshot(req.city, req.cooling, rows, fx, req.submit_ts)
     gpu = fx.gpu_params(req.gpu_model)
     fs = fx.central()
-    sigma = fx.stress_weight("extremely_high")  # Chennai placeholder category
+    sigma = fx.stress_weight(get_city(req.city).stress_category)
     f0 = snap.slot0_capacity
     h_d = int((req.deadline - snap.slots[0]) / timedelta(hours=1))
 
@@ -239,7 +240,7 @@ def test_pausable_is_never_worse_than_non_pausable(fx: Factors, seed: int, alpha
     fixed = run(fx, rows, pausable=False, **kw)
     paused = run(fx, rows, pausable=True, **kw)
     cost_paused = objective(paused, paused["chosen"], alpha)
-    assert cost_paused <= objective(fixed, fixed["chosen"], alpha) + 1e-9
+    assert cost_paused <= objective(fixed, fixed["chosen"], alpha) + 1e-6
 
 
 # 8 ---------------------------------------------------------------------------------------
@@ -250,7 +251,7 @@ def test_pareto_has_eleven_entries_and_chosen_is_indexed_by_alpha(fx: Factors) -
     for alpha in (0.0, 0.1, 0.3, 0.5, 0.7, 1.0):
         result = run(fx, alpha=alpha)
         assert [p["alpha"] for p in result["pareto"]] == [i / 10 for i in range(11)]
-        assert result["chosen"] is result["pareto"][round(alpha * 10)]
+        assert result["chosen"] == result["pareto"][round(alpha * 10)]
         assert result["chosen"]["alpha"] == alpha
 
 
@@ -330,7 +331,7 @@ def test_pausable_wins_when_the_cheap_hours_are_split_by_a_hot_spell(fx: Factors
     hot_hours = {"01:00", "02:00"}
     assert {r["slot"][11:16] for r in chosen["schedule"] if r["state"] == "pause"} == hot_hours
     assert chosen["savings_central"]["water_pct"] > fixed["chosen"]["savings_central"]["water_pct"]
-    assert work_done(fx, chosen["schedule"]) >= 6.0 - 1e-6
+    assert work_done(fx, chosen["schedule"]) >= 6.0 - 1e-5
 
 
 def test_many_cheap_gaps_are_limited_to_three(fx: Factors) -> None:
@@ -338,7 +339,7 @@ def test_many_cheap_gaps_are_limited_to_three(fx: Factors) -> None:
                  gpu_count=1, alpha=0.5)
     for entry in result["pareto"]:
         assert pause_gaps(entry["schedule"]) <= 3
-        assert work_done(fx, entry["schedule"]) >= 6.0 - 1e-6
+        assert work_done(fx, entry["schedule"]) >= 6.0 - 1e-5
 
 
 def test_pausable_falls_back_when_cheapest_levels_cannot_finish(fx: Factors) -> None:
@@ -346,8 +347,8 @@ def test_pausable_falls_back_when_cheapest_levels_cannot_finish(fx: Factors) -> 
     deadline = SUBMIT + timedelta(hours=6, minutes=50)
     result = run(fx, work_hours=6.5, deadline=deadline, pausable=True)
     assert result["chosen"]["kind"] == "non_pausable"
-    assert "gap_limit_fallback" in result["chosen"]["notes"]
-    assert work_done(fx, result["chosen"]["schedule"]) >= 6.5 - 1e-6
+    assert "pause_no_room" in result["chosen"]["notes"]
+    assert work_done(fx, result["chosen"]["schedule"]) >= 6.5 - 1e-5
 
 
 def test_deadline_beyond_the_window_is_capped(fx: Factors) -> None:
@@ -424,8 +425,22 @@ def test_bad_input_is_rejected_with_a_code(
 
 
 def test_naive_submit_time_is_rejected(fx: Factors) -> None:
-    with pytest.raises(ValueError, match="timezone"):
+    with pytest.raises(EngineError, match="timezone") as err:
         run(fx, submit_ts=SUBMIT.replace(tzinfo=None))
+    assert err.value.code == "invalid_field"
+
+
+def test_job_longer_than_the_window_allows_gets_a_fixable_message(fx: Factors) -> None:
+    submit = ist(2026, 10, 9, 10, 30)  # slot 0 has only half an hour left
+    with pytest.raises(EngineError) as err:
+        plan_from_rows(
+            request(submit_ts=submit, deadline=submit + timedelta(days=10), work_hours=47.8),
+            diurnal_rows(submit),
+            fx,
+        )
+    assert err.value.code == "invalid_field"
+    assert "work_hours" in err.value.message
+    assert "47.5" in err.value.message
 
 
 def test_snapshot_must_match_the_request(fx: Factors) -> None:

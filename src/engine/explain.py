@@ -10,11 +10,11 @@ from collections.abc import Mapping
 from datetime import datetime
 from typing import Any
 
-_WHEN = "%a %d %b %H:%M"
+from .units import when_text
 
 
 def _clock(iso: str) -> str:
-    return datetime.fromisoformat(iso).strftime(_WHEN)
+    return when_text(datetime.fromisoformat(iso))
 
 
 def _range(pair: list[int]) -> str:
@@ -42,6 +42,13 @@ def _saving_sentence(chosen: Mapping[str, Any]) -> str:
     ranges = chosen["savings_ranges"]
     if max(r[1] for r in ranges.values()) <= 0:
         return "Compared with starting now, this plan does not reduce your footprint."
+    if min(r[0] for r in ranges.values()) < 0:
+        return (
+            "Compared with starting now, the effect is uncertain (a negative number means more "
+            f"use): stress-weighted water {_range(ranges['water_pct'])}, "
+            f"CO₂ {_range(ranges['co2_pct'])} and "
+            f"facility energy {_range(ranges['energy_pct'])}."
+        )
     return (
         "Compared with starting now, it saves "
         f"{_range(ranges['water_pct'])} of stress-weighted water, "

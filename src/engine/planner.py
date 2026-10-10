@@ -12,6 +12,7 @@ to the Pareto set so the receipt scorer never has to re-run the planner.
 
 from __future__ import annotations
 
+import copy
 import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
@@ -23,7 +24,7 @@ from .errors import EngineError
 from .factors import Factors, FactorSet, GpuParams, get_city, load_factors
 from .footprint import Coefficients, Totals, coefficients, footprint
 from .forecast import ForecastSnapshot, Intensities, WeatherRow, build_snapshot, intensities
-from .units import WINDOW_SLOTS, deadline_slots, ensure_ist, floor_hour, slot0_capacity
+from .units import WINDOW_SLOTS, clock_text, deadline_slots, ensure_ist, floor_hour, slot0_capacity
 
 LEVELS = (1.0, 0.85, 0.7)
 ALPHA_STEPS = 10
@@ -266,8 +267,8 @@ def _solve(env: _Env, weights: Weights) -> Plan:
     if not env.pausable:
         return fixed
     paused = _plan_pausable(ctx, kwh_cost)
-    if paused is None:
-        return replace(fixed, notes=("gap_limit_fallback",))
+    if paused is None:  # no room for pauses: the cheapest levels cannot finish in time
+        return replace(fixed, notes=("pause_no_room",))
     if _objective(ctx, paused, kwh_cost) < _objective(ctx, fixed, kwh_cost) * (1 - _TIE):
         return replace(paused, notes=("pausable_won",))
     return replace(fixed, notes=("non_pausable_won",))
@@ -276,14 +277,32 @@ def _solve(env: _Env, weights: Weights) -> Plan:
 # --------------------------------------------------------------------------- setup
 
 
+def _is_number(value: object) -> bool:
+    return isinstance(value, int | float) and not isinstance(value, bool) and math.isfinite(value)
+
+
 def _validate(req: PlanRequest) -> None:
-    if not isinstance(req.gpu_count, int) or not 1 <= req.gpu_count <= MAX_GPUS:
+    """Check types and ranges first, so bad input never reaches arithmetic that would crash."""
+    if (
+        isinstance(req.gpu_count, bool)
+        or not isinstance(req.gpu_count, int)
+        or not 1 <= req.gpu_count <= MAX_GPUS
+    ):
         raise EngineError("invalid_field", f"gpu_count: use a whole number from 1 to {MAX_GPUS}.")
-    if not 0 < req.work_hours <= MAX_WORK_HOURS:
+    if not _is_number(req.work_hours) or not 0 < req.work_hours <= MAX_WORK_HOURS:
         raise EngineError("invalid_field", "work_hours: use a number above 0 and up to 48.")
-    on_grid = abs(req.alpha * ALPHA_STEPS - round(req.alpha * ALPHA_STEPS)) <= 1e-6
-    if not (0 <= req.alpha <= 1 and on_grid):
+    if not _is_number(req.alpha) or not 0 <= req.alpha <= 1:
         raise EngineError("invalid_field", "alpha: use a step of 0.1 from 0 to 1.")
+    if abs(req.alpha * ALPHA_STEPS - round(req.alpha * ALPHA_STEPS)) > 1e-6:
+        raise EngineError("invalid_field", "alpha: use a step of 0.1 from 0 to 1.")
+    if not isinstance(req.pausable, bool) or not isinstance(req.pausable_allowed, bool):
+        raise EngineError("invalid_field", "pausable: use true or false.")
+    if req.pue_user is not None and not _is_number(req.pue_user):
+        raise EngineError("invalid_field", "pue: use a number from 1.0 to 3.0.")
+    for name in ("submit_ts", "deadline"):
+        value = getattr(req, name)
+        if not isinstance(value, datetime) or value.utcoffset() is None:
+            raise EngineError("invalid_field", f"{name}: use a time with a timezone offset.")
 
 
 def _build_ctx(req: PlanRequest, snap: ForecastSnapshot, fx: Factors, gpu: GpuParams,
@@ -329,10 +348,16 @@ def _build_env(req: PlanRequest, snap: ForecastSnapshot, fx: Factors) -> _Env:
     h_d, capped = deadline_slots(req.submit_ts, req.deadline)
     capacity = slot0_capacity(req.submit_ts) + max(h_d - 1, 0) if h_d else 0.0
     if capacity < req.work_hours - _EPS:
+        if h_d >= WINDOW_SLOTS:  # a later deadline cannot help: the planning window is the limit
+            raise EngineError(
+                "invalid_field",
+                f"work_hours: from this start the 48-hour planning window fits at most "
+                f"{capacity:.1f} h of work.",
+            )
         finish = ensure_ist(req.submit_ts) + timedelta(hours=req.work_hours)
         raise EngineError(
             "deadline_too_soon",
-            f"This job needs until {finish:%H:%M on %d %b} at full power. Pick a later deadline.",
+            f"This job needs until {clock_text(finish)} at full power. Pick a later deadline.",
         )
     sigma = fx.stress_weight(city.stress_category)
     ctx = _build_ctx(req, snap, fx, gpu, sigma, h_d)
@@ -539,7 +564,7 @@ def plan(req: PlanRequest, snap: ForecastSnapshot, fx: Factors | None = None) ->
     best_entry, _ = _entry(env, best_plan, base_totals)
     j_best = _objective(env.ctx, best_plan, _kwh_cost(env.ctx, _j_weights(fx)))
     idx = int(round(req.alpha * ALPHA_STEPS + 1e-9))
-    chosen, chosen_plan, chosen_totals = pareto[idx], plans[idx], entries[idx][1]
+    chosen, chosen_plan, chosen_totals = copy.deepcopy(pareto[idx]), plans[idx], entries[idx][1]
     days = [chosen_totals[n].person_days(env.fs[n]) for n in _SETS]
     return {
         "plan_id": "",
@@ -551,7 +576,7 @@ def plan(req: PlanRequest, snap: ForecastSnapshot, fx: Factors | None = None) ->
         "chosen": chosen,
         "pareto": pareto,
         "points": _points(pareto),
-        "savings_ranges": chosen["savings_ranges"],
+        "savings_ranges": copy.deepcopy(chosen["savings_ranges"]),
         "series": _series(env, chosen_plan),
         "person_days_range": [round(min(days), 4), round(max(days), 4)],
         "tags": {
@@ -572,6 +597,7 @@ def plan_from_rows(
     req: PlanRequest, rows: Sequence[WeatherRow], fx: Factors | None = None
 ) -> dict[str, Any]:
     """Build the forecast snapshot from weather rows and plan in one call."""
+    _validate(req)
     fx = fx or load_factors()
     snap = build_snapshot(req.city, req.cooling, rows, fx, req.submit_ts, pue_user=req.pue_user)
     return plan(req, snap, fx)

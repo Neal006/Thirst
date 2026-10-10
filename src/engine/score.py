@@ -12,6 +12,7 @@ Absolute litres and kilograms use observed weather where it exists.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta
 from typing import Any
@@ -27,6 +28,9 @@ from .units import WINDOW_SLOTS, ensure_ist, floor_hour
 MEASURED_METHODS = frozenset({"nvml_energy", "nvml_power_integration"})
 WINDOW_DAYS = 30
 RECENT_RECEIPTS = 10
+MAX_RECEIPT_SLOTS = 72  # a receipt covers at most 72 hours (plan 08 §3.4)
+MIN_RUN_KWH = 1e-3  # below 1 Wh the ratios against Base are numerical noise, not a job
+MAX_BASE_SLOTS = 4 * WINDOW_SLOTS  # more Base hours than this can only come from bad energy values
 NEEDS_FLEXIBLE = "needs_flexible_receipt"
 _HOUR = timedelta(hours=1)
 _PARTS_MAX = 70.0  # A (50) + C (20); B is not rated in v0
@@ -96,34 +100,66 @@ def _fp(t: Totals, fs: FactorSet) -> dict[str, float]:
     }
 
 
+def _finite(value: object, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, int | float) or not math.isfinite(value):
+        raise EngineError("invalid_field", f"slots: {name} must be a finite number.")
+    return float(value)
+
+
+def _parse_slot(
+    slot: Mapping[str, Any], snap: ForecastSnapshot
+) -> tuple[datetime, int, float, float, float]:
+    """One receipt slot as (hour, snapshot index, run kWh, idle kWh, level), fully validated."""
+    try:
+        hour = floor_hour(datetime.fromisoformat(slot["hour"]))
+        raw_run, raw_idle, raw_level = slot["run_kwh"], slot["idle_kwh"], slot["level"]
+    except (KeyError, TypeError, ValueError):
+        raise EngineError(
+            "invalid_field",
+            "slots: each slot needs hour (with timezone), run_kwh, idle_kwh and level.",
+        ) from None
+    run_kwh, idle_kwh = _finite(raw_run, "run_kwh"), _finite(raw_idle, "idle_kwh")
+    level_value = _finite(raw_level, "level")
+    idx = round((hour - snap.slots[0]) / _HOUR)
+    if not 0 <= idx < WINDOW_SLOTS + MAX_RECEIPT_SLOTS:
+        raise EngineError("slot_out_of_range", "Some hours are outside the job's start and end.")
+    if run_kwh < 0 or idle_kwh < 0:
+        raise EngineError("invalid_field", "slots: energy must not be negative.")
+    level = min(LEVELS, key=lambda x: abs(x - level_value))
+    if abs(level - level_value) > 1e-6:
+        raise EngineError("invalid_field", "slots: level must be 1.0, 0.85 or 0.7.")
+    return hour, idx, run_kwh, idle_kwh, level
+
+
 def _group_hours(
-    receipt: Mapping[str, Any], snap: ForecastSnapshot
+    receipt: Mapping[str, Any], snap: ForecastSnapshot, max_hour_kwh: float
 ) -> tuple[dict[int, float], dict[int, float], dict[int, float], list[str]]:
     """Receipt slots summed per snapshot hour: run kWh, idle kWh, level, extrapolated hours."""
+    slots = receipt.get("slots")
+    if not isinstance(slots, list | tuple) or not 1 <= len(slots) <= MAX_RECEIPT_SLOTS:
+        raise EngineError("invalid_field", f"slots: send between 1 and {MAX_RECEIPT_SLOTS} slots.")
     run: dict[int, float] = {}
     idle: dict[int, float] = {}
     level: dict[int, float] = {}
     biggest: dict[int, float] = {}
     extrapolated: list[str] = []
-    for s in receipt["slots"]:
-        hour = floor_hour(datetime.fromisoformat(s["hour"]))
-        idx = round((hour - snap.slots[0]) / _HOUR)
-        if idx < 0:
-            raise EngineError(
-                "slot_out_of_range", "Some hours are outside the job's start and end."
-            )
-        run_kwh, idle_kwh = float(s["run_kwh"]), float(s["idle_kwh"])
-        if run_kwh < 0 or idle_kwh < 0:
-            raise EngineError("invalid_field", "slots: energy must not be negative.")
-        lv = min(LEVELS, key=lambda x: abs(x - float(s["level"])))
-        if abs(lv - float(s["level"])) > 1e-6:
-            raise EngineError("invalid_field", "slots: level must be 1.0, 0.85 or 0.7.")
+    for s in slots:
+        hour, idx, run_kwh, idle_kwh, lv = _parse_slot(s, snap)
         if idx >= WINDOW_SLOTS and hour.isoformat() not in extrapolated:
             extrapolated.append(hour.isoformat())
         run[idx] = run.get(idx, 0.0) + run_kwh
         idle[idx] = idle.get(idx, 0.0) + idle_kwh
+        if run[idx] + idle[idx] > max_hour_kwh:
+            raise EngineError(
+                "implausible_energy",
+                "This energy is more than your GPUs can draw. Receipt rejected.",
+            )
         if run_kwh >= biggest.get(idx, -1.0):
             level[idx], biggest[idx] = lv, run_kwh
+    if sum(run.values()) < MIN_RUN_KWH:
+        raise EngineError(
+            "invalid_field", "slots: a receipt needs at least 1 Wh of run energy in total."
+        )
     return run, idle, level, extrapolated
 
 
@@ -132,6 +168,11 @@ def _base_energy(e_base_gpu: float, n_kw: float, f0: float) -> list[float]:
     hours_left = e_base_gpu / n_kw if n_kw > 0 else 0.0
     out: list[float] = []
     while hours_left > 1e-12:
+        if len(out) >= MAX_BASE_SLOTS:
+            raise EngineError(
+                "implausible_energy",
+                "This energy is more than your GPUs can draw. Receipt rejected.",
+            )
         use = min(f0 if not out else 1.0, hours_left)
         out.append(use * n_kw)
         hours_left -= use
@@ -188,7 +229,8 @@ def receipt_footprints(
     inputs = plan_record["inputs"]
     gpu = fx.gpu_params(inputs["gpu_model"])
     sigma = fx.stress_weight(get_city(snap.city).stress_category)
-    run, idle, level, extrapolated = _group_hours(receipt, snap)
+    max_hour_kwh = inputs["gpu_count"] * gpu.model.p_max_w / 1000 * fs["receipt_kwh_tolerance"]
+    run, idle, level, extrapolated = _group_hours(receipt, snap, max_hour_kwh)
 
     e_base_gpu = sum(run[h] / gpu.levels[level[h]].eps for h in run)
     n_kw = inputs["gpu_count"] * gpu.u * gpu.model.p_max_w / 1000
@@ -234,6 +276,8 @@ def receipt_footprints(
             "co2": "modelled",
         },
         "extrapolated_hours": extrapolated,
+        # the plan was made with other factor files than the ones scoring it now
+        "factor_version_mismatch": snap.factor_version != fx.version,
     }
 
 
@@ -280,7 +324,7 @@ def site_score(
     measured_kwh = sum(r["kwh"] for r in counted if r.get("method") in MEASURED_METHODS)
     c_parts = {
         "measured_share": 10.0 * measured_kwh / total_kwh if total_kwh > 0 else 0.0,
-        "coverage": 5.0 if site.get("coverage_declared", 0.0) >= 0.8 else 0.0,
+        "coverage": 5.0 if float(site.get("coverage_declared") or 0.0) >= 0.8 else 0.0,
         "public": 5.0 if site.get("public", True) else 0.0,
     }
     c_total = sum(c_parts.values())
@@ -353,9 +397,17 @@ def site_page_view(
     """Data for ``GET /sites/{id}`` (plan 08 §3.3): score, monthly footprint, last 10 receipts."""
     fx = fx or load_factors()
     result = site_score(receipts, site, now, fx)
-    recent = sorted(_counted(receipts, now), key=lambda r: r["end_ts"], reverse=True)
+    info = _site_info(site, fx.central())
+    if not info["public"]:  # D26: a private site shows only its name, division and score
+        return {"site": info, "score": _score_view(result), "monthly_absolute": None,
+                "recent_receipts": []}
+    recent = sorted(
+        _counted(receipts, now),
+        key=lambda r: ensure_ist(datetime.fromisoformat(r["end_ts"])),
+        reverse=True,
+    )
     return {
-        "site": _site_info(site, fx.central()),
+        "site": info,
         "score": _score_view(result),
         "monthly_absolute": result["monthly_absolute"],
         "recent_receipts": [

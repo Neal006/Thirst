@@ -122,8 +122,8 @@ def leaderboard_response(plan: dict[str, Any], fx: Factors) -> dict[str, Any]:
         "s_demobbbbbb": demo_jobs(plan, fx, "b", [
             {"which": "chosen", "shift_hours": -1}, {"which": "base", "scale": 0.8}]),
         "s_democccccc": demo_jobs(plan, fx, "c", [
-            {"which": "base"}, {"which": "base", "scale": 2.0}]),
-        "s_demoeeeeee": demo_jobs(plan, fx, "e", [{"which": "best", "scale": 4.0}]),
+            {"which": "base"}, {"which": "base", "scale": 0.5}]),
+        "s_demoeeeeee": demo_jobs(plan, fx, "e", [{"which": "best"}]),
     }
     rows = score.leaderboard_rows(sites, receipts, "D1", NOW, fx)
     return {"division": "D1", "period": "30d", "board": "score", "generated_at": NOW.isoformat(),

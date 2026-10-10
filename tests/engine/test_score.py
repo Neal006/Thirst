@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import pytest
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 from weather_helpers import SUBMIT, diurnal_rows, flat_rows, ist
 
@@ -149,13 +149,14 @@ def test_capped_energy_implies_a_base_of_the_same_work(fx: Factors, plan: dict[s
 @settings(max_examples=100, deadline=None)
 @given(
     hours=st.lists(st.integers(0, 60), min_size=1, max_size=12, unique=True),
-    kwh=st.lists(st.floats(0.0, 5.0), min_size=12, max_size=12),
-    idle=st.lists(st.floats(0.0, 1.0), min_size=12, max_size=12),
+    kwh=st.lists(st.floats(0.0, 0.9), min_size=12, max_size=12),
+    idle=st.lists(st.floats(0.0, 0.09), min_size=12, max_size=12),
     levels=st.lists(st.sampled_from(LEVELS), min_size=12, max_size=12),
 )
 def test_capture_is_always_between_zero_and_one(
     hours: list[int], kwh: list[float], idle: list[float], levels: list[float]
 ) -> None:
+    assume(sum(kwh[: len(hours)]) >= 0.01)  # a receipt needs a real amount of run energy
     fx = load_factors()
     base_plan = make_plan(fx)
     first = datetime.fromisoformat(base_plan["forecast_snapshot"]["slots"][0])
@@ -165,7 +166,13 @@ def test_capture_is_always_between_zero_and_one(
     ]
     rec = {"job_id": "j_x", "end_ts": NOW.isoformat(), "method": "nvml_energy", "slots": slots}
     res = score.receipt_footprints(rec, base_plan, (), fx)
-    assert res["capture"] is None or 0.0 <= res["capture"] <= 1.0
+    j = res["scoring"]["J"]
+    assert j["base"] == pytest.approx(1.0)  # holds for any receipt, by construction
+    if res["capture"] is None:
+        assert 1 - j["best"] < 0.03
+    else:
+        expected = (1 - j["actual"]) / (1 - j["best"])
+        assert res["capture"] == pytest.approx(min(max(expected, 0.0), 1.0))
 
 
 def test_same_receipt_two_observed_weathers_same_capture_different_litres(fx: Factors) -> None:
@@ -224,7 +231,7 @@ def test_hours_past_the_snapshot_are_extrapolated(fx: Factors, plan: dict[str, A
     rec = receipt_from(plan, which="best")
     first = datetime.fromisoformat(plan["forecast_snapshot"]["slots"][0])
     late = (first + timedelta(hours=50)).isoformat()
-    rec["slots"].append({"hour": late, "run_kwh": 1.0, "idle_kwh": 0.0, "level": 1.0})
+    rec["slots"].append({"hour": late, "run_kwh": 0.5, "idle_kwh": 0.0, "level": 1.0})
     res = score.receipt_footprints(rec, plan, (), fx)
     assert res["extrapolated_hours"] == [late]
     assert res["kwh"] == pytest.approx(sum(s["run_kwh"] + s["idle_kwh"] for s in rec["slots"]))

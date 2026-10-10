@@ -43,6 +43,22 @@ def slot0_capacity(submit_ts: datetime) -> float:
     return 1.0 - elapsed / 3600.0
 
 
+_DAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+_MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+
+def clock_text(ts: datetime) -> str:
+    """``03:14 on 10 Oct`` in IST. Fixed English names, so it does not depend on the locale."""
+    t = ensure_ist(ts)
+    return f"{t:%H:%M} on {t.day:02d} {_MONTHS[t.month - 1]}"
+
+
+def when_text(ts: datetime) -> str:
+    """``Sat 10 Oct 03:14`` in IST, locale independent."""
+    t = ensure_ist(ts)
+    return f"{_DAYS[t.weekday()]} {t.day:02d} {_MONTHS[t.month - 1]} {t:%H:%M}"
+
+
 def mj_to_kwh(millijoules: float) -> float:
     """Convert millijoules (the NVML energy counter unit) to kWh."""
     return millijoules / _MJ_PER_KWH

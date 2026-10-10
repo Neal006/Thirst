@@ -17,6 +17,7 @@ import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -76,10 +77,13 @@ def load_grid(path: Path | str | None = None) -> GridModel:
             raise ValueError("hod_profile needs profiles and mean radiation for hours 0 to 23")
     return GridModel(
         kind=kind,
-        annual_shares=annual,
+        annual_shares=MappingProxyType(annual),
         s_avg_solar=float(data.get("s_avg_solar", annual["solar"])),
-        profiles=profiles,
-        mean_radiation_profile=mean_rad,
+        profiles=(
+            None if profiles is None
+            else MappingProxyType({h: MappingProxyType(p) for h, p in profiles.items()})
+        ),
+        mean_radiation_profile=None if mean_rad is None else MappingProxyType(mean_rad),
         status=str(data.get("status", "sourced")),
         source=str(data.get("source", "")),
     )

@@ -18,6 +18,7 @@ from types import MappingProxyType
 from typing import Any
 
 from .errors import EngineError
+from .grid import DEFAULT_PATH as GRID_PATH
 from .grid import GridModel, calibrate_coal_ef, load_grid
 
 DATA_DIR = Path(__file__).parent / "data"
@@ -205,19 +206,28 @@ def load_gpus(path: Path | str | None = None) -> dict[str, GpuModel]:
     }
 
 
+def _freeze(value: Any) -> Any:
+    """Recursively turn dicts into read-only mappings and lists into tuples."""
+    if isinstance(value, dict):
+        return MappingProxyType({k: _freeze(v) for k, v in value.items()})
+    if isinstance(value, list):
+        return tuple(_freeze(v) for v in value)
+    return value
+
+
 @lru_cache(maxsize=1)
-def _default_cities() -> dict[str, City]:
+def _default_cities() -> Mapping[str, City]:
     data = _read_json(DATA_DIR / "cities.json")
-    return {
+    return MappingProxyType({
         c["id"]: City(c["id"], float(c["lat"]), float(c["lon"]), c["stress_category"],
                       c.get("status", "sourced"), c.get("source", ""), c.get("source_url", ""),
                       c.get("lookup_date"))
         for c in data["cities"]
-    }
+    })
 
 
-def load_cities() -> dict[str, City]:
-    """The six seed cities keyed by id."""
+def load_cities() -> Mapping[str, City]:
+    """The six seed cities keyed by id (read-only: the result is shared and cached)."""
     return _default_cities()
 
 
@@ -280,14 +290,20 @@ def _load(
         )
         for f in data["factors"]
     ]
-    grid = load_grid(grid_path)
+    grid_file = Path(grid_path) if grid_path else GRID_PATH
+    grid = load_grid(grid_file)
     sweep_file = Path(sweep_path) if sweep_path else DATA_DIR / "powercap_sweep.json"
-    sweep = _read_json(sweep_file).get("gpus", {})
-    version = f"{data['version']}+{hashlib.sha256(raw_bytes).hexdigest()[:12]}"
+    gpus_file = Path(gpus_path) if gpus_path else DATA_DIR / "gpus.json"
+    sweep = _freeze(_read_json(sweep_file).get("gpus", {}))
+    # every file that changes a model result goes into the version, not just factors.json
+    digest = hashlib.sha256()
+    for part in (factors_file, grid_file, sweep_file, gpus_file, DATA_DIR / "cities.json"):
+        digest.update(part.read_bytes())
+    version = f"{data['version']}+{digest.hexdigest()[:12]}"
     return Factors(
         version,
         tuple(_calibrated(items, grid)),
         grid,
-        MappingProxyType(load_gpus(gpus_path)),
-        MappingProxyType(sweep),
+        MappingProxyType(load_gpus(gpus_file)),
+        sweep,
     )
