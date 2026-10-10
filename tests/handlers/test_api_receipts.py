@@ -113,8 +113,8 @@ def test_a_valid_signed_receipt_is_scored(scene: Scene) -> None:
     assert data["scoring"]["J"]["base"] == pytest.approx(1.0)
     assert set(data["absolute"]) >= {"base", "best", "actual", "basis"}
     assert data["tags"]["energy"] == "measured"
-    assert data["capture"] is None or 0.0 <= data["capture"] <= 1.0
-    assert isinstance(data["no_room"], bool) and data["flexible"] == (not data["no_room"])
+    assert data["no_room"] is False and data["flexible"] is True  # this plan has room to shift
+    assert data["capture"] is not None and 0.0 <= data["capture"] <= 1.0
     assert set(data["site_score"]) == {"value", "badge", "provisional"}
     assert data["url"] == f"/receipts/{scene.site_id}/{JOB}"
     assert "NaN" not in reply.text
@@ -579,3 +579,59 @@ def test_a_private_sites_receipt_is_not_found(client: Client) -> None:
     assert scene.post(body).status == 200
     reply = client.call("GET", f"/receipts/{site['site_id']}/{JOB}")
     assert reply.status == 404 and reply.json["error"] == "receipt_not_found"
+
+
+# abuse limits and time handling ------------------------------------------------------------
+
+
+def test_fractional_seconds_are_cut_so_the_receipt_is_stored_not_a_503(scene: Scene) -> None:
+    body = scene.receipt()
+    end = datetime.fromisoformat(body["end_ts"]).replace(microsecond=500_000)
+    body["end_ts"] = end.isoformat()
+    scene.finish(body)
+    reply = scene.post(body)
+    assert reply.status == 200, reply.text
+    (item,) = stored_receipts(scene.client, scene.site_id)
+    assert re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\+05:30", item["end_ts"])
+
+
+def test_a_receipt_older_than_the_scoring_window_is_refused(scene: Scene) -> None:
+    old = scene.client.clock() - timedelta(days=31)
+    hour = old.replace(minute=0, second=0, microsecond=0)
+    body = scene.receipt(
+        start_ts=(hour + timedelta(minutes=1)).isoformat(),
+        end_ts=(hour + timedelta(minutes=50)).isoformat(),
+        slots=[{"hour": hour.isoformat(), "run_kwh": 0.2, "idle_kwh": 0.0, "level": 1.0}],
+    )
+    reply = scene.post(body)
+    assert reply.status == 400 and reply.json["error"] == "invalid_field"
+    assert "end_ts" in reply.json["message"] and "30 days" in reply.json["message"]
+    assert stored_receipts(scene.client, scene.site_id) == []
+
+
+def test_receipts_per_site_are_limited_per_day(
+    scene: Scene, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from handlers import api
+
+    monkeypatch.setattr(api, "MAX_RECEIPTS_PER_SITE_PER_DAY", 1)
+    first = scene.receipt()
+    scene.finish(first)
+    assert scene.post(first).status == 200
+    second = scene.receipt(job_id="j_bbbbbbbbbbbb")
+    refused = scene.post(second)
+    assert refused.status == 429 and refused.json["error"] == "rate_limited"
+    assert len(stored_receipts(scene.client, scene.site_id)) == 1
+
+
+def test_a_refused_receipt_does_not_use_up_the_daily_quota(
+    scene: Scene, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from handlers import api
+
+    monkeypatch.setattr(api, "MAX_RECEIPTS_PER_SITE_PER_DAY", 1)
+    bad = scene.receipt(slots=[])  # invalid
+    scene.finish(bad)
+    assert scene.post(bad).status == 400
+    good = scene.receipt()
+    assert scene.post(good).status == 200

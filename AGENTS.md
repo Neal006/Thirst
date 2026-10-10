@@ -1,5 +1,5 @@
 # AGENTS.md — Project Memory (auto-maintained)
-Last updated: 2026-10-09 | Sessions logged: 3
+Last updated: 2026-10-10 | Sessions logged: 4
 
 ## Identity
 Thirst: a water and carbon planner, receipt and rating for GPU jobs in India (WeMakeDevs x AWS Environmental Hacks, Track 02).
@@ -9,7 +9,8 @@ Users: students and lab heads in college GPU labs, startups on rented GPUs. Buil
 - Engine and handlers: Python 3.12, pure-Python engine (no numpy), pytest + hypothesis, ruff, mypy (strict, `src/` only).
 - CLI: Python ≥ 3.10, nvidia-ml-py, httpx; `thirst` entry point (stub today).
 - Web: Vite + React 19 + TypeScript + Recharts + Vitest, Node 22.12+ (`web/`; lint is oxlint; vitest 5 and jest-dom 7 need Node 22).
-- AWS: SAM CLI, `ap-south-1`, profile `thirst`, stack `thirst-dev`; `template.yaml` arrives in step 05.1.
+- AWS: SAM CLI, `ap-south-1`, profile `thirst`, stack `thirst-dev`; `template.yaml` is written (not yet deployed or `sam validate`d: no SAM CLI here).
+- Ops scripts: `python scripts/seed.py --profile thirst --stage dev [--wipe-simulated | --delete-site ID]`; `bash scripts/smoke.sh "$API"`; `python scripts/bench_plan.py "$API"`.
 - Setup: `uv venv --python 3.12 .venv && uv pip install --python .venv -e ".[dev]" -e ./cli && npm --prefix web ci`.
 - Checks (same as CI): `make check` = `ruff check .` + `mypy` + `pytest -m "not gpu and not aws" --cov` (+ `make cov-engine` once engine tests exist).
   Without make (Windows): run `.venv/Scripts/python.exe -m ruff check .`, `-m mypy`, `-m pytest …`, and `npm --prefix web test -- --run | run lint | run build`.
@@ -20,7 +21,8 @@ Users: students and lab heads in college GPU labs, startups on rented GPUs. Buil
 - Phase 01 still needs people: AWS account/SAM/Docker/budgets/Bedrock/SSM secret (1.6), CSEP/Ember/Aqueduct data (1.7.b–f), GPU box checks (1.8), team registration and deadline (1.9). CI (python, web, sam, secrets) passed on draft PR #1; the Makefile ran green on ubuntu.
 - Phase 02 (engine) DONE and reviewed (ECC code + Python reviewers, all CRITICAL/HIGH fixed): units, errors, wetbulb, factors, cooling, grid, forecast, footprint, planner, score, explain + `scripts/gen_fixtures.py`; engine coverage 99%, 317 tests, fixtures in `tests/fixtures/*_response.json` (a test fails when they go stale: run `make fixtures`).
 - Engine data is still PLACEHOLDER where plan 1.7 is open: `cities.json` stress categories, `grid_shares.json` national mix, `powercap_sweep.json` (empty, so tau/eps use the placeholders and every plan tags `tau: placeholder`).
-- Next: Phase 05 backend (A) and Phase 06 frontend (C) can start from the fixtures; Phase 04 CLI needs the GPU box.
+- Phase 05 (backend code) DONE offline: errors, security (HMAC), validation, store (moto), refresh, cache, API routes (/plan /sites /receipts /leaderboard /assumptions), `/explain` (template first, optional Strands agent), `template.yaml`, seed/smoke/bench scripts; ~520 handler tests incl. `test_flow.py` end to end on moto. NOT done (needs AWS account): deploy, SSM secret, `sam build --use-container`, smoke and bench against a real URL, Bedrock model access.
+- Next: Phase 06 frontend (C) can start from the fixtures and the API contract; Phase 04 CLI software parts (fake NVML) then the GPU box checks.
 - Code freeze Sun 11 Oct 11:00 IST; submit Sun 14:00 to 16:00 IST. The exact deadline time is still to be checked on the schedule page.
 
 ## Architecture
@@ -39,7 +41,13 @@ The engine is pure Python with no AWS imports; the solver decides and the AI onl
 - `src/engine/score.py` — `receipt_footprints`, `capture`, `site_score`, `badge`, `division`, `site_page_view`, `leaderboard_rows`; `explain.py` — `explain_template`
 - `src/engine/data/` — `factors.json` (57 factors, status per row), `gpus.json` (13), `cities.json` (6), `grid_shares.json`, `powercap_sweep.json`, `sample_forecast.json` (96 h × 6 cities, matched by hour of day)
 - `tests/weather_helpers.py` — synthetic weather and `request()` builder shared by engine tests; `scripts/gen_fixtures.py` — writes the three API fixtures
-- `src/handlers/` — Lambda handlers (stubs; plan 05.x); `cli/thirst/` — CLI package (stubs; plan 04.x) with its own `cli/pyproject.toml`
+- `src/handlers/api.py` — Powertools `APIGatewayHttpResolver`, all routes except `/explain`; receipt order: headers → size → signature → site → JSON → validate → plan checks → plausibility → score → transaction write; `reset_caches()`
+- `src/handlers/http.py` — `new_app(logger)` (JSON error handlers), `json_response`, `read_body`, `parse_json`, `new_id`; `errors.py` — `ApiError`, `from_engine`; `security.py` — `site_token`, `verify_signature`, `load_secret`
+- `src/handlers/validation.py` — `plan_request`, `site_request`, `receipt_request` + id regexes; `store.py` — `TABLE_SPECS`, `Tables`, `WeatherRepo/SiteRepo/PlanRepo/ReceiptRepo`, `to_ddb/from_ddb`
+- `src/handlers/refresh.py` — hourly Open-Meteo → weather table; `cache.py` — `TtlCache`; `assumptions.py` — `/assumptions` body; `explain.py` — `/explain`, `AgentContext`, `strands_tools`
+- `template.yaml` — SAM stack (4 tables, HttpApi, Api/Refresh/Explain functions, alarm); `tests/handlers/test_template.py` cross-checks it against `store.TABLE_SPECS`
+- `scripts/seed.py` — 8 `s_sim…` sites (D1×5, D2×2, D3×1) + real lab; `smoke.sh`, `bench_plan.py`; `tests/api_helpers.py` + `tests/handlers/conftest.py` — moto fixtures, signed-call client
+- `cli/thirst/` — CLI package (stubs; plan 04.x) with its own `cli/pyproject.toml`
 - `web/` — Vite React TS app (placeholder `App.tsx`, Vitest set up in `vite.config.ts`, `.env.example`)
 - `scripts/check_skeleton.py` — asserts the repo layout from plan 1.2; other `scripts/*.py` are stubs
 - `prd.md` — what: goals, personas, US1–US12, F1–F14, metrics, video plan
@@ -75,6 +83,15 @@ The engine is pure Python with no AWS imports; the solver decides and the AI onl
 - Planner perf: non-pausable candidates are built once per request; `plan()` ≈ 50 ms (100 ms under coverage). The 500-example deadline property test takes ~45 s with coverage.
 - Engine input rules (review fixes): every bad input raises `EngineError` (`invalid_field`, `slot_out_of_range`, `implausible_energy`), never a bare `ValueError`/`KeyError`. `PlanRequest`: strict types, finite numbers, aware datetimes, alpha on the 0.1 grid. Receipts: 1–72 slots, hour ≤ 48+72 slots from submit, ≤ GPUs × max power × 1.1 kWh per hour, ≥ 1 Wh run energy in total. `WeatherRow` rejects NaN and implausible values. Cached objects (`load_cities`, grid, sweep, factor sets) are read-only. `factor_version` hashes factors, grid, sweep, gpus and cities files; scored receipts carry `factor_version_mismatch`.
 - Known limit: the pausable plan only uses each slot's cheapest level, so a tight deadline that needs a faster level falls back to the non-pausable plan (note `pause_no_room`). Work above 47 h can exceed the 48-slot window when submitted mid-hour (`invalid_field` says how much fits).
+- Handlers (Phase 05): verify the HMAC over the raw bytes before parsing JSON; an unknown site and a bad signature are both 401 (no enumeration), a validly signed request for a missing site is 404. `end_ts` more than 10 min in the future is refused. Unverified receipts are stored `scored: false` and never counted.
+- Site ids are `s_` + 10 chars of `[a-z2-7]` (base32 alphabet has no 0, 1, 8, 9), plan ids `p_` + 10, job ids `j_` + 12; the plan's `s_sim000001` example is invalid, seeded ids are `s_simaaaaaaa…h` (D30).
+- DynamoDB: floats are stored as `Decimal(repr(x))`; NaN/Inf refused; the receipt sort key is `<IST end_ts>#<job_id>` and `job#<job_id>` is the duplicate guard item; the `plans` table also holds `quota#YYYY-MM-DD` counters.
+- Powertools: register exception handlers by call (`app.exception_handler(X)(fn)`), the decorator is untyped under strict mypy. Test modules cannot import each other; shared test helpers live in `tests/api_helpers.py`.
+- Validation must never leak a 503: `_number` skips `isfinite` for ints (`10**400` overflows it), `_aware` catches `OverflowError` (year 1 or 9999), `parse_json` catches `RecursionError`, receipt times are cut to whole seconds (the sort key regex has no fraction).
+- Open gaps (need AWS or later work): `sam validate --lint` never run; leaderboard still costs one Query per public site per cache miss (capped by the site limit; a precomputed per-division item is the real fix); IAM actions are unverified by moto; Bedrock model access untested.
+- Test clock: never move a test `Clock` backwards between a receipt and a board read, or later receipts look like they are in the future and are not counted.
+- Seed behaviour profiles: capture clusters at 0 or 1 because the placeholder power-cap sweep always makes 70% optimal (plan 1.7 data will spread it).
+- Sandbox: the shell refuses compound commands that cannot be verified to stay in the worktree; run plain separate commands.
 - Private sites (D26): `site_page_view` returns no receipts or monthly footprint for `public: false`; the leaderboard omits them.
 - GateGuard asks for facts on the first write/edit of each file: state callers, API, schema and the user's instruction in text, then repeat the call.
 - `create-vite` ignores `--template` when called through `npm create … -- --template` in PowerShell: use `npx create-vite@latest web --template react-ts --no-interactive`.
@@ -89,7 +106,18 @@ The engine is pure Python with no AWS imports; the solver decides and the AI onl
 - 2026-10-09 — D28: pausable plan falls back to the best non-pausable plan (note `gap_limit_fallback`) when the cheapest levels cannot finish in time, and the schedule keeps only the last run slot partial
 - 2026-10-09 — D29: `monthly_absolute` and leaderboard footprints are scalars (central set); `kwh` means GPU kWh from receipts, `facility_kwh` is the modelled facility figure
 
+- 2026-10-10 — D30: seeded demo site ids are `s_sim` + 7 letters (the plan's `s_sim000001` fails the id regex) — ids must match one validator everywhere
+- 2026-10-10 — D31: `PlanRequest.force_now` lives in the engine (not the handler) so `chosen`, `series` and savings stay consistent for `thirst run --now`
+- 2026-10-10 — D32: simulated receipts follow behaviour profiles always_now / follows_plan / water_first / co2_first / mixed (plan 5.10.b named caps-only and follows-70%, which the engine cannot express without new plan kinds)
+- 2026-10-10 — D34: abuse limits because POST /sites is open: 100 new sites per IST day, 200 receipts per site per day, leaderboard capped at 100 rows, receipts older than 30 days refused, anonymous plans kept 2 h (site plans 14 d); counters live in the `plans` table as `quota#<scope>#<day>`
+- 2026-10-10 — D35: the real lab is found by the `seed_owner = real_lab` attribute, never by name; `simulated` and `seed_owner` cannot be set through the API
+- 2026-10-10 — D36: ApiFn gets least-privilege DynamoDB actions (no delete, weather read-only); alarms cover Lambda Errors, API Gateway 5xx (the handler answers 503 itself, so Errors stays 0) and RefreshFailed
+- 2026-10-10 — D33: `/explain` accepts an agent answer only if every number in it appears in the plan facts and it uses no spelled-out big number or "percent"; otherwise the template is returned (`note: agent_rejected`)
+
 ## Changelog
+- 2026-10-10 | Phase 05 ops: seed, smoke, bench, e2e flow tests | scripts/seed.py, scripts/smoke.sh, scripts/bench_plan.py, tests/handlers/test_seed.py, test_ops_scripts.py, test_flow.py | seed never touches non-simulated data; scripts tested against a local stub API
+- 2026-10-10 | Phase 05 handlers: refresh, cache, routes, explain, SAM template | src/handlers/*, template.yaml, layers/strands/requirements.txt, src/engine/planner.py (force_now), tests/handlers/*, tests/fixtures/*.json | signature before JSON; template cross-checked with store.TABLE_SPECS; strands-agents pinned 1.59.0
+- 2026-10-09 | Phase 05 foundations: errors, security, validation, store | src/handlers/{errors,security,validation,store}.py, scripts/gen_hmac_vectors.py, tests/vectors/hmac.json | HMAC vectors match plan 08 §6
 - 2026-10-09 | Phase 02 engine | src/engine/*.py, src/engine/data/*.json, scripts/gen_fixtures.py, scripts/check_skeleton.py, tests/engine/*, tests/weather_helpers.py, tests/fixtures/*, pyproject.toml | tests first; Best = J-optimal solve (D27); placeholder data flagged in factors.json
 - 2026-10-09 | Phase 01 foundations (local part) | LICENSE, .gitignore, .editorconfig, .gitattributes, Makefile, pyproject.toml, cli/pyproject.toml, .github/workflows/ci.yml, src/**, cli/**, scripts/check_skeleton.py, web/**, tests/test_smoke.py, README.md, docs/FIXLIST.md | stubs-only skeleton checked by script; Idea_1.md→Idea.md (D1); engine kept free of AWS imports by test
 - 2026-10-09 | Detailed implementation plan | AGENTS.md, docs/implementation-plan/* | phase files + contracts; ECC architect/planner review folded in

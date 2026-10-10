@@ -170,6 +170,35 @@ def test_the_real_lab_is_created_once_with_a_printed_token(
     assert "token" not in stored and out["token"] not in json.dumps(stored)
 
 
+def test_a_stranger_cannot_take_over_the_real_lab_by_using_its_name(
+    tables: store.Tables, client: api_helpers.Client
+) -> None:
+    """POST /sites is open, so the real lab is found by a marker the API cannot write."""
+    squatter = client.call("POST", "/sites", {"name": "Test Lab", "city": "Pune",
+                                              "cooling": "room_ac", "gpu_count": 4}).json
+    secret = security.load_secret()
+    lab = seed.ensure_real_lab(tables, api_helpers.NOW, secret, name="Test Lab", city="Chennai",
+                               cooling="room_ac", gpu_count=2)
+    assert lab["created"] and lab["site_id"] != squatter["site_id"]
+    assert lab["token"] != squatter["token"]
+    again = seed.ensure_real_lab(tables, api_helpers.NOW, secret, name="Test Lab", city="Chennai",
+                                 cooling="room_ac", gpu_count=2)
+    assert not again["created"] and again["site_id"] == lab["site_id"]
+
+
+def test_the_marker_cannot_be_set_through_the_api_or_read_from_a_site_page(
+    client: api_helpers.Client,
+) -> None:
+    sneaky = client.call("POST", "/sites", {"name": "Sneaky Lab", "city": "Pune",
+                                            "cooling": "room_ac", "gpu_count": 4,
+                                            "seed_owner": "real_lab", "simulated": True}).json
+    stored = store.SiteRepo(client.tables.sites).get(sneaky["site_id"])
+    assert stored is not None
+    assert "seed_owner" not in stored and stored["simulated"] is False
+    page = client.call("GET", f"/sites/{sneaky['site_id']}").json
+    assert "seed_owner" not in json.dumps(page)
+
+
 # safety --------------------------------------------------------------------------------------
 
 

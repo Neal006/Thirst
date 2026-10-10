@@ -224,3 +224,34 @@ def test_the_clock_decides_the_window(client: Client) -> None:
     data = plan(client, deadline=(api_helpers.NOW + timedelta(hours=14)).isoformat()).json
     assert data["submit_ts"] == (api_helpers.NOW + timedelta(hours=1)).isoformat()
     assert data["series"][0]["slot"].startswith("2026-10-09T22:00")
+
+
+def test_deeply_nested_json_is_a_400_not_a_crash(client: Client) -> None:
+    reply = client.call("POST", "/plan", raw=b"[" * 5000)
+    assert reply.status == 400 and reply.json["error"] == "invalid_field"
+
+
+def test_a_huge_integer_field_is_a_400(client: Client) -> None:
+    raw = b'{"gpu_count": 1' + b"0" * 400 + b"}"
+    assert client.call("POST", "/plan", raw=raw).status == 400
+
+
+def test_a_deadline_at_the_edge_of_the_calendar_is_a_400(client: Client) -> None:
+    reply = plan(client, deadline="9999-12-31T23:59:59-05:00")
+    assert reply.status == 400 and reply.json["error"] == "invalid_field"
+
+
+def test_an_anonymous_plan_is_kept_two_hours_and_a_site_plan_fourteen_days(
+    client: Client,
+) -> None:
+    lab = {"name": "TTL Lab", "city": "Chennai", "cooling": "room_ac", "gpu_count": 2}
+    site = client.call("POST", "/sites", lab).json
+    anonymous = plan(client).json["plan_id"]
+    linked = plan(client, site_id=site["site_id"]).json["plan_id"]
+    ttl = {
+        pid: int(client.tables.plans.get_item(Key={"plan_id": pid})["Item"]["ttl"])
+        for pid in (anonymous, linked)
+    }
+    start = int(api_helpers.NOW.timestamp())
+    assert ttl[anonymous] - start < 3 * 3600
+    assert ttl[linked] - start > 13 * 86400

@@ -55,7 +55,7 @@ def _reject_constant(name: str) -> Any:
 def parse_json(raw: bytes) -> Any:
     try:
         return json.loads(raw.decode("utf-8"), parse_constant=_reject_constant)
-    except ValueError:
+    except (ValueError, RecursionError):  # deeply nested arrays raise RecursionError
         raise ApiError(400, "invalid_field", "body: send valid JSON.") from None
 
 

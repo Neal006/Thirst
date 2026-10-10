@@ -33,6 +33,7 @@ from engine.units import IST, floor_hour  # noqa: E402
 from handlers import http, security, store, validation  # noqa: E402
 
 SIM_PREFIX = "s_sim"
+REAL_LAB_MARKER = "real_lab"  # site attribute written only by this script
 HISTORY_DAYS = 28
 MIN_HISTORY_HOURS = 60  # the newest job must be over (the planning window is 48 h)
 DEFAULT_REAL_LAB = ("Thirst Lab", "Chennai", "room_ac", 2)  # name, city, cooling, GPUs
@@ -274,7 +275,8 @@ def ensure_real_lab(
     """The team's own site (not simulated). Created once; the token can be shown again."""
     repo = store.SiteRepo(tables.sites)
     for site in repo.scan_all():
-        if not site.get("simulated") and site.get("name") == name:
+        # Found by a marker only this script writes: POST /sites is open, so a name proves nothing.
+        if site.get("seed_owner") == REAL_LAB_MARKER and site.get("name") == name:
             token = security.site_token(secret, site["site_id"])
             return {"site_id": site["site_id"], "created": False, "token": token}
     site_id = http.new_id("s_")
@@ -290,6 +292,7 @@ def ensure_real_lab(
             "coverage_declared": 0.0,
             "public": True,
             "simulated": False,
+            "seed_owner": REAL_LAB_MARKER,
             "created_at": now.isoformat(),
         }
     )

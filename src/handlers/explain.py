@@ -56,8 +56,16 @@ logger = Logger(service="thirst")
 app = http.new_app(logger)
 
 _FORBIDDEN = frozenset({"Cc", "Cf", "Cs", "Co", "Cn"})
-_PERCENT = re.compile(r"(\d+(?:\.\d+)?)\s*%")
 _NUMBER = re.compile(r"\d+(?:\.\d+)?")
+_CO2 = re.compile(r"CO[2₂]")  # a chemical formula, not a figure
+# Words that carry a figure without digits ("ninety percent"). Small counts such as "one" are fine.
+_NUMBER_WORDS = re.compile(
+    r"\b(?:eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|"
+    r"thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|percent|per\s+cent)\b",
+    re.IGNORECASE,
+)
+CONNECT_TIMEOUT_S = 3
+READ_TIMEOUT_S = 15
 
 
 def _now() -> datetime:
@@ -120,7 +128,7 @@ def _tool_plan(
             }
         )
         summary = _summary(result)
-        seen.append(str(summary["savings_ranges"]))
+        seen.append(str(summary))  # every figure the tool returned may be quoted
         return summary
 
     return make_plan
@@ -179,13 +187,20 @@ def strands_tools(ctx: AgentContext) -> list[Any]:
 
 
 def _strands_runner(ctx: AgentContext) -> str:
+    from botocore.config import Config
     from strands import Agent
     from strands.models import BedrockModel
 
+    # A thread cannot be killed after the 20 s backstop, so the call must give up by itself.
     model = BedrockModel(
         model_id=os.environ["BEDROCK_MODEL_ID"],
         region_name=os.environ.get("BEDROCK_REGION") or None,
         max_tokens=MAX_OUTPUT_TOKENS,
+        boto_client_config=Config(
+            connect_timeout=CONNECT_TIMEOUT_S,
+            read_timeout=READ_TIMEOUT_S,
+            retries={"max_attempts": 1},
+        ),
     )
     agent = Agent(
         model=model,
@@ -210,10 +225,23 @@ def _plain(text: str) -> str:
     return " ".join(kept.split())[:MAX_EXPLANATION]
 
 
+def _numbers(text: str) -> set[float]:
+    return {float(n) for n in _NUMBER.findall(_CO2.sub("", text))}
+
+
 def _invents_numbers(answer: str, *facts: str) -> bool:
-    """True if the answer states a percentage that appears nowhere in the facts."""
-    allowed = {float(n) for fact in facts for n in _NUMBER.findall(fact)}
-    return any(float(value) not in allowed for value in _PERCENT.findall(answer))
+    """True if the answer states a number that is not in the facts, or spells a big one out.
+
+    Every digit run in the answer must also occur in the plan facts the model was given, so it
+    can repeat a figure but not make one up. Words like "ninety" and "percent" are refused
+    outright because they would slip past a digit check.
+    """
+    if _NUMBER_WORDS.search(answer):
+        return True
+    allowed: set[float] = set()
+    for fact in facts:
+        allowed |= _numbers(fact)
+    return not _numbers(answer) <= allowed
 
 
 def plan_view(record: Mapping[str, Any]) -> dict[str, Any]:
@@ -276,7 +304,7 @@ def post_explain() -> Response[str]:
     plans = store.PlanRepo(tables.plans)
     template, facts, prompt = FORM_HINT, "", text or ""
     if plan_id is not None:
-        record = plans.get(plan_id)
+        record = plans.get(plan_id, now)
         if record is None:
             raise ApiError(404, "plan_not_found", "We couldn't find that plan.")
         template = facts = explain_template(plan_view(record))

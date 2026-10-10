@@ -11,6 +11,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test": "vitest",
+    "fixtures": "node scripts/copy-fixtures.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

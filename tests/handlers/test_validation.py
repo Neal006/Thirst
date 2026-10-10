@@ -419,3 +419,41 @@ def test_unverified_receipts_may_have_no_plan() -> None:
 
 def test_duplicate_slot_hours_are_rejected() -> None:
     assert code_of(lambda: receipt(slots=[slot_with(), slot_with()]))[0] == 400
+
+
+# inputs that used to escape as a 503 (review fixes) -------------------------------------------
+
+
+@pytest.mark.parametrize("value", [10**400, -(10**400)])
+def test_a_huge_integer_is_a_400_not_an_overflow(value: int) -> None:
+    assert code_of(lambda: validation._number(value, "work_hours", 0, 48)) == (
+        400,
+        "invalid_field",
+    )
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["9999-12-31T23:59:59-05:00", "0001-01-01T00:00:00+05:30", "0001-01-01T00:00:00+14:00"],
+)
+def test_a_time_at_the_edge_of_the_calendar_is_a_400(value: str) -> None:
+    assert code_of(lambda: validation._aware(value, "deadline")) == (400, "invalid_field")
+
+
+def test_fractional_seconds_are_cut_from_receipt_times() -> None:
+    r = receipt(start_ts="2026-10-10T01:10:00.25+05:30", end_ts="2026-10-10T03:20:00.5+05:30")
+    assert r.canonical_start == "2026-10-10T01:10:00+05:30"
+    assert r.canonical_end == "2026-10-10T03:20:00+05:30"
+
+
+def test_a_slot_that_starts_at_the_end_time_is_refused() -> None:
+    slots = [
+        slot_with(hour="2026-10-10T01:00:00+05:30"),
+        slot_with(hour="2026-10-10T03:00:00+05:30"),
+    ]
+    assert code_of(lambda: receipt(end_ts="2026-10-10T03:00:00+05:30", slots=slots)) == (
+        422,
+        "slot_out_of_range",
+    )
+    ok = [slot_with(hour="2026-10-10T01:00:00+05:30"), slot_with(hour="2026-10-10T02:00:00+05:30")]
+    assert len(receipt(end_ts="2026-10-10T03:00:00+05:30", slots=ok).slots) == 2

@@ -109,9 +109,11 @@ def test_smoke_sends_a_plan_request_the_api_accepts(api: tuple[Stub, str]) -> No
     parsed = json.loads(body)
     from datetime import datetime, timedelta, timezone
 
-    now = datetime(2026, 1, 1, tzinfo=timezone(timedelta(hours=5, minutes=30)))
-    inp = validation.plan_request(parsed, datetime.now(now.tzinfo))
-    assert inp.deadline > datetime.now(now.tzinfo)  # a future deadline, in IST
+    ist = timezone(timedelta(hours=5, minutes=30))
+    inp = validation.plan_request(parsed, datetime.now(ist))  # raises if it is not acceptable
+    assert parsed["deadline"].endswith("+05:30")  # written in IST, whatever the machine's zone
+    hours_ahead = (inp.deadline - datetime.now(ist)).total_seconds() / 3600
+    assert 29 < hours_ahead < 31  # about 30 hours from now
 
 
 @needs_shell

@@ -346,13 +346,34 @@ def test_plan_items_are_small_and_compressed(
     assert item_size(item) < 100_000  # the hard DynamoDB limit is 400 KB
 
 
-def test_plan_ttl_is_submit_plus_fourteen_days(
+def test_a_plan_linked_to_a_site_lives_fourteen_days(
     tables: store.Tables, engine_plan: dict[str, Any]
 ) -> None:
-    PlanRepo(tables.plans).put(engine_plan, site_id=None)
+    PlanRepo(tables.plans).put(engine_plan, site_id="s_abcdefghij")
     item = tables.plans.get_item(Key={"plan_id": "p_abcdefghij"})["Item"]
     submit = ist(2026, 10, 9, 21, 14)
     assert int(item["ttl"]) == int((submit + timedelta(days=14)).timestamp())
+
+
+def test_an_anonymous_plan_lives_two_hours(
+    tables: store.Tables, engine_plan: dict[str, Any]
+) -> None:
+    """Nobody can send a receipt for it, so it only has to outlive the page that asked."""
+    PlanRepo(tables.plans).put(engine_plan, site_id=None)
+    item = tables.plans.get_item(Key={"plan_id": "p_abcdefghij"})["Item"]
+    submit = ist(2026, 10, 9, 21, 14)
+    assert int(item["ttl"]) == int((submit + timedelta(hours=2)).timestamp())
+
+
+def test_an_expired_plan_is_not_returned_even_before_dynamodb_deletes_it(
+    tables: store.Tables, engine_plan: dict[str, Any]
+) -> None:
+    repo = PlanRepo(tables.plans)
+    repo.put(engine_plan, site_id=None)
+    submit = ist(2026, 10, 9, 21, 14)
+    assert repo.get("p_abcdefghij", now=submit + timedelta(hours=1, minutes=59)) is not None
+    assert repo.get("p_abcdefghij", now=submit + timedelta(hours=2, minutes=1)) is None
+    assert repo.get("p_abcdefghij") is not None  # without a clock the caller decides
 
 
 def test_missing_plan_is_none(tables: store.Tables) -> None:
@@ -374,6 +395,20 @@ def test_quota_counts_up_to_the_limit_then_refuses(tables: store.Tables) -> None
     item = tables.plans.get_item(Key={"plan_id": "quota#2026-10-10"})["Item"]
     assert int(item["n"]) == 3
     assert int(item["ttl"]) > int(day.timestamp())
+
+
+def test_scoped_quotas_are_separate_counters(tables: store.Tables) -> None:
+    repo = PlanRepo(tables.plans)
+    day = ist(2026, 10, 10, 12, 0)
+    assert [repo.bump_quota(day, 1, scope="sites") for _ in range(2)] == [True, False]
+    assert repo.bump_quota(day, 1, scope="receipts#s_abcdefghij") is True
+    assert repo.bump_quota(day, 1) is True  # the /explain counter is untouched
+    keys = {i["plan_id"] for i in tables.plans.scan()["Items"]}
+    assert keys == {
+        "quota#sites#2026-10-10",
+        "quota#receipts#s_abcdefghij#2026-10-10",
+        "quota#2026-10-10",
+    }
 
 
 # receipts ------------------------------------------------------------------------------------

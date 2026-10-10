@@ -234,6 +234,18 @@ The web form fills its GPU and city lists from this response (06.2.a).
 Request: `{ "text": "≤ 500 chars" }` or `{ "plan_id": "p_…" }`.
 Response: `{ "form": {…} | null, "explanation": "3 sentences", "source": "agent" | "template", "note": "daily_limit" | null }`.
 
+### 3.8 As built (Phase 05; where the code is more exact than the text above)
+
+- **Ids.** Site ids are `s_` + 10 characters of `[a-z2-7]`, plan ids `p_` + 10, job ids `j_` + 12. The base32 alphabet has no `0`, `1`, `8` or `9`, so the example `s_sim000001` in 05.10 is not a valid id: seeded demo sites are `s_simaaaaaaa` … `s_simaaaaaah` (D30).
+- **`POST /plan`** also returns `plan_id` (server-made), `forecast_age_hours` (whole hours since the forecast was issued, `null` when the table holds no forecast) and never returns `forecast_snapshot`. `inputs` echoes `force_now`. With `force_now: true`, `chosen` is the Base entry plus a `start_now_forced` note, and `series` and `savings_ranges` follow it (D31).
+- **`POST /receipts` check order** (so that nothing is learned without the token): required headers → body size → signature over the raw bytes → site lookup (404) → JSON and field validation → `site_id` equals the header → `end_ts` not more than 10 min in the future → plan exists (404), belongs to the site (403), starts no earlier than the plan's first hour (422) → plausibility (422) → scoring → one transaction writing the `job#<job_id>` guard and the receipt (409 on a duplicate). A bad signature for an unknown site is the same 401 as for a known one. Receipts with `method: unverified` are stored with `scored: false` and never counted.
+- **`POST /sites`**: `coverage_declared` defaults to 0 and `public` to true; `org` is optional.
+- **`POST /explain`** also returns `note` values `agent_disabled` (no model configured and the request was free text, so `form` is null), `agent_failed`, `agent_rejected` (the agent stated a percentage that is not in the plan) and `daily_limit` (300 agent calls per IST day; template requests never use the quota). Free text is capped at 500 characters (400 `text_too_long`); the model's tool arguments go through the same validation as `POST /plan` (D33). `agent_rejected` also covers any number that is not in the plan facts and words such as "ninety" or "percent".
+- **`chosen` and `force_now`.** `chosen` equals `pareto[round(alpha*10)]` except when `force_now` is true, where it is the Base entry (see above).
+- **Limits (D34).** 429 `rate_limited` when more than 100 sites are created in an IST day, or a site posts more than 200 receipts in an IST day. `POST /receipts` answers 400 `invalid_field` when `end_ts` is more than 30 days old. `GET /leaderboard` returns at most 100 rows. Plans made without `site_id` are stored for 2 hours (not 14 days); a plan past its ttl is `plan_not_found`.
+- **Times.** Receipt `start_ts` and `end_ts` are cut to whole seconds; a slot whose hour starts at or after `end_ts` is `slot_out_of_range`. Out-of-range dates and huge numbers are 400 `invalid_field`.
+- **Caches.** Site pages and leaderboards are cached 20 s per warm Lambda instance and invalidated on every receipt write. `Cache-Control` is `no-store` on every response except `GET /assumptions`, which is `max-age=300`.
+
 ---
 
 ## 4. Error codes

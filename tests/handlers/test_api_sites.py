@@ -199,3 +199,23 @@ def test_dates_are_never_in_the_future_of_the_clock(client: Client) -> None:
         stored_receipt(sid, "j_aaaaaaaaaaaa", (api_helpers.NOW + timedelta(hours=3)).isoformat())
     )
     assert client.call("GET", f"/sites/{sid}").json["recent_receipts"] == []
+
+
+def test_new_sites_are_limited_per_day(client: Client, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Anyone can register a site, so the number made per IST day is capped (finding: spam)."""
+    monkeypatch.setattr(api, "MAX_SITES_PER_DAY", 2)
+    assert [create(client, name=f"Lab {n}").status for n in range(3)] == [201, 201, 429]
+    refused = create(client, name="Lab refused")
+    assert refused.json["error"] == "rate_limited" and "tomorrow" in refused.json["message"]
+    names = [s["name"] for s in store.SiteRepo(client.tables.sites).scan_all()]
+    assert sorted(names) == ["Lab 0", "Lab 1"]  # refused sites are never stored
+    client.clock.advance(days=1)
+    assert create(client, name="Lab next day").status == 201
+
+
+def test_a_refused_request_does_not_use_up_the_site_quota(
+    client: Client, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(api, "MAX_SITES_PER_DAY", 1)
+    assert create(client, name="").status == 400  # invalid: not counted
+    assert create(client, name="Lab one").status == 201

@@ -209,8 +209,8 @@ def test_the_assumptions_page_lists_every_factor_with_its_status(client: Client)
     data = client.call("GET", "/assumptions").json
     assert len(data["factors"]) >= 50 and data["version"]
     assert {f["status"] for f in data["factors"]} <= {
-        "measured", "modelled", "placeholder", "sourced", "calibrated", "assumed", "derived",
-    } | {f["status"] for f in data["factors"]}
+        "measured", "placeholder", "sourced", "calibrated", "design_choice",
+    }
     assert any(f["status"] == "placeholder" for f in data["factors"])  # nothing is hidden
 
 
@@ -223,4 +223,5 @@ def test_stale_weather_still_gives_a_plan_with_an_honest_tag(
                                           "deadline": "2026-10-13T20:00:00+05:30"})
     assert reply.status == 200, reply.text
     assert reply.json["tags"]["forecast"] == "cached"
-    assert reply.json["forecast_age_hours"] is None or reply.json["forecast_age_hours"] >= 48
+    assert reply.json["forecast_age_hours"] is None  # no forecast row is left for this window
+    assert "forecast_cached" in reply.json["notes"]

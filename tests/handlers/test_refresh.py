@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import http.client
 import io
 import json
 import logging
@@ -338,3 +339,24 @@ def test_the_handler_succeeds_even_when_open_meteo_is_down(
     monkeypatch.setattr(refresh, "_now", lambda: NOW)
     out = refresh.handler({}, None)  # no exception: the schedule must not retry-hammer the API
     assert out["status"] == "failed" and out["rows"] == 0
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        http.client.IncompleteRead(b"par", 100),  # a body cut short mid-transfer
+        http.client.RemoteDisconnected("closed"),
+        TimeoutError("slow"),
+        json.JSONDecodeError("bad", "x", 0),
+    ],
+)
+def test_a_broken_download_is_a_failed_refresh_not_a_crash(
+    tables: store.Tables, monkeypatch: pytest.MonkeyPatch, error: Exception
+) -> None:
+    def broken(*a: Any, **k: Any) -> Any:
+        raise error
+
+    monkeypatch.setattr(refresh, "fetch_open_meteo", broken)
+    monkeypatch.setattr(refresh, "_now", lambda: NOW)
+    assert refresh.handler({}, None)["status"] == "failed"
+    assert all_items(tables) == []

@@ -9,6 +9,7 @@ and the function still succeeds, so the schedule does not hammer a failing API.
 
 from __future__ import annotations
 
+import http.client
 import json
 import urllib.request
 from collections.abc import Callable, Mapping, Sequence
@@ -165,7 +166,7 @@ def run(
     cities = load_cities()
     try:
         by_city, skipped = parse_payload(fetch(), cities)
-    except (OSError, ValueError) as err:
+    except (OSError, ValueError, http.client.HTTPException) as err:  # incl. a body cut short
         log.warning(f"refresh_failed cities={','.join(cities)} reason={type(err).__name__}: {err}")
         return RefreshResult("failed", 0, 0, 0)
     started = now.replace(minute=0, second=0, microsecond=0)

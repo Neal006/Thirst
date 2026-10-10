@@ -153,6 +153,25 @@ def policy_text(template: dict[str, Any], fn: str) -> str:
     return str(template["Resources"][fn]["Properties"]["Policies"])
 
 
+def dynamo_grants(template: dict[str, Any], fn: str) -> dict[str, set[str]]:
+    """Table logical id -> the DynamoDB actions the function may use on it."""
+    grants: dict[str, set[str]] = {}
+    for policy in template["Resources"][fn]["Properties"]["Policies"]:
+        if not isinstance(policy, dict):
+            continue
+        for name in ("DynamoDBReadPolicy", "DynamoDBCrudPolicy"):
+            if name in policy:
+                table = policy[name]["TableName"]["Ref"]
+                grants.setdefault(table, set()).add(name)
+        for statement in policy.get("Statement", []):
+            actions = statement["Action"]
+            actions = [actions] if isinstance(actions, str) else actions
+            if any(a.startswith("dynamodb:") for a in actions):
+                (table,) = [r["Fn::GetAtt"][0] for r in statement["Resource"]]
+                grants.setdefault(table, set()).update(actions)
+    return grants
+
+
 def test_each_function_gets_only_the_tables_it_needs(template: dict[str, Any]) -> None:
     refresh = policy_text(template, "RefreshFn")
     assert "WeatherTbl" in refresh
@@ -162,6 +181,23 @@ def test_each_function_gets_only_the_tables_it_needs(template: dict[str, Any]) -
     for table in ("WeatherTbl", "SitesTbl", "PlansTbl", "ReceiptsTbl"):
         assert table in api
     assert "bedrock" not in api.lower()  # only the explain function may call the model
+
+
+def test_the_api_cannot_delete_data_or_write_the_weather(template: dict[str, Any]) -> None:
+    """Only scripts/seed.py deletes; a bug or a bad dependency in the API must not be able to."""
+    grants = dynamo_grants(template, "ApiFn")
+    assert grants["WeatherTbl"] == {"DynamoDBReadPolicy"}
+    assert "dynamodb:DeleteItem" not in str(grants) and "DynamoDBCrudPolicy" not in str(grants)
+    assert grants["SitesTbl"] == {"dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Scan"}
+    assert grants["PlansTbl"] == {"dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem"}
+    assert grants["ReceiptsTbl"] == {"dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query"}
+
+
+def test_explain_can_only_read_plans_and_count_its_quota(template: dict[str, Any]) -> None:
+    grants = dynamo_grants(template, "ExplainFn")
+    assert grants["PlansTbl"] == {"dynamodb:GetItem", "dynamodb:UpdateItem"}
+    assert grants["WeatherTbl"] == {"DynamoDBReadPolicy"}
+    assert "DynamoDBCrudPolicy" not in str(grants)
 
 
 def test_iam_has_no_wildcards_except_the_scoped_kms_grant(template: dict[str, Any]) -> None:
@@ -196,12 +232,41 @@ def test_log_groups_keep_seven_days(template: dict[str, Any]) -> None:
     assert all(g["Properties"]["RetentionInDays"] == 7 for g in groups.values())
 
 
+def alarm(template: dict[str, Any], name: str) -> dict[str, Any]:
+    return template["Resources"][name]["Properties"]  # type: ignore[no-any-return]
+
+
 def test_an_alarm_watches_api_errors(template: dict[str, Any]) -> None:
-    (alarm,) = resources(template, "AWS::CloudWatch::Alarm").values()
-    p = alarm["Properties"]
+    p = alarm(template, "ApiErrorsAlarm")
     assert p["MetricName"] == "Errors" and p["Namespace"] == "AWS/Lambda"
     assert p["Threshold"] == 5 and p["Period"] == 300 and p["EvaluationPeriods"] == 1
     assert p["AlarmActions"]
+
+
+def test_a_5xx_alarm_fires_even_though_the_handler_catches_its_errors(
+    template: dict[str, Any],
+) -> None:
+    """The Lambda 'Errors' metric stays 0 when the code answers 503 itself, so watch the API."""
+    p = alarm(template, "Api5xxAlarm")
+    assert p["Namespace"] == "AWS/ApiGateway" and p["MetricName"] == "5xx"
+    assert p["Dimensions"] == [{"Name": "ApiId", "Value": {"Ref": "HttpApi"}}]
+    assert p["Statistic"] == "Sum" and p["Threshold"] == 5 and p["Period"] == 300
+    assert p["ComparisonOperator"] == "GreaterThanOrEqualToThreshold"
+    assert p["AlarmActions"] == [{"Ref": "AlarmTopic"}]
+
+
+def test_a_stuck_weather_refresh_raises_an_alarm(template: dict[str, Any]) -> None:
+    p = alarm(template, "RefreshFailedAlarm")
+    assert p["Namespace"] == "Thirst" and p["MetricName"] == "RefreshFailed"
+    assert p["Dimensions"] == [{"Name": "service", "Value": "thirst"}]
+    assert p["Statistic"] == "Sum" and p["Threshold"] == 1
+    assert p["EvaluationPeriods"] == 2 and p["DatapointsToAlarm"] == 2  # not one blip
+    assert p["TreatMissingData"] == "breaching"  # no data at all means it did not even run
+    assert p["AlarmActions"] == [{"Ref": "AlarmTopic"}]
+
+
+def test_there_are_exactly_three_alarms(template: dict[str, Any]) -> None:
+    assert len(resources(template, "AWS::CloudWatch::Alarm")) == 3
 
 
 def test_nothing_on_the_never_create_list(template: dict[str, Any]) -> None:

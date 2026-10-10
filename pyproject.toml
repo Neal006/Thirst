@@ -23,6 +23,8 @@ dev = [
   "moto[dynamodb,ssm]>=5",
   "aws-lambda-powertools",
   "freezegun",
+  "pyyaml",  # tests/handlers/test_template.py reads template.yaml
+  "strands-agents==1.59.0",  # same pin as layers/strands/requirements.txt; /explain wiring test
 ]
 
 [tool.setuptools.packages.find]

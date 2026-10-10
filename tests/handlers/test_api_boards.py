@@ -214,3 +214,18 @@ def test_assumptions_is_valid_json_without_nan(client: Client) -> None:
 def test_assumptions_marks_placeholder_sweeps_until_measured(client: Client) -> None:
     gpus = client.call("GET", "/assumptions").json["gpus"]
     assert {g["sweep_status"] for g in gpus} == {"placeholder"}  # no GPU box measured yet
+
+
+def test_the_board_returns_at_most_the_configured_number_of_rows(
+    client: Client, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from handlers import api
+
+    monkeypatch.setattr(api, "LEADERBOARD_MAX_ROWS", 2)
+    for letter, capture in (("a", 0.2), ("b", 0.9), ("c", 0.5)):
+        site = f"s_demo{letter * 6}"
+        add_site(client, site, f"Lab {letter}")
+        add_receipt(client, site, "j_aaaaaaaaaaaa", capture)
+    rows = board(client).json["rows"]
+    assert [r["name"] for r in rows] == ["Lab b", "Lab c"]  # the best two, in rank order
+    assert [r["rank"] for r in rows] == [1, 2]

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import time
 from typing import Any
 
@@ -117,11 +118,12 @@ def test_the_form_is_extracted_through_the_validated_tool(
 ) -> None:
     def recorded(ctx: explain.AgentContext) -> str:
         # what the model does with the sentence: it calls make_plan with these arguments
-        ctx.make_plan(
+        result = ctx.make_plan(
             city="Chennai", cooling="room_ac", gpu_model="RTX-4090", gpu_count=2, work_hours=6,
             deadline_iso="2026-10-10T09:00:00+05:30", pausable=True, alpha=0.5,
         )
-        return "Start at 01:00 with the GPUs capped. Water and CO2 are modelled."
+        start = result["start"][11:16]  # the model quotes the time the tool gave it
+        return f"Start at {start} with the GPUs capped. Water and CO2 are modelled."
 
     agent(monkeypatch, recorded)
     data = ask(ex, {"text": SENTENCE}).json
@@ -131,7 +133,7 @@ def test_the_form_is_extracted_through_the_validated_tool(
         "work_hours": 6.0, "deadline": "2026-10-10T09:00:00+05:30", "pausable": True,
         "alpha": 0.5,
     }
-    assert data["explanation"].startswith("Start at 01:00")
+    assert re.match(r"Start at \d\d:\d\d with the GPUs capped", data["explanation"])
 
 
 def test_the_tool_returns_only_engine_numbers_to_the_model(
@@ -190,7 +192,7 @@ def test_tool_arguments_from_the_model_go_through_the_api_validation(
 def test_agent_text_is_plain_capped_and_stripped(
     ex: Client, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    nasty = "<script>alert(1)</script>\x00\x1b[31m" + "word " * 1000
+    nasty = "<script>alert('x')</script>\x00\x1b[mWater is modelled. " + "word " * 1000
     agent(monkeypatch, lambda ctx: nasty)
     text = ask(ex, {"text": SENTENCE}).json["explanation"]
     assert len(text) <= explain.MAX_EXPLANATION
@@ -207,6 +209,38 @@ def test_an_agent_that_invents_numbers_is_replaced_by_the_template(
     data = ask(ex, {"plan_id": plan["plan_id"]}).json
     assert data["source"] == "template" and data["note"] == "agent_rejected"
     assert data["explanation"] == explain_template(plan)
+
+
+@pytest.mark.parametrize(
+    "invented",
+    [
+        "This job saves 90 percent of your water.",
+        "This job saves 90 per cent of your water.",
+        "This job saves ninety percent of your water.",
+        "You will save 5000 litres of water, modelled.",
+        "It saves about a hundred litres. Modelled.",
+        "Water use falls by 97 %, modelled.",
+        "Saves 12.5 kg of CO2, modelled.",
+    ],
+)
+def test_any_number_the_plan_does_not_contain_is_refused_not_just_percentages(
+    ex: Client, monkeypatch: pytest.MonkeyPatch, invented: str
+) -> None:
+    plan = make_plan(ex)
+    agent(monkeypatch, lambda ctx: invented)
+    data = ask(ex, {"plan_id": plan["plan_id"]}).json
+    assert data["source"] == "template" and data["note"] == "agent_rejected"
+
+
+def test_the_checker_allows_co2_and_numbers_taken_from_the_plan(
+    ex: Client, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    plan = make_plan(ex)
+    low, high = plan["chosen"]["savings_ranges"]["co2_pct"]
+    text = f"CO2 falls between {low} and {high}%. Everything here is modelled."
+    agent(monkeypatch, lambda ctx: text)
+    data = ask(ex, {"plan_id": plan["plan_id"]}).json
+    assert data["source"] == "agent" and "CO2" in data["explanation"]
 
 
 def test_an_agent_that_quotes_the_plans_numbers_is_accepted(
@@ -298,8 +332,10 @@ def test_the_daily_limit_switches_to_the_template(
     agent(monkeypatch, counting)
     notes = [ask(ex, {"plan_id": plan["plan_id"]}).json["note"] for _ in range(4)]
     assert notes == [None, None, "daily_limit", "daily_limit"] and len(calls) == 2
-    ex.clock.advance(days=1)  # a new day starts again
-    assert ask(ex, {"plan_id": plan["plan_id"]}).json["note"] is None
+    ex.clock.advance(days=1)  # a new day starts again (and the old anonymous plan has expired)
+    assert ask(ex, {"plan_id": plan["plan_id"]}).json["error"] == "plan_not_found"
+    fresh = make_plan(ex, deadline="2026-10-11T09:00:00+05:30")
+    assert ask(ex, {"plan_id": fresh["plan_id"]}).json["note"] is None
 
 
 def test_the_limit_is_300_a_day() -> None:
@@ -318,7 +354,6 @@ def test_template_requests_do_not_use_up_the_quota(ex: Client) -> None:
 
 
 def test_the_strands_tools_have_valid_specs_and_use_the_same_validation(ex: Client) -> None:
-    pytest.importorskip("strands")
     forms: list[dict[str, Any]] = []
 
     def fake_make_plan(**kw: Any) -> dict[str, Any]:
@@ -337,6 +372,40 @@ def test_the_strands_tools_have_valid_specs_and_use_the_same_validation(ex: Clie
         deadline_iso="2026-10-10T09:00:00+05:30", pausable=True,
     ) == {"ok": True}
     assert forms[0]["alpha"] == 0.5  # the default is applied before reaching our function
+
+
+def test_the_bedrock_client_has_its_own_network_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A thread cannot be killed, so the model call must give up on its own."""
+    import strands
+    import strands.models
+
+    seen: dict[str, Any] = {}
+
+    class FakeModel:
+        def __init__(self, **kwargs: Any) -> None:
+            seen["model"] = kwargs
+
+    class FakeAgent:
+        def __init__(self, **kwargs: Any) -> None:
+            seen["agent"] = kwargs
+
+        def __call__(self, prompt: str) -> str:
+            return "ok"
+
+    monkeypatch.setattr(strands.models, "BedrockModel", FakeModel)
+    monkeypatch.setattr(strands, "Agent", FakeAgent)
+    monkeypatch.setenv("BEDROCK_MODEL_ID", "test-model")
+    monkeypatch.setenv("BEDROCK_REGION", "us-east-1")
+    ctx = explain.AgentContext("system", "prompt", lambda **kw: {}, lambda: [])
+    assert explain._strands_runner(ctx) == "ok"
+    config = seen["model"]["boto_client_config"]
+    assert config.read_timeout <= 15 and config.connect_timeout <= 5
+    assert config.retries["max_attempts"] == 1
+    assert seen["model"]["max_tokens"] == explain.MAX_OUTPUT_TOKENS
+    assert seen["model"]["region_name"] == "us-east-1"
+    assert seen["agent"]["system_prompt"] == "system"
 
 
 def test_the_system_prompt_forbids_inventing_numbers() -> None:

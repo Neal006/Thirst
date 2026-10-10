@@ -35,7 +35,8 @@ from engine.units import ensure_ist
 log = logging.getLogger("thirst.store")
 
 WEATHER_TTL = timedelta(days=10)
-PLAN_TTL = timedelta(days=14)
+PLAN_TTL = timedelta(days=14)  # a plan linked to a site: receipts may arrive for days
+ANONYMOUS_PLAN_TTL = timedelta(hours=2)  # no receipt can use it, so keep it just long enough
 QUOTA_TTL = timedelta(days=3)  # the quota day plus 2 days (D13)
 WINDOW_DAYS = 30
 _CANONICAL_END = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+05:30")
@@ -376,7 +377,7 @@ class PlanRepo:
             "notes": plan.get("notes", []),
             "tags": plan.get("tags", {}),
             "factor_version": plan["factor_version"],
-            "ttl": int((submit + PLAN_TTL).timestamp()),
+            "ttl": int((submit + (PLAN_TTL if site_id else ANONYMOUS_PLAN_TTL)).timestamp()),
         }
         if site_id is not None:
             item["site_id"] = site_id
@@ -385,9 +386,12 @@ class PlanRepo:
         stored["forecast_snapshot_gz"] = _gz(plan["forecast_snapshot"])
         self._table.put_item(Item=stored)
 
-    def get(self, plan_id: str) -> dict[str, Any] | None:
+    def get(self, plan_id: str, now: datetime | None = None) -> dict[str, Any] | None:
+        """The plan, or None. With ``now``, a plan past its ttl is gone (DynamoDB deletes late)."""
         item = self._table.get_item(Key={"plan_id": plan_id}).get("Item")
         if item is None:
+            return None
+        if now is not None and int(item["ttl"]) <= int(ensure_ist(now).timestamp()):
             return None
         out = dict(from_ddb({k: v for k, v in item.items() if not k.endswith("_gz")}))
         out.setdefault("notes", [])  # plans stored before notes and tags were kept
@@ -396,12 +400,17 @@ class PlanRepo:
         out["forecast_snapshot"] = _gunzip(item["forecast_snapshot_gz"])
         return out
 
-    def bump_quota(self, day: datetime, limit: int) -> bool:
-        """Count one use for the IST day. False once ``limit`` uses are spent (D13)."""
+    def bump_quota(self, day: datetime, limit: int, scope: str | None = None) -> bool:
+        """Count one use for the IST day. False once ``limit`` uses are spent (D13).
+
+        ``scope`` names a separate counter (``sites``, ``receipts#<site_id>``); without one this
+        is the /explain counter.
+        """
         start = ensure_ist(day).replace(hour=0, minute=0, second=0, microsecond=0)
+        name = f"quota#{scope}#" if scope else "quota#"
         try:
             self._table.update_item(
-                Key={"plan_id": f"quota#{start:%Y-%m-%d}"},
+                Key={"plan_id": f"{name}{start:%Y-%m-%d}"},
                 UpdateExpression="SET #ttl = :ttl ADD #n :one",
                 ConditionExpression="attribute_not_exists(#n) OR #n < :limit",
                 ExpressionAttributeNames={"#n": "n", "#ttl": "ttl"},

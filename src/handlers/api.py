@@ -30,6 +30,11 @@ from .errors import TRY_AGAIN, ApiError
 from .http import MAX_BODY_RECEIPT, MAX_BODY_SMALL
 
 CACHE_SECONDS = 20  # site pages and leaderboards (PRD 6.2.7: on the board within a minute)
+# Anyone can register a site and a site's token can sign receipts, so work and storage are capped.
+MAX_SITES_PER_DAY = 100  # new sites per IST day, whole service
+MAX_RECEIPTS_PER_SITE_PER_DAY = 200
+LEADERBOARD_MAX_ROWS = 100
+RECEIPT_MAX_AGE = timedelta(days=30)  # older receipts could never be scored into the 30-day window
 CLOCK_SKEW = timedelta(seconds=security.MAX_SKEW_SECONDS)
 DIVISIONS = ("D1", "D2", "D3", "D4")
 
@@ -117,6 +122,8 @@ def post_plan() -> Response[str]:
 def post_site() -> Response[str]:
     inp = validation.site_request(_parse(_body(MAX_BODY_SMALL)))
     now = _now()
+    if not store.PlanRepo(_tables().plans).bump_quota(now, MAX_SITES_PER_DAY, scope="sites"):
+        raise ApiError(429, "rate_limited", "Too many new sites today. Please try again tomorrow.")
     fx = load_factors()
     repo = store.SiteRepo(_tables().sites)
     division = score.division(inp.gpu_count, fx.central())
@@ -142,6 +149,7 @@ def post_site() -> Response[str]:
             continue
     else:
         raise ApiError(503, "try_again", TRY_AGAIN)
+    _board_cache.clear()  # the new site is listed (unrated) straight away
     token = security.site_token(security.load_secret(), site_id)  # shown once, never stored
     return _json(201, {"site_id": site_id, "token": token, "division": division})
 
@@ -170,14 +178,16 @@ def _check_plausible(
         )
 
 
-def _plan_for(inp: validation.ReceiptInput, site_id: str) -> dict[str, Any] | None:
+def _plan_for(inp: validation.ReceiptInput, site_id: str, now: datetime) -> dict[str, Any] | None:
     if inp.plan_id is None:
         return None
     plan = store.PlanRepo(_tables().plans).get(inp.plan_id)
     if plan is None:
         raise ApiError(404, "plan_not_found", "We couldn't find that plan.")
-    if plan.get("site_id") != site_id:
+    if plan.get("site_id") != site_id:  # also true for a plan made without a site (D23)
         raise ApiError(403, "plan_site_mismatch", "This plan belongs to another site.")
+    if int(plan["ttl"]) <= int(now.timestamp()):  # DynamoDB deletes expired items late
+        raise ApiError(404, "plan_not_found", "We couldn't find that plan.")
     submitted = datetime.fromisoformat(plan["submit_ts"])
     if inp.start_ts < floor_hour(submitted):
         raise ApiError(422, "slot_out_of_range", "Some hours are outside the job's start and end.")
@@ -287,11 +297,19 @@ def post_receipt() -> Response[str]:
         raise ApiError(400, "invalid_field", "site_id: must match the X-Thirst-Site header.")
     if inp.end_ts > now + CLOCK_SKEW:
         raise ApiError(400, "invalid_field", "end_ts: is in the future.")
+    if inp.end_ts <= now - RECEIPT_MAX_AGE:
+        raise ApiError(400, "invalid_field", "end_ts: is older than 30 days.")
     fx = load_factors()
-    plan = _plan_for(inp, site_id)
+    plan = _plan_for(inp, site_id, now)
     count, p_max_w = _plausibility_inputs(plan, site, fx)
     _check_plausible(inp, count, p_max_w, fx.central()["receipt_kwh_tolerance"])
     tables = _tables()
+    if not store.PlanRepo(tables.plans).bump_quota(
+        now, MAX_RECEIPTS_PER_SITE_PER_DAY, scope=f"receipts#{site_id}"
+    ):
+        raise ApiError(
+            429, "rate_limited", "Too many receipts today for this site. Please try again tomorrow."
+        )
     scored = _scored(inp, plan, store.WeatherRepo(tables.weather))
     item = _receipt_item(inp, scored, now)
     try:
@@ -367,7 +385,7 @@ def get_leaderboard() -> Response[str]:
         for s in sites
         if _division(s, fx) == division and s.get("public", True)
     }
-    rows = score.leaderboard_rows(sites, by_site, division, now, fx)
+    rows = score.leaderboard_rows(sites, by_site, division, now, fx)[:LEADERBOARD_MAX_ROWS]
     data = {
         "division": division,
         "period": "30d",

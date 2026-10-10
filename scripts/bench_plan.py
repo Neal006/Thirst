@@ -10,6 +10,7 @@ the p95 is not under 2000 ms or any request fails. Standard library only.
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
 import math
 import sys
@@ -79,7 +80,7 @@ def _post_plan(url: str) -> float | None:
         with urllib.request.urlopen(request, timeout=TIMEOUT_S) as reply:  # noqa: S310
             reply.read()
             ok = reply.status == 200
-    except (urllib.error.URLError, TimeoutError, OSError):
+    except (urllib.error.URLError, TimeoutError, OSError, http.client.HTTPException):
         return None
     return (time.perf_counter() - started) * 1000 if ok else None
 

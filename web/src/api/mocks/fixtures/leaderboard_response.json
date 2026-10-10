@@ -1,0 +1,96 @@
+{
+  "division": "D1",
+  "period": "30d",
+  "board": "score",
+  "generated_at": "2026-10-10T12:00:00+05:30",
+  "rows": [
+    {
+      "rank": 1,
+      "site_id": "s_demoaaaaaa",
+      "name": "Demo Lab, Chennai (simulated)",
+      "simulated": true,
+      "division": "D1",
+      "badge": "platinum",
+      "score": 99.2704298456615,
+      "provisional": true,
+      "A": 49.48930089196304,
+      "C": 20.0,
+      "flex_share": 1.0,
+      "monthly_absolute": {
+        "kwh": 13.608,
+        "facility_kwh": 21.752073617201432,
+        "litres": 57.7878945423452,
+        "stress_litres": 144.469736355863,
+        "kg_co2": 16.831211605043855,
+        "person_days": 0.4280584780914459
+      },
+      "receipts": 3
+    },
+    {
+      "rank": 2,
+      "site_id": "s_demobbbbbb",
+      "name": "Demo Lab, Bengaluru (simulated)",
+      "simulated": true,
+      "division": "D1",
+      "badge": "silver",
+      "score": 63.17249000615283,
+      "provisional": true,
+      "A": 24.220743004306986,
+      "C": 20.0,
+      "flex_share": 1.0,
+      "monthly_absolute": {
+        "kwh": 7.776,
+        "facility_kwh": 12.463011987657604,
+        "litres": 33.49416545152588,
+        "stress_litres": 83.73541362881468,
+        "kg_co2": 9.757360590901609,
+        "person_days": 0.2481049292705621
+      },
+      "receipts": 2
+    },
+    {
+      "rank": 3,
+      "site_id": "s_democccccc",
+      "name": "Demo Lab, Delhi (simulated)",
+      "simulated": true,
+      "division": "D1",
+      "badge": null,
+      "score": 21.665260393285656,
+      "provisional": true,
+      "A": 0.16568227529995846,
+      "C": 15.0,
+      "flex_share": 1.0,
+      "monthly_absolute": {
+        "kwh": 7.290000000000001,
+        "facility_kwh": 11.720090996572278,
+        "litres": 31.57099512201657,
+        "stress_litres": 78.92748780504144,
+        "kg_co2": 9.197471195802674,
+        "person_days": 0.23385922312604868
+      },
+      "receipts": 2
+    },
+    {
+      "rank": null,
+      "site_id": "s_demodddddd",
+      "name": "Demo Startup, Mumbai (simulated)",
+      "simulated": true,
+      "division": "D1",
+      "badge": null,
+      "score": null,
+      "provisional": true,
+      "A": 0.0,
+      "C": 5.0,
+      "flex_share": 0.0,
+      "monthly_absolute": {
+        "kwh": 0,
+        "facility_kwh": 0,
+        "litres": 0,
+        "stress_litres": 0,
+        "kg_co2": 0,
+        "person_days": 0
+      },
+      "receipts": 0
+    }
+  ]
+}

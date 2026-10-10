@@ -44,7 +44,9 @@ def _obj(value: Any, name: str) -> Mapping[str, Any]:
 
 
 def _number(value: Any, name: str, lo: float, hi: float, *, lo_open: bool = False) -> float:
-    ok = isinstance(value, int | float) and not isinstance(value, bool) and math.isfinite(value)
+    ok = isinstance(value, int | float) and not isinstance(value, bool)
+    if ok and isinstance(value, float):  # math.isfinite(10**400) overflows: only floats need it
+        ok = math.isfinite(value)
     if not ok or value > hi or value < lo or (lo_open and value == lo):
         sign = "above" if lo_open else "from"
         raise _bad(f"{name}: use a number {sign} {lo:g} to {hi:g}.")
@@ -86,11 +88,11 @@ def _aware(value: Any, name: str) -> datetime:
         raise _bad(f"{name}: use a time like 2026-10-10T09:00:00+05:30.")
     try:
         parsed = datetime.fromisoformat(value)
-    except ValueError:
+        if parsed.utcoffset() is None:
+            raise _bad(f"{name}: add a timezone offset such as +05:30.")
+        return parsed.astimezone(IST)
+    except (ValueError, OverflowError):  # unparsable, or too near year 1 or 9999 to convert
         raise _bad(f"{name}: use a time like 2026-10-10T09:00:00+05:30.") from None
-    if parsed.utcoffset() is None:
-        raise _bad(f"{name}: add a timezone offset such as +05:30.")
-    return parsed.astimezone(IST)
 
 
 def site_id(value: Any) -> str:
@@ -286,7 +288,7 @@ def _slots(raw: Any, start: datetime, end: datetime) -> tuple[Mapping[str, Any],
     first = floor_hour(start)
     for s in slots:
         hour = datetime.fromisoformat(s["hour"])
-        if hour < first or hour > end:
+        if hour < first or hour >= end:  # an hour that starts at the end never ran
             raise ApiError(
                 422, "slot_out_of_range", "Some hours are outside the job's start and end."
             )
@@ -305,8 +307,10 @@ def receipt_request(body: Any) -> ReceiptInput:
     job = data.get("job_id")
     if not isinstance(job, str) or not JOB_ID.fullmatch(job):
         raise _bad("job_id: not a valid job id.")
-    start, end = _aware(data.get("start_ts"), "start_ts"), _aware(data.get("end_ts"), "end_ts")
-    if not start < end <= start + timedelta(hours=MAX_RECEIPT_HOURS):
+    # Whole seconds only: the stored sort key has a fixed shape and clients may send fractions.
+    start = _aware(data.get("start_ts"), "start_ts").replace(microsecond=0)
+    end = _aware(data.get("end_ts"), "end_ts").replace(microsecond=0)
+    if not start < end or (end - start) > timedelta(hours=MAX_RECEIPT_HOURS):
         raise _bad(f"end_ts: must be after start_ts and within {MAX_RECEIPT_HOURS} hours.")
     gpu = _obj(data.get("gpu"), "gpu")
     exit_code = data.get("exit_code")

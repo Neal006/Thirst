@@ -123,11 +123,24 @@ Resources:
     Properties:
       CodeUri: src/
       Handler: handlers.api.handler
+      # The API never deletes (only scripts/seed.py does) and never writes the weather table.
       Policies:
-        - DynamoDBCrudPolicy: { TableName: !Ref WeatherTbl }
-        - DynamoDBCrudPolicy: { TableName: !Ref SitesTbl }
-        - DynamoDBCrudPolicy: { TableName: !Ref PlansTbl }
-        - DynamoDBCrudPolicy: { TableName: !Ref ReceiptsTbl }
+        - DynamoDBReadPolicy: { TableName: !Ref WeatherTbl }
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:Scan]
+              Resource: [!GetAtt SitesTbl.Arn]
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem]
+              Resource: [!GetAtt PlansTbl.Arn]
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:Query]
+              Resource: [!GetAtt ReceiptsTbl.Arn]
         - Version: "2012-10-17"
           Statement:
             - Effect: Allow
@@ -187,9 +200,12 @@ Resources:
           BEDROCK_MODEL_ID: !Ref BedrockModelId
           BEDROCK_REGION: !Ref BedrockRegion
       Policies:
-        - DynamoDBCrudPolicy: { TableName: !Ref PlansTbl }
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:UpdateItem]
+              Resource: [!GetAtt PlansTbl.Arn]
         - DynamoDBReadPolicy: { TableName: !Ref WeatherTbl }
-        - DynamoDBReadPolicy: { TableName: !Ref SitesTbl }
         - !If
           - HasBedrockModel
           - Version: "2012-10-17"
@@ -247,6 +263,41 @@ Resources:
       Threshold: 5
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlarmTopic]
+
+  # The handler catches its own errors and answers 503, so Lambda "Errors" stays 0: watch the API.
+  Api5xxAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: The API answered 5 or more server errors in 5 minutes
+      Namespace: AWS/ApiGateway
+      MetricName: 5xx
+      Dimensions:
+        - { Name: ApiId, Value: !Ref HttpApi }
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlarmTopic]
+
+  # Published by RefreshFn. No data at all means the schedule did not run, which is also bad.
+  RefreshFailedAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: The hourly weather refresh failed two hours in a row
+      Namespace: Thirst
+      MetricName: RefreshFailed
+      Dimensions:
+        - { Name: service, Value: thirst }
+      Statistic: Sum
+      Period: 3600
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: breaching
       AlarmActions: [!Ref AlarmTopic]
 
 Outputs:
