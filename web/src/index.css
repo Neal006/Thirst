@@ -12,7 +12,7 @@
   --surface-sunk: #eff2ef;
   --text: var(--ink);
   --text-muted: #5b6662;
-  --text-faint: #87918d;
+  --text-faint: #566675;
   --border: #dfe4e0;
   --border-strong: #b9c2bd;
   --link: #0f6360;
@@ -345,8 +345,11 @@ code {
 
 /* ---------- tags (PRD G5) ---------- */
 
+/* Every chip is a link: at least 24px tall so it is an easy tap target (WCAG 2.5.8). */
 .tag {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
   padding: 0 6px;
   border: 1px solid currentColor;
   border-radius: 3px;
@@ -448,7 +451,7 @@ code {
 }
 
 .badge-gold {
-  color: #9a6b00;
+  color: #7a5400;
   background: var(--signal-soft);
   border-color: #d9a900;
 }

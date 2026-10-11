@@ -10,7 +10,6 @@ from __future__ import annotations
 import json
 import math
 import os
-import re
 import secrets
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
@@ -18,7 +17,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from . import __version__, config
+from . import __version__, config, ids
 from .errors import CliError
 from .ledger import IST, SlotEnergy, floor_hour
 from .meter import MeterSummary
@@ -27,7 +26,6 @@ LEVELS = (1.0, 0.85, 0.7)
 MAX_SLOTS = 72
 KWH_TOLERANCE = 1.1  # same tolerance as the server (receipt_kwh_tolerance)
 _BASE32 = "abcdefghijklmnopqrstuvwxyz234567"
-_JOB_ID = re.compile(r"j_[a-z2-7]{12}")
 _ONE_SECOND = timedelta(seconds=1)
 _ONE_HOUR = timedelta(hours=1)
 
@@ -263,7 +261,7 @@ def format_local(body: Mapping[str, Any], *, queued: bool, note: str = "") -> st
 
 
 def _path(job_id: str) -> Path:
-    if not _JOB_ID.fullmatch(job_id):
+    if not ids.JOB_ID.fullmatch(job_id):
         raise CliError("That is not a valid job id (it looks like j_abcdefghijkl).")
     return config.receipts_dir() / f"{job_id}.json"
 

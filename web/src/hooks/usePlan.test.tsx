@@ -127,6 +127,20 @@ describe('usePlan', () => {
     expect(result.current.response?.plan_id).toBe('p_new')
   })
 
+  it('cancels the request that is still running when the page goes away', async () => {
+    let seen: AbortSignal | null | undefined
+    const spy = fetchSpy((_input, init) => {
+      seen = init?.signal
+      return new Promise<Response>(() => {})
+    })
+    const { result, unmount } = renderHook(() => usePlan(), { wrapper: wrapperFor(spy) })
+    act(() => result.current.submit(BODY))
+    await waitFor(() => expect(seen).toBeDefined())
+    expect(seen?.aborted).toBe(false)
+    unmount()
+    expect(seen?.aborted).toBe(true)
+  })
+
   it('retry with nothing to retry does nothing', () => {
     const spy = planSpy()
     const { result } = renderHook(() => usePlan(), { wrapper: wrapperFor(spy) })

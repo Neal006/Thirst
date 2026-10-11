@@ -1,3 +1,8 @@
+# Used only if the Amplify app is ever connected to this Git repo. The live app (dzxkrtlc7xqfx) takes
+# manual zip deploys from scripts/deploy_web.py, so these build steps and headers do not run there.
+# A Git-connected app also needs the SPA rewrite rule (</^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json)$)([^.]+$)/>
+# -> /index.html, 200) and its domain in the stack's AllowedOrigins. A custom API domain must be
+# added to connect-src below.
 version: 1
 applications:
   - appRoot: web
@@ -32,6 +37,7 @@ applications:
             value: strict-origin-when-cross-origin
           - key: X-Frame-Options
             value: DENY
-          # style-src needs 'unsafe-inline' because Recharts sets inline style attributes.
+          # style-src needs 'unsafe-inline' because Recharts sets inline style attributes; the fonts come
+          # from Google Fonts (Archivo, IBM Plex Mono).
           - key: Content-Security-Policy
-            value: "default-src 'self'; connect-src 'self' https://*.execute-api.ap-south-1.amazonaws.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
+            value: "default-src 'self'; connect-src 'self' https://*.execute-api.ap-south-1.amazonaws.com; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"

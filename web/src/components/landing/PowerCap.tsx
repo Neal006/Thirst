@@ -68,33 +68,35 @@ export function PowerCap({ factors }: { factors: readonly AssumptionRow[] | unde
           ))}
         </div>
       </div>
-      <dl className="cap-bars">
-        <div className="cap-row">
-          <dt>Time to finish</dt>
-          <dd>
-            <span className="cap-track">
-              <span className="cap-fill cap-fill-time" style={{ width: `${(time / TRACK) * 100}%` }} />
-              <span className="cap-base" style={{ left: `${100 / TRACK}%` }} />
-            </span>
-            <span className="cap-num">
-              <span className="range-value">{signed(timeDelta)}</span> <TagChip tag={level.status} factor={level.factor?.replace('eps', 'tau')} />
-            </span>
-          </dd>
-        </div>
-        <div className="cap-row">
-          <dt>Energy for the job</dt>
-          <dd>
-            <span className="cap-track">
-              <span className="cap-fill cap-fill-energy" style={{ width: `${(level.eps / TRACK) * 100}%` }} />
-              <span className="cap-base" style={{ left: `${100 / TRACK}%` }} />
-            </span>
-            <span className="cap-num cap-num-big">
-              <span className="range-value">{signed(energyDelta)}</span> <TagChip tag={level.status} factor={level.factor} />
-            </span>
-          </dd>
-        </div>
+      <div>
+        <dl className="cap-bars">
+          <div className="cap-row">
+            <dt>Time to finish</dt>
+            <dd>
+              <span className="cap-track">
+                <span className="cap-fill cap-fill-time" style={{ width: `${(time / TRACK) * 100}%` }} />
+                <span className="cap-base" style={{ left: `${100 / TRACK}%` }} />
+              </span>
+              <span className="cap-num">
+                <span className="range-value">{signed(timeDelta)}</span> <TagChip tag={level.status} factor={level.factor?.replace('eps', 'tau')} />
+              </span>
+            </dd>
+          </div>
+          <div className="cap-row">
+            <dt>Energy for the job</dt>
+            <dd>
+              <span className="cap-track">
+                <span className="cap-fill cap-fill-energy" style={{ width: `${(level.eps / TRACK) * 100}%` }} />
+                <span className="cap-base" style={{ left: `${100 / TRACK}%` }} />
+              </span>
+              <span className="cap-num cap-num-big">
+                <span className="range-value">{signed(energyDelta)}</span> <TagChip tag={level.status} factor={level.factor} />
+              </span>
+            </dd>
+          </div>
+        </dl>
         <p className="cap-note">Less energy means less water and less CO₂. A real cut, not a shift.</p>
-      </dl>
+      </div>
     </div>
   )
 }

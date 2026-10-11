@@ -54,6 +54,20 @@ def test_signal_guard_sets_the_flag_and_restores_the_old_handlers() -> None:
     assert (signal.getsignal(signal.SIGINT), signal.getsignal(signal.SIGTERM)) == before
 
 
+@POSIX_ONLY
+def test_signal_guard_turns_a_dropped_ssh_session_into_an_interrupt() -> None:
+    flag = process.InterruptFlag()
+    before = signal.getsignal(signal.SIGHUP)
+
+    with process.SignalGuard(flag):
+        handler = signal.getsignal(signal.SIGHUP)
+        assert callable(handler)
+        handler(signal.SIGHUP, None)  # type: ignore[operator]
+        assert flag.is_set()  # the run stops cleanly and the cap is restored
+
+    assert signal.getsignal(signal.SIGHUP) == before
+
+
 def test_signal_guard_in_a_thread_does_not_crash() -> None:
     flag = process.InterruptFlag()
     errors: list[BaseException] = []
@@ -220,8 +234,7 @@ def test_pause_really_stops_the_process_and_resume_continues_it(tmp_path: Path) 
 # A training script that cleans up on SIGTERM (checkpoint, close files). Linux kills a stopped
 # process at once for a SIGTERM it does not handle, but a handled one waits for SIGCONT.
 HANDLES_SIGTERM = (
-    "import signal, sys\n"
-    "signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))\n"
+    "import signal, sys\nsignal.signal(signal.SIGTERM, lambda *_: sys.exit(0))\n"
 ) + COUNTER
 
 

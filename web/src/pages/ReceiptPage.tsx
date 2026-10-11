@@ -4,11 +4,14 @@ import { Banner } from '../components/ui/Banner'
 import { Spinner } from '../components/ui/Spinner'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useReceipt } from '../hooks/useReceipt'
+import { useSite } from '../hooks/useSite'
 
 export function ReceiptPage() {
   const { siteId = '', jobId = '' } = useParams()
-  usePageTitle('Receipt')
   const { state, reload } = useReceipt(siteId, jobId)
+  // Only for the tab title: if the site cannot be loaded, the title is just "Receipt".
+  const site = useSite(siteId).state
+  usePageTitle(site.status === 'ready' ? `Receipt - ${site.data.site.name}` : 'Receipt')
   return (
     <div className="receipt-page">
       <div className="page-head">

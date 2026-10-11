@@ -49,8 +49,8 @@ function Monthly({ month }: { month: MonthlyAbsolute }) {
 
 export function SitePage() {
   const { siteId = '' } = useParams()
-  usePageTitle('Site')
   const { state, reload } = useSite(siteId)
+  usePageTitle(state.status === 'ready' ? state.data.site.name : 'Site')
   const assumptions = useAssumptions().state
   const steps = badgeSteps(assumptions.status === 'ready' ? assumptions.data.factors : undefined)
   if (state.status === 'loading') return <Spinner label="Loading the site…" lines={5} />

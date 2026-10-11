@@ -18,6 +18,14 @@ function CaptureBanner({ receipt }: { receipt: ReceiptDetail }) {
   if (receipt.capture === null) {
     return <p className="card">The share of the saving is not available for this receipt.</p>
   }
+  if (receipt.capture < 0) {
+    // Worse than the base plan: say so in words. "You took -20%" would read as nonsense.
+    return (
+      <p className="card">
+        You used more than the base plan, so there was no saving to capture this time.
+      </p>
+    )
+  }
   const percent = receipt.capture * 100
   return (
     <div className="card capture-card">

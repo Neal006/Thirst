@@ -42,6 +42,7 @@ def cmd_register(args: argparse.Namespace, ctx: Context) -> int:
             "Tell Thirst where the API is: pass --api-url, or set THIRST_API_URL "
             "(your team lead has the address)."
         )
+    api_url = config.check_api_url(api_url)  # https only: the site token is sent to this address
     if config.config_path().exists() and not args.force:
         raise ConfigError(
             f"This computer is already registered ({config.config_path()}). "

@@ -88,6 +88,65 @@ def test_gpu_models_have_sane_power() -> None:
         assert g.nvml_name_patterns
 
 
+GPU_KEYS = {
+    "id",
+    "label",
+    "p_max_w",
+    "p_idle_w",
+    "nvml_name_patterns",
+    "status",
+    "source",
+    "source_url",
+    "notes",
+}
+GPU_STATUSES = {"sourced", "placeholder", "measured"}
+
+
+def raw_gpus() -> list[dict]:
+    path = ROOT / "src" / "engine" / "data" / "gpus.json"
+    return json.loads(path.read_text(encoding="utf-8"))["models"]
+
+
+def test_every_gpu_row_has_fields_a_source_and_a_valid_status() -> None:
+    for row in raw_gpus():
+        assert row.keys() >= GPU_KEYS, row["id"]
+        assert row["status"] in GPU_STATUSES, row["id"]
+        assert row["source"].strip(), row["id"]
+        assert row["source_url"].startswith("https://"), row["id"]
+        assert row["nvml_name_patterns"], row["id"]
+        assert 0 < row["p_idle_w"] < row["p_max_w"], row["id"]
+
+
+def test_gpu_ids_and_patterns_are_unique() -> None:
+    rows = raw_gpus()
+    ids = [r["id"] for r in rows]
+    patterns = [p.lower() for r in rows for p in r["nvml_name_patterns"]]
+
+    assert len(ids) == len(set(ids))
+    assert len(patterns) == len(set(patterns))
+
+
+def test_college_lab_gpus_are_present_with_their_sourced_power() -> None:
+    gpus = factors.load_gpus()
+    expected = {
+        "RTX-3050-Laptop": 80, "RTX-3060-Laptop": 115, "RTX-4060-Laptop": 115, "RTX-3070": 220,
+        "RTX-3080": 350, "RTX-4060": 115, "RTX-4070": 200, "A10": 150, "A30": 165,
+        "RTX-A4000": 140, "RTX-A5000": 230, "V100-PCIE": 250, "P100-PCIE": 250,
+    }
+    for gpu_id, watts in expected.items():
+        assert gpus[gpu_id].p_max_w == watts, gpu_id
+        assert gpus[gpu_id].status == "sourced", gpu_id
+
+
+def test_laptop_rows_say_why_they_use_the_top_of_the_power_range() -> None:
+    laptops = [r for r in raw_gpus() if r["id"].endswith("-Laptop")]
+
+    assert len(laptops) >= 3
+    for row in laptops:
+        assert "TOP of NVIDIA's stated" in row["notes"], row["id"]
+        assert "GPU Subsystem Power" in row["source"], row["id"]
+
+
 def test_unknown_gpu_raises_engine_error(fx: factors.Factors) -> None:
     with pytest.raises(EngineError) as err:
         fx.gpu_params("RTX-9999")

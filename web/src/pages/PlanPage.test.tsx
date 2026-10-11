@@ -60,7 +60,7 @@ describe('PlanPage with a plan', () => {
     expect(screen.getByRole('slider')).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Timetable' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByRole('table', { name: /timetable/i })).toBeInTheDocument()
-    expect(screen.getAllByRole('img').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByRole('table', { name: /slider positions/i })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Run this plan' })).toHaveTextContent('thirst run --hours')
   })
 
