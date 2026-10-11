@@ -9,6 +9,8 @@ The prioritised plan for these items lives in [`TODO.md`](TODO.md).
 
 ## Fixed on 2026-10-11
 
+- [x] ci | PR #19 (Bedrock error notes + a one-sentence job box) was merged with an unresolved conflict in `web/src/pages/PlanPage.tsx` (`<<<<<<< HEAD … >>>>>>> upstream/main`): web lint failed, `main` CI went red and Deploy was skipped from 18:09. Nothing reached AWS (stack and Lambdas last updated 12:32 IST). PR #20 reverted the merge; `main` CI, Deploy and the live e2e job are green again. The feature can come back as a fixed PR from the `pr-18` branch.
+
 On `feat/web-ui-accessibility` (each with tests):
 
 - [x] cli | `thirst doctor` on a laptop GPU said "The NVIDIA driver reported an error while reading the GPU" and failed. It now prints `[warn]`, explains that laptops block power-limit changes, and points to `--no-cap` (TODO 4.1.a).
@@ -43,4 +45,4 @@ Earlier:
 - [x] Full-history secret scan: gitleaks 8.28.0 over all 54 commits and the working tree, **no leaks found** (`docs/gitleaks_full_history.txt`).
 - [ ] `powercap_sweep.json` measured for our GPU: needs a desktop NVIDIA GPU
 - [ ] At least one receipt with method `nvml_*` on the board: needs a GPU run
-- [ ] Video < 3:00: not recorded yet
+- [x] Video < 3:00: **2:54** (174 s), `docs/video/thirst-demo.mp4` with captions `docs/video/thirst-demo.srt` (Neal). YouTube upload still open.

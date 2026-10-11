@@ -30,7 +30,7 @@ These need a team member's own accounts or a decision only the team can take.
 | # | Task | Who | Time | Done when |
 |---|---|---|---|---|
 | 1.2 | Every team member registered and on the team on the hackathon site | each member | 5 min | team page lists everyone |
-| 1.3 | Record the video from [`VIDEO_SCRIPT.md`](VIDEO_SCRIPT.md) (< 3:00, captions, AWS named out loud). Record on the site version the script describes (see its top note) | 1 person | 90 min | exported file shows < 3:00 |
+| 1.3 | ✅ Video recorded: `docs/video/thirst-demo.mp4`, 2:54, captions `docs/video/thirst-demo.srt` (Neal). Upload it to YouTube as unlisted and check it plays signed out | Neal | 10 min | unlisted link plays signed out |
 | 1.4 | Upload to YouTube as **unlisted**, then open it in a private window, signed out | same | 10 min | it plays signed out |
 | 1.5 | Write and publish the Builder Center blog (900–1,200 words, from `WRITEUP.md`) | 1 person | 60 min | public URL |
 | 1.6 | Put the video and blog links in `docs/WRITEUP.md` (top table), `docs/SUBMISSION.md` and the README | anyone | 5 min | links work |
@@ -39,7 +39,7 @@ These need a team member's own accounts or a decision only the team can take.
 | 1.10 | Make the repo public: `gh repo edit Neal006/Thirst --visibility public --accept-visibility-change-consequences` | repo owner | 1 min | repo opens signed out |
 | 1.11 | Fill in and submit the form (links in `SUBMISSION.md`), then re-open it | team lead | 10 min | the submission page shows the saved entry |
 | 1.12 | After submitting, leave everything running: don't delete the stack, don't wipe data, keep the budget alerts | everyone | — | site still up during judging |
-| 1.13 | Decide when to merge `feat/web-ui-accessibility`. Merging deploys the new look. If the video was recorded on the old site, merge after recording, or re-record the shots that show it | team lead | 5 min | PR merged, Deploy and its new `e2e` job green |
+| 1.13 | ✅ `feat/web-ui-accessibility` merged (PR #15) and deployed | — | — | done |
 | 1.14 | Formal clean-machine timer (plan 7.6): a second person, a machine that never had the repo, the **live** API, a phone for the last step. A local rehearsal took 70 s (FIXLIST) but does not replace this | 1 person | 15 min | time recorded in `FIXLIST.md` |
 
 ---
