@@ -601,3 +601,39 @@ def test_unknown_command_is_a_usage_error(rig: CliRig) -> None:
 
 def test_help_exits_cleanly(rig: CliRig) -> None:
     assert rig.main("--help") == 0
+
+
+# ------------------------------------------------------------ H1: register refuses cleartext
+
+
+@pytest.mark.parametrize(
+    "url",
+    ["http://api.example.com", "https://user:pw@api.example.com", "ftp://x.example.com"],
+)
+def test_register_refuses_a_cleartext_url_before_any_request(rig: CliRig, url: str) -> None:
+    args = register_args()
+    args[args.index(URL)] = url
+
+    code = rig.main(*args)
+
+    assert code == 3
+    assert "https" in rig.errors
+    assert rig.api.sites == []
+    assert rig.clients == []
+    assert not (rig.home / "config.toml").exists()
+
+
+def test_register_refuses_a_cleartext_url_from_the_environment(rig: CliRig) -> None:
+    rig.env["THIRST_API_URL"] = "http://api.example.com"
+    args = [a for a in register_args() if a not in ("--api-url", URL)]
+
+    assert rig.main(*args) == 3
+    assert rig.api.sites == []
+
+
+def test_register_allows_http_to_loopback(rig: CliRig) -> None:
+    args = register_args()
+    args[args.index(URL)] = "http://127.0.0.1:8000"
+
+    assert rig.main(*args) == 0
+    assert rig.clients[0][0] == "http://127.0.0.1:8000"

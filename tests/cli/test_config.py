@@ -162,3 +162,70 @@ def test_paths_live_under_the_home(home: Path) -> None:
     assert config.receipts_dir() == home / "receipts"
     assert config.logs_dir() == home / "logs"
     assert config.restore_marker_path() == home / "restore.json"
+
+
+# ------------------------------------------------------------ H1: https only
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://api.example.com",
+        "http://example.com:8080/path",
+        "http://localhost.evil.com",
+        "http://127.0.0.1.evil.com",
+        "https://user:pass@api.example.com",
+        "https://user@api.example.com",
+        "http://localhost@evil.com",
+        "https://",
+        "https:///path",
+        "https://exa mple.com",
+        "https://[::1",
+        "https://api.example.com:notaport",
+    ],
+)
+def test_validated_rejects_cleartext_and_userinfo_urls(url: str) -> None:
+    bad = config.Config(api_url=url, site_id=SITE, token=TOKEN)
+
+    with pytest.raises(ConfigError) as err:
+        config.validated(bad)
+
+    assert "api_url" in err.value.message
+    assert TOKEN not in err.value.message
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://localhost:8000",
+        "http://127.0.0.1:3000/",
+        "http://[::1]:3000",
+        "https://localhost:8443",
+        "https://api.example.com/prod",
+    ],
+)
+def test_validated_accepts_https_and_loopback_http(url: str) -> None:
+    good = config.validated(config.Config(api_url=url, site_id=SITE, token=TOKEN))
+
+    assert good.api_url == url.rstrip("/")
+
+
+def test_env_url_override_with_cleartext_is_refused(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config.save(make_config())
+    monkeypatch.setenv("THIRST_API_URL", "http://api.example.com")
+
+    with pytest.raises(ConfigError):
+        config.load()
+
+
+def test_a_cleartext_url_in_the_file_is_refused(home: Path) -> None:
+    home.mkdir(parents=True)
+    body = f'api_url = "http://api.example.com"\nsite_id = "{SITE}"\ntoken = "{TOKEN}"\n'
+    (home / "config.toml").write_text(body, encoding="utf-8")
+
+    with pytest.raises(ConfigError) as err:
+        config.load()
+
+    assert "https" in err.value.message
