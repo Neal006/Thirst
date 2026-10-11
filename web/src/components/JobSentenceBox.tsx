@@ -62,13 +62,16 @@ export function JobSentenceBox() {
         </div>
       </form>
       {status === 'error' && <p className="error">{error}</p>}
-      {response && (
-        <div className="explanation-result">
-          <h4>Explanation ({response.source})</h4>
-          {renderExplanation(response.explanation)}
-          {response.note && <p className="note">Note: {response.note}</p>}
-        </div>
-      )}
+{response && (
+  <div className="explanation-result">
+    <h4>Explanation ({response.source})</h4>
+    {renderExplanation(response.explanation)}
+    {response.note && <p className="note">Note: {response.note}</p>}
+  </div>
+)}
+{response && (
+  <button type="button" onClick={() => console.log('fill planner')}>Use parameters</button>
+)}
     </section>
   )
 }

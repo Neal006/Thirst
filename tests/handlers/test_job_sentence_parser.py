@@ -1,5 +1,7 @@
-import pytest
+
+
 from handlers.job_sentence import parse_job_sentence
+
 
 def test_parse_valid_sentence():
     txt = "LoRA on 2 x 4090, 6 hours, need it by 9 AM, can pause, Chennai lab with AC"

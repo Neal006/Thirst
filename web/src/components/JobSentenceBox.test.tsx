@@ -24,6 +24,6 @@ describe('JobSentenceBox', () => {
     const button = screen.getByRole('button', { name: /Explain/i })
     fireEvent.click(button)
     await waitFor(() => expect(screen.getByText(/Explanation for:/)).toBeInTheDocument())
-    expect(screen.getByText(/template/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Use parameters/i })).toBeInTheDocument()
   })
 })

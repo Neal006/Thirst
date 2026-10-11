@@ -325,7 +325,11 @@ def post_explain() -> Response[str]:
         answer = _plain(_run_with_timeout(_build_runner(), ctx))
     except Exception as err:  # the model, the network and the SDK can all fail
         # Narrow handling for known AWS SDK errors to avoid leaking details
-        from botocore.exceptions import ClientError, ConnectTimeoutError, ReadTimeoutError, EndpointConnectionError
+        from botocore.exceptions import (
+            ConnectTimeoutError,
+            EndpointConnectionError,
+            ReadTimeoutError,
+        )
         # Determine a generic reason code
         reason = getattr(err, "response", {}).get("Error", {}).get("Code", type(err).__name__)
         # Map to stable reason strings for the client

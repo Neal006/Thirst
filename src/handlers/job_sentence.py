@@ -10,19 +10,19 @@ Returns a dict with the extracted values (or ``None``) and a sorted ``found`` li
 """
 
 import re
-from typing import Any, Dict, List
+from typing import Any
 
 from engine.factors import load_cities
 
 
-def parse_job_sentence(text: str) -> Dict[str, Any]:
+def parse_job_sentence(text: str) -> dict[str, Any]:
     """Parse *text* and return extracted parameters.
 
     The implementation is deliberately simple and deterministic – no ML, only regexes and
     known city names. The return shape matches the contract used by the frontend component
     and the unit tests.
     """
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "work_hours": None,
         "gpu_count": None,
         "city": None,
@@ -59,5 +59,10 @@ def parse_job_sentence(text: str) -> Dict[str, Any]:
 
     # deduplicate while preserving order
     seen = set()
-    result["found"] = [x for x in result["found"] if not (x in seen or seen.add(x))]
+    ordered = []
+    for x in result["found"]:
+        if x not in seen:
+            ordered.append(x)
+            seen.add(x)
+    result["found"] = ordered
     return result
