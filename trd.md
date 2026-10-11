@@ -1,5 +1,15 @@
 # Thirst: Technical Requirements Document (TRD)
 
+> **Implementation status (11 Oct 2026).** Built and live as specified, with these changes:
+> - **Limits (D37):** throttle 200/400, and 1000 sites, 2000 receipts per site and 3000 explain calls per day.
+> - **Build:** the Strands layer is built without Docker (`scripts/build_layer.py`).
+> - **Deploy:** GitHub Actions with OIDC (D38).
+> - **CLI release:** to PyPI by Trusted Publishing.
+> - **Bedrock:** model access is blocked for the account, so `/explain` returns the template.
+> - **Data:** the power-cap sweep and 17 other factors are still placeholders.
+>
+> The score rules as built are in [`SPEC.md`](SPEC.md), the factor table in [`ASSUMPTIONS.md`](ASSUMPTIONS.md), and decisions D27–D39 in [`AGENTS.md`](AGENTS.md).
+
 Version 0.3 · 9 Oct 2026 · Read `Idea.md` (why) and `prd.md` (what) first.
 Budget: AWS Free Tier credits (target spend under $15) · Region: `ap-south-1` (Mumbai)
 
@@ -359,7 +369,7 @@ All bodies are JSON. Times are ISO 8601 with `+05:30`. Errors: `{ "error": "code
 - Site token: `token = HMAC_SHA256(server_secret, site_id)`. Nothing to store; the server recomputes it.
 - Signature: `hex(HMAC_SHA256(token, timestamp + "." + raw_body))`. Reject if the timestamp is more than 10 minutes off (stops replay).
 - Reject if `Σ kWh > gpu_count × P_max_kW × hours × 1.1`, if `plan_id` belongs to another site, if `job_id` already exists, or if any slot is outside `[start_ts, end_ts]`.
-- API Gateway throttling: rate 10 req/s, burst 20. CORS: the Amplify domain and `localhost:5173` only.
+- API Gateway throttling: rate 10 req/s, burst 20 (raised to 200 req/s, burst 400 in D37 so judges are never throttled). CORS: the Amplify domain and `localhost:5173` only.
 - Validate every input (types, ranges, lengths). No personal data is collected. Site names are free text, shown publicly, so the form says so.
 
 ---
@@ -416,7 +426,7 @@ agent = Agent(
 )
 ```
 
-- **Guardrails:** input capped at 500 characters; output capped at 1,000 tokens; a daily counter in DynamoDB refuses calls after 300 per day; on any error or timeout, return the template explanation.
+- **Guardrails:** input capped at 500 characters; output capped at 1,000 tokens; a daily counter in DynamoDB refuses calls after 300 per day (3000 since D37); on any error or timeout, return the template explanation.
 - **Template explanation (default):** built from plan JSON, for example: "Start at {start} with the GPU at {level}. This finishes by {finish}, before your deadline. Compared with starting now, it saves about {w_lo} to {w_hi}% stress-weighted water and {c_lo} to {c_hi}% CO₂. Energy is modelled from your GPU type; water and CO₂ are modelled from that energy."
 
 ---

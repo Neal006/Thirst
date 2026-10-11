@@ -72,3 +72,47 @@ def build_plan_request(
     if force_now:
         body["force_now"] = True
     return body
+
+
+_UNREADABLE_PLAN = "The server sent a plan the CLI cannot read. Try again in a minute."
+
+
+def _is_number(value: Any) -> bool:
+    return isinstance(value, int | float) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def _is_time(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        return datetime.fromisoformat(value).tzinfo is not None
+    except ValueError:
+        return False
+
+
+def checked_plan(plan: Any) -> dict[str, Any]:
+    """The ``/plan`` answer, after checking every field the CLI prints or follows (TODO 4.2).
+
+    A reply that is missing ``chosen``, has a bad time or a savings range that is not two numbers
+    becomes one plain error instead of a traceback halfway through the output.
+    """
+    if not isinstance(plan, dict) or not isinstance(plan.get("plan_id"), str):
+        raise CliError(_UNREADABLE_PLAN)
+    chosen = plan.get("chosen")
+    if not isinstance(chosen, dict):
+        raise CliError(_UNREADABLE_PLAN)
+    if not (_is_time(chosen.get("start")) and _is_time(chosen.get("finish"))):
+        raise CliError(_UNREADABLE_PLAN)
+    if not isinstance(chosen.get("schedule"), list) or not isinstance(
+        chosen.get("level_summary", ""), str
+    ):
+        raise CliError(_UNREADABLE_PLAN)
+    ranges = chosen.get("savings_ranges", {})
+    if not isinstance(ranges, dict):
+        raise CliError(_UNREADABLE_PLAN)
+    for pair in ranges.values():
+        if not (isinstance(pair, list) and len(pair) == 2 and all(_is_number(v) for v in pair)):
+            raise CliError(_UNREADABLE_PLAN)
+    if not isinstance(plan.get("notes", []), list):
+        raise CliError(_UNREADABLE_PLAN)
+    return plan

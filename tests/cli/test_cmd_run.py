@@ -88,7 +88,8 @@ def test_run_saves_the_receipt_locally(ready: CliRig) -> None:
 def test_run_installs_the_signal_guard(ready: CliRig) -> None:
     ready.main(*run_args())
 
-    assert ready.log == ["guard_enter", "guard_exit"]
+    # once around the run itself, once while the receipt is written to disk
+    assert ready.log == ["guard_enter", "guard_exit", "guard_enter", "guard_exit"]
 
 
 def test_run_exits_with_the_commands_exit_code(ready: CliRig) -> None:
@@ -140,6 +141,21 @@ def test_dry_run_prints_the_transitions_and_starts_nothing(ready: CliRig) -> Non
     assert ready.api.receipts == []
     for expected in ("Dry run", "01:00", "start", "02:00", "pause", "03:00", "resume", "04:00"):
         assert expected in ready.text
+
+
+def test_dry_run_uses_the_plans_exact_start_and_finish(ready: CliRig) -> None:
+    # TODO 4.1.c: the plan line says 01:47 and 03:20, so the dry run must not say 01:00 and 04:00.
+    plan = plan_response(rows=(("run", 0.7), ("run", 0.7), ("run", 0.7)))
+    plan["chosen"]["start"] = "2026-10-10T01:47:00+05:30"
+    plan["chosen"]["finish"] = "2026-10-10T03:20:00+05:30"
+    ready.api.plan_result = plan
+
+    code = ready.main(*run_args("--dry-run"))
+
+    assert code == 0
+    assert "10 Oct 01:47  start the command at 70% power" in ready.text
+    assert "10 Oct 03:20  planned end" in ready.text
+    assert "01:00  start" not in ready.text
 
 
 def test_dry_run_does_not_need_a_gpu_when_the_flags_say_what_it_is(ready: CliRig) -> None:
@@ -251,6 +267,103 @@ def test_implausible_energy_warns_and_is_still_posted(ready: CliRig) -> None:
     assert len(ready.api.receipts) == 1
 
 
+def test_a_duplicate_receipt_is_reported_as_already_recorded(ready: CliRig) -> None:
+    ready.api.receipt_duplicate = True
+
+    code = ready.main(*run_args())
+
+    assert code == 0
+    assert "already recorded" in ready.text
+    assert outbox.pending() == []
+    assert receipt.load_receipt(the_job_id(ready))["status"] == "duplicate"
+
+
+def test_a_401_keeps_the_receipt_queued_and_says_what_to_fix(ready: CliRig) -> None:
+    ready.api.receipt_error = ApiError("Too old.", "stale_timestamp", 401)
+
+    code = ready.main(*run_args())
+
+    assert code == 0
+    assert outbox.pending() == [the_job_id(ready)]
+    assert "clock" in ready.text
+    assert receipt.load_receipt(the_job_id(ready))["status"] == "queued"
+
+
+def test_the_receipt_is_on_disk_before_the_first_network_attempt(ready: CliRig) -> None:
+    seen: dict[str, object] = {}
+
+    def spy() -> None:
+        seen["outbox"] = outbox.pending()
+        seen["receipts"] = list(config.receipts_dir().glob("*.json"))
+
+    ready.api.on_receipt = spy
+
+    ready.main(*run_args())
+
+    assert seen["outbox"] == [the_job_id(ready)]
+    assert len(seen["receipts"]) == 1  # type: ignore[arg-type]
+    assert outbox.pending() == []  # the server took it, so it left the outbox
+
+
+def test_ctrl_c_while_posting_keeps_the_receipt_for_sync(ready: CliRig) -> None:
+    ready.api.receipt_error = KeyboardInterrupt()
+
+    code = ready.main(*run_args())
+
+    assert code == 130
+    assert outbox.pending() == [the_job_id(ready)]
+    assert "thirst sync" in ready.errors
+    assert receipt.load_receipt(the_job_id(ready))["status"] == "pending"
+
+
+def test_an_outbox_write_error_still_prints_and_posts_the_receipt(
+    ready: CliRig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def broken(_: object) -> object:
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(outbox, "enqueue", broken)
+
+    code = ready.main(*run_args())
+
+    assert code == 0
+    assert "Thirst receipt j_" in ready.text
+    assert len(ready.api.receipts) == 1
+
+
+def test_an_outbox_write_error_with_the_server_down_is_said_out_loud(
+    ready: CliRig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def broken(_: object) -> object:
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(outbox, "enqueue", broken)
+    ready.api.receipt_error = ApiError("Could not reach the Thirst server.", "network_error", 0)
+
+    code = ready.main(*run_args())
+
+    assert code == 0
+    assert "could not be saved to the outbox" in ready.text
+    assert "Thirst receipt j_" in ready.text  # the numbers are still on screen
+    assert "queued, run" not in ready.text
+
+
+def test_a_local_copy_write_error_does_not_lose_the_receipt(
+    ready: CliRig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def broken(*_: object) -> object:
+        raise OSError(13, "Permission denied")
+
+    monkeypatch.setattr(receipt, "save_receipt", broken)
+
+    code = ready.main(*run_args())
+
+    assert code == 0
+    assert len(ready.api.receipts) == 1
+    assert "Thirst receipt j_" in ready.text
+    assert outbox.pending() == []
+
+
 # ------------------------------------------------------------ pausing and the plan's timeline
 
 
@@ -354,12 +467,25 @@ def test_modelled_run_needs_no_gpu_and_is_tagged_modelled(ready: CliRig) -> None
     assert ready.nvml.set_calls == []
 
 
-def test_modelled_run_needs_the_gpu_flags(ready: CliRig) -> None:
+def test_modelled_run_without_a_gpu_needs_the_gpu_flags(ready: CliRig) -> None:
+    ready.nvml_error = GpuError("No NVIDIA GPU was found on this machine.")
+
     code = ready.main(*run_args("--modelled"))
 
     assert code == 2
     assert "--gpu-model" in ready.errors
     assert ready.api.plan_payloads == []
+
+
+def test_modelled_run_uses_the_detected_gpu_when_the_flags_are_left_out(ready: CliRig) -> None:
+    # TODO 4.1.d: the README example `thirst run --modelled ...` has no GPU flags.
+    code = ready.main(*run_args("--modelled"))
+
+    assert code == 0
+    assert ready.api.plan_payloads[0]["gpu_count"] == len(ready.nvml.gpus)
+    body = ready.api.receipts[0]
+    assert body["method"] == "modelled"
+    assert ready.nvml.set_calls == []  # modelled never touches the power limit
 
 
 # ------------------------------------------------------------ bad setups

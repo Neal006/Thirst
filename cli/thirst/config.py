@@ -15,9 +15,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 import tomli_w
 
+from . import ids
 from .errors import ConfigError
 
 if sys.version_info >= (3, 11):
@@ -33,8 +35,6 @@ CREDENTIAL_ENV = "THIRST_TOKEN"
 DEFAULT_API_URL = "https://l6y3i40hh4.execute-api.ap-south-1.amazonaws.com"
 DEFAULT_WEB_URL = "https://main.dzxkrtlc7xqfx.amplifyapp.com"
 
-_SITE_ID = re.compile(r"s_[a-z2-7]{10}")
-_TOKEN = re.compile(r"[0-9a-f]{64}")
 _REGISTER_FIRST = "Run `thirst register` first."
 
 
@@ -43,6 +43,9 @@ class Config:
     api_url: str
     site_id: str
     token: str = field(repr=False)
+    # False for a --private site: its receipts are hidden on the website (D26), so the CLI does
+    # not print a link that would 404. Older config files have no key and count as public.
+    public: bool = True
 
 
 def thirst_home(env: Mapping[str, str] | None = None) -> Path:
@@ -74,14 +77,42 @@ def restore_marker_path() -> Path:
     return thirst_home() / "restore.json"
 
 
+_LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
+_URL_HELP = (
+    "api_url must start with https:// (http:// is only allowed for localhost), "
+    "and must not contain a user name or password."
+)
+
+
+def check_api_url(raw: str) -> str:
+    """The URL without a trailing slash, or ``ConfigError``.
+
+    The site token travels in requests to this address, so it must be ``https://``. Plain
+    ``http://`` is accepted only for loopback hosts (local development). A URL with a user name or
+    password in it is refused.
+    """
+    url = raw.strip().rstrip("/")
+    if re.search(r"\s", url):
+        raise ConfigError(_URL_HELP)
+    try:
+        parts = urlsplit(url)
+        host = parts.hostname
+        parts.port  # noqa: B018 - raises ValueError for a bad port
+    except ValueError:
+        raise ConfigError(_URL_HELP) from None
+    if not host or "@" in parts.netloc:
+        raise ConfigError(_URL_HELP)
+    if parts.scheme == "https" or (parts.scheme == "http" and host in _LOOPBACK_HOSTS):
+        return url
+    raise ConfigError(_URL_HELP)
+
+
 def validated(cfg: Config) -> Config:
     """Return the config with a normalised URL, or raise ``ConfigError`` naming the bad key."""
-    url = cfg.api_url.strip().rstrip("/")
-    if not re.fullmatch(r"https?://[^\s/]+(/\S*)?", url):
-        raise ConfigError("api_url in config.toml must start with http:// or https://.")
-    if not _SITE_ID.fullmatch(cfg.site_id):
+    url = check_api_url(cfg.api_url)
+    if not ids.SITE_ID.fullmatch(cfg.site_id):
         raise ConfigError("site_id in config.toml is not a valid site id, such as s_abcdefghij.")
-    if not _TOKEN.fullmatch(cfg.token):
+    if not ids.TOKEN.fullmatch(cfg.token):
         raise ConfigError("token must be 64 lowercase hex characters. Run `thirst register` again.")
     return replace(cfg, api_url=url)
 
@@ -121,6 +152,7 @@ def load(env: Mapping[str, str] | None = None) -> Config:
             api_url=_text(url, "api_url"),
             site_id=_text(site, "site_id"),
             token=_text(token, "token"),
+            public=data.get("public") is not False,
         )
     )
 
@@ -144,7 +176,12 @@ def write_private(path: Path, text: str) -> None:
 def save(cfg: Config) -> Path:
     """Validate and write the config. Returns the path."""
     good = validated(cfg)
-    body = {"api_url": good.api_url, "site_id": good.site_id, "token": good.token}
+    body = {
+        "api_url": good.api_url,
+        "site_id": good.site_id,
+        "token": good.token,
+        "public": good.public,
+    }
     path = config_path()
     write_private(path, tomli_w.dumps(body))
     return path

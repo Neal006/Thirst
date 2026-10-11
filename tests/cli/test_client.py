@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -172,6 +172,20 @@ def test_server_errors_are_retried_with_backoff_then_succeed() -> None:
     assert result == {"ok": 1}
     assert len(server.requests) == 3
     assert sleeps == [1, 2]
+
+
+def test_register_is_retried_on_a_server_error_too() -> None:
+    # TODO 4.2: POST /sites goes through the same retry with backoff as every other call.
+    server = Server(
+        reply(503, {"error": "try_again", "message": "x"}), reply(201, {"site_id": "s"})
+    )
+    sleeps: list[float] = []
+
+    result = make_client(server, sleeps).post_site({})
+
+    assert result == {"site_id": "s"}
+    assert [r.url.path for r in server.requests] == ["/sites", "/sites"]
+    assert sleeps == [1]
 
 
 def test_gives_up_after_three_retries() -> None:
@@ -342,7 +356,7 @@ def test_server_time_comes_from_the_date_header() -> None:
 
     when = make_client(server).get_server_time()
 
-    assert when == datetime(2025, 10, 10, 4, 0, tzinfo=UTC)
+    assert when == datetime(2025, 10, 10, 4, 0, tzinfo=timezone.utc)
     assert server.requests[0].url.path == "/assumptions"
 
 

@@ -3,9 +3,8 @@
 
 .section-title {
   font-size: clamp(2rem, 1.3rem + 3vw, 3.6rem);
-  font-weight: 850;
-  font-stretch: 68%;
-  text-transform: uppercase;
+  font-weight: 750;
+  font-stretch: 100%;
   line-height: 0.95;
   margin: 0;
 }
@@ -13,7 +12,7 @@
 .seg {
   display: inline-flex;
   flex-wrap: wrap;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--white);
   overflow: hidden;
@@ -26,7 +25,7 @@
   padding: 9px 14px;
   min-height: 42px;
   border: 0;
-  border-right: 1px solid var(--ink);
+  border-right: 1px solid var(--border);
   background: transparent;
   color: var(--ink);
   cursor: pointer;
@@ -57,7 +56,7 @@
   height: 12px;
   margin-right: 5px;
   vertical-align: -1px;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--border);
 }
 
 .swatch-grid {
@@ -85,7 +84,7 @@
   align-items: center;
   gap: 4px 12px;
   padding: 12px 16px;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--border);
   background: var(--white);
   font-size: 1.15rem;
   font-weight: 700;
@@ -93,9 +92,8 @@
 
 .cf-name {
   color: var(--cobalt);
-  font-stretch: 75%;
-  text-transform: uppercase;
-  font-weight: 850;
+  font-stretch: 100%;
+  font-weight: 750;
 }
 
 .cf-eq {
@@ -125,7 +123,6 @@
   font-family: var(--mono);
   font-size: 0.66rem;
   font-weight: 500;
-  text-transform: uppercase;
   color: var(--text-muted);
 }
 
@@ -163,7 +160,7 @@
 
 .podium-1 {
   border-color: var(--ink);
-  box-shadow: 5px 5px 0 var(--signal);
+  box-shadow: var(--shadow);
 }
 
 .podium-ghost {
@@ -176,8 +173,8 @@
   right: 10px;
   bottom: -22px;
   font-size: 6rem;
-  font-weight: 900;
-  font-stretch: 62%;
+  font-weight: 750;
+  font-stretch: 100%;
   line-height: 1;
   color: var(--surface-sunk);
   pointer-events: none;
@@ -251,8 +248,8 @@
   display: grid;
   place-items: center;
   font-size: 1.5rem;
-  font-weight: 900;
-  font-stretch: 65%;
+  font-weight: 750;
+  font-stretch: 100%;
 }
 
 .classes {
@@ -283,8 +280,8 @@
 
 .class-id {
   font-size: 1.3rem;
-  font-weight: 900;
-  font-stretch: 65%;
+  font-weight: 750;
+  font-stretch: 100%;
   line-height: 1;
 }
 
@@ -308,3 +305,12 @@
   }
 }
 
+
+
+/* Monsoon refresh: calmer section titles */
+.section-title {
+  font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.4rem);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}

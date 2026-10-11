@@ -11,8 +11,10 @@ import {
 } from 'recharts'
 import type { ParetoEntry, PlanTags } from '../api/types'
 import { formatAmount, formatClock } from '../lib/format'
+import { pickAlpha } from '../lib/paretoPick'
 import { alphaText, snapAlpha } from '../lib/planView'
 import { ChartTooltip } from './ChartTooltip'
+import { ParetoTable } from './ParetoTable'
 import { TagChip } from './TagChip'
 
 interface ParetoChartProps {
@@ -78,13 +80,10 @@ export function ParetoChart({ entries, tags, selectedAlpha, onSelect }: ParetoCh
           <span>yellow dot: your pick</span>
         </span>
       </div>
-      <div
-        className="chart-box"
-        role="img"
-        aria-label="Scatter chart of stress-weighted water against CO₂ for the 11 slider positions"
-      >
+      {/* Mouse convenience only: the table below and the slider are the keyboard and screen reader path. */}
+      <div className="chart-box" aria-hidden="true">
         <ResponsiveContainer width="100%" height={HEIGHT} initialDimension={INITIAL}>
-          <ScatterChart margin={{ top: 8, right: 16, bottom: 20, left: 4 }}>
+          <ScatterChart margin={{ top: 8, right: 16, bottom: 20, left: 4 }} accessibilityLayer={false}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis type="number" dataKey="x" name="Stress-weighted water" domain={['auto', 'auto']} tick={{ fontSize: 12 }} label={{ value: 'stress-weighted litres →', position: 'insideBottom', offset: -10, fontSize: 12 }} />
             <YAxis type="number" dataKey="y" name="CO₂" domain={['auto', 'auto']} width={48} tick={{ fontSize: 12 }} label={{ value: 'kg CO₂ →', angle: -90, position: 'insideLeft', fontSize: 12 }} />
@@ -108,7 +107,7 @@ export function ParetoChart({ entries, tags, selectedAlpha, onSelect }: ParetoCh
                     stroke={isSelected ? 'var(--ink)' : 'var(--cobalt)'}
                     strokeWidth={isSelected ? 2.5 : 1.5}
                     cursor="pointer"
-                    onClick={() => onSelect(dot.alpha)}
+                    onClick={() => onSelect(pickAlpha(dots, dot, selected))}
                   />
                 )
               }}
@@ -116,6 +115,7 @@ export function ParetoChart({ entries, tags, selectedAlpha, onSelect }: ParetoCh
           </ScatterChart>
         </ResponsiveContainer>
       </div>
+      <ParetoTable entries={entries} tags={tags} selectedAlpha={selected} />
       <figcaption>
         Each dot is one slider position. Closer to the bottom left is better for both water and
         carbon; click a dot or move the slider to choose. Values are{' '}

@@ -48,9 +48,9 @@ describe('ResultCard', () => {
 
   it('shows the saving as ranges, each with a modelled chip', () => {
     const card = renderCard(distinctPlan())
-    expect(card).toHaveTextContent(/saves about 10 to 20% modelled.*stress-weighted water/i)
-    expect(card).toHaveTextContent(/15 to 25% modelled.*CO₂/)
-    expect(card).toHaveTextContent(/compared with starting now/i)
+    expect(card).toHaveTextContent(/uses about 10 to 20% modelled.*less water/i)
+    expect(card).toHaveTextContent(/15 to 25% modelled.*less CO₂/)
+    expect(card).toHaveTextContent(/than starting now/i)
     const values = card.querySelectorAll('.range-value')
     expect(values.length).toBeGreaterThanOrEqual(3)
     values.forEach((value) => {
@@ -65,28 +65,28 @@ describe('ResultCard', () => {
     expect(water?.querySelector('.tag-placeholder')).not.toBeNull()
   })
 
-  it('shows person-days of city water as a range', () => {
+  it('shows the water as days of one person\'s city water, as a range', () => {
     const card = renderCard(distinctPlan())
-    expect(card).toHaveTextContent(/0\.11 to 0\.14 person-days/)
-    expect(card).toHaveTextContent(/of city water/i)
+    expect(card).toHaveTextContent(/0\.11 to 0\.14 days/)
+    expect(card).toHaveTextContent(/one person's daily use/i)
   })
 
-  it('says energy is modelled and that a receipt shows measured energy', () => {
+  it('says how fresh the forecast is and why the plan starts when it does', () => {
     const card = renderCard(distinctPlan())
-    expect(card).toHaveTextContent(/energy comes from your gpu type/i)
-    expect(card).toHaveTextContent(/after a real run, your receipt shows measured energy/i)
+    expect(card).toHaveTextContent(/forecast updated/i)
+    expect(card.querySelector('.why-line')).not.toBeNull()
   })
 
   it('warns that the power-cap factors are placeholders when the server says so', () => {
     const card = renderCard(distinctPlan())
-    expect(card).toHaveTextContent(/power-cap factors are placeholders/i)
+    expect(card).toHaveTextContent(/power factors are estimates/i)
     expect(within(card).getAllByRole('link', { name: /placeholder/i }).length).toBeGreaterThan(0)
   })
 
   it('says there is little room to shift when the notes say no_room', () => {
     const plan = distinctPlan({ notes: ['no_room'] })
     expect(renderCard(plan)).toHaveTextContent(
-      'Little room to shift before your deadline; starting now is fine.',
+      'Little room to shift before your deadline, so starting now is fine.',
     )
   })
 

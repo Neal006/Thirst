@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -260,6 +261,78 @@ def test_merge_replaces_this_gpu_and_keeps_the_others() -> None:
     assert existing["gpus"]["RTX-4090"]["u"] == 0.1  # the input is not changed
 
 
+def run_entry(tau85: float, eps85: float, u: float, idle: float, when: str) -> dict[str, Any]:
+    return {
+        "workload": "same",
+        "steps": 300,
+        "measured_at": when,
+        "levels": {
+            "1.0": {"tau": 1.0, "eps": 1.0},
+            "0.85": {"tau": tau85, "eps": eps85},
+            "0.7": {"tau": tau85 - 0.1, "eps": eps85 - 0.05},
+        },
+        "u": u,
+        "p_idle_w": idle,
+        "runs": 1,
+        "raw": [{"level": 1.0, "seconds": 10.0}],
+    }
+
+
+def test_a_second_run_keeps_the_median_per_level_and_both_raw_runs() -> None:
+    # Plan 4.5.d / TODO 2.2: a re-run used to replace the first run.
+    first = run_entry(0.94, 0.80, 0.90, 30.0, "2026-10-11T10:00+05:30")
+    second = run_entry(0.96, 0.84, 0.94, 34.0, "2026-10-11T11:00+05:30")
+
+    merged = sweep.merge_sweep({"gpus": {"RTX-4090": first}}, "RTX-4090", second)["gpus"][
+        "RTX-4090"
+    ]
+
+    assert merged["runs"] == 2
+    assert merged["levels"]["0.85"]["tau"] == pytest.approx(0.95)
+    assert merged["levels"]["0.85"]["eps"] == pytest.approx(0.82)
+    assert merged["u"] == pytest.approx(0.92)
+    assert merged["p_idle_w"] == pytest.approx(32.0)
+    assert [row["run"] for row in merged["raw"]] == [1, 2]
+    assert len(merged["history"]) == 2
+
+
+def test_a_third_run_takes_the_true_median_not_a_median_of_medians() -> None:
+    runs = [
+        run_entry(t, 0.8, 0.9, 30.0, f"2026-10-11T1{i}:00+05:30")
+        for i, t in enumerate((0.90, 0.99, 0.95))
+    ]
+    doc: dict[str, Any] = {"gpus": {}}
+    for entry in runs:
+        doc = sweep.merge_sweep(doc, "RTX-4090", entry)
+
+    merged = doc["gpus"]["RTX-4090"]
+    assert merged["runs"] == 3
+    assert merged["levels"]["0.85"]["tau"] == pytest.approx(0.95)
+
+
+def test_a_run_with_another_workload_replaces_instead_of_mixing() -> None:
+    first = run_entry(0.94, 0.80, 0.90, 30.0, "a")
+    second = {**run_entry(0.80, 0.70, 0.80, 20.0, "b"), "workload": "different"}
+
+    merged = sweep.merge_sweep({"gpus": {"RTX-4090": first}}, "RTX-4090", second)["gpus"][
+        "RTX-4090"
+    ]
+
+    assert merged["runs"] == 1
+    assert merged["levels"]["0.85"]["tau"] == pytest.approx(0.80)
+
+
+def test_combined_runs_still_load_in_the_engine(tmp_path: Path) -> None:
+    target = tmp_path / "powercap_sweep.json"
+    sweep.write_result(target, "RTX-4090", run_entry(0.94, 0.80, 0.90, 30.0, "a"))
+    sweep.write_result(target, "RTX-4090", run_entry(0.96, 0.84, 0.94, 34.0, "b"))
+
+    params = factors.load_factors(sweep_path=target).gpu_params("RTX-4090")
+
+    assert params.measured is True
+    assert params.levels[0.85].tau == pytest.approx(0.95)
+
+
 def test_merge_into_an_empty_file() -> None:
     assert sweep.merge_sweep({"gpus": {}}, "RTX-4090", {"u": 1})["gpus"] == {"RTX-4090": {"u": 1}}
 
@@ -334,6 +407,29 @@ def test_levels_must_include_full_power() -> None:
         sweep.parse_levels("85,70")
 
     assert "100" in err.value.message
+
+
+def test_the_sweep_uses_pci_order_so_torch_and_nvml_see_the_same_gpu(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # TODO 4.2: CUDA's default order is "fastest first", NVML's is the PCI bus.
+    monkeypatch.delenv("CUDA_DEVICE_ORDER", raising=False)
+    monkeypatch.setitem(sys.modules, "torch", None)
+
+    with pytest.raises(GpuError):
+        sweep.TorchResnetWorkload()
+
+    assert os.environ["CUDA_DEVICE_ORDER"] == "PCI_BUS_ID"
+
+
+def test_the_sweep_keeps_a_users_own_cuda_order(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CUDA_DEVICE_ORDER", "FASTEST_FIRST")
+    monkeypatch.setitem(sys.modules, "torch", None)
+
+    with pytest.raises(GpuError):
+        sweep.TorchResnetWorkload()
+
+    assert os.environ["CUDA_DEVICE_ORDER"] == "FASTEST_FIRST"
 
 
 def test_torch_missing_is_a_plain_error(monkeypatch: pytest.MonkeyPatch) -> None:

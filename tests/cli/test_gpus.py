@@ -45,6 +45,16 @@ def test_child_environment_does_not_modify_its_input() -> None:
     assert base == {"PATH": "x"}
 
 
+def test_child_environment_never_passes_the_site_key_to_the_job() -> None:
+    base = {"THIRST_TOKEN": "a" * 64, "PATH": "x"}
+
+    env = gpus.child_environment(base)
+
+    assert "THIRST_TOKEN" not in env
+    assert env["PATH"] == "x"
+    assert base["THIRST_TOKEN"] == "a" * 64  # the CLI itself still has it
+
+
 def test_child_environment_asks_python_not_to_buffer_the_tee() -> None:
     assert gpus.child_environment({})["PYTHONUNBUFFERED"] == "1"
     assert gpus.child_environment({"PYTHONUNBUFFERED": "0"})["PYTHONUNBUFFERED"] == "0"
@@ -191,6 +201,37 @@ def test_same_model_on_all_gpus_resolves() -> None:
     names = ["NVIDIA GeForce RTX 4090"] * 3
 
     assert gpus.resolve_model(names, None).id == "RTX-4090"
+
+
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        ("NVIDIA GeForce RTX 3050 Laptop GPU", "RTX-3050-Laptop"),
+        ("NVIDIA GeForce RTX 3050 6GB Laptop GPU", "RTX-3050-Laptop"),
+        ("NVIDIA GeForce RTX 3050 Ti Laptop GPU", "RTX-3050-Ti-Laptop"),
+        ("NVIDIA GeForce RTX 3060 Laptop GPU", "RTX-3060-Laptop"),
+        ("NVIDIA GeForce RTX 3060", "RTX-3060"),
+        ("NVIDIA GeForce RTX 3060 Ti", "RTX-3060-Ti"),
+        ("NVIDIA GeForce RTX 3070 Ti", "RTX-3070-Ti"),
+        ("NVIDIA GeForce RTX 3080 Ti Laptop GPU", "RTX-3080-Ti-Laptop"),
+        ("NVIDIA GeForce RTX 4070 SUPER", "RTX-4070-SUPER"),
+        ("NVIDIA GeForce RTX 4090 Laptop GPU", "RTX-4090-Laptop"),
+        ("NVIDIA GeForce RTX 4090", "RTX-4090"),
+        ("NVIDIA RTX A4000", "RTX-A4000"),
+        ("NVIDIA A10", "A10"),
+        ("Tesla V100-SXM2-16GB", "V100-SXM2"),
+        ("Tesla V100-PCIE-32GB", "V100-PCIE"),
+    ],
+)
+def test_lab_and_laptop_gpus_map_to_their_own_row_not_the_desktop_one(
+    name: str, expected: str
+) -> None:
+    assert gpus.match_model(name).id == expected
+
+
+def test_a10_is_not_confused_with_a100() -> None:
+    assert gpus.match_model("NVIDIA A100-PCIE-40GB").id == "A100-PCIE-40GB"
+    assert gpus.match_model("NVIDIA A10").id == "A10"
 
 
 def test_l4_is_not_confused_with_l40s() -> None:

@@ -317,6 +317,39 @@ def test_an_unexpected_error_stops_the_child_and_restores_the_cap() -> None:
     assert rig.cap.restores == 1
 
 
+def test_an_error_while_paused_still_continues_the_child_before_sigterm() -> None:
+    plan = segments(row(1, "run", 0.85), row(2, "pause", 0.0), row(3, "run", 0.85))
+    rig = Rig(plan, exit_after_s=None)
+
+    def explode_in_the_pause(r: Rig) -> None:
+        if r.clock.wall() >= ist("2026-10-10 02:30:00"):
+            raise RuntimeError("meter broke")
+
+    rig.on_sleep = explode_in_the_pause
+
+    outcome = rig.build().run()
+
+    assert outcome.error is not None
+    assert rig.child.calls == ["pause", "resume", "terminate", "wait:10"]
+    assert rig.cap.restores == 1
+
+
+def test_a_cap_restore_that_raises_is_reported_not_swallowed() -> None:
+    plan = segments(row(1, "run", 0.85))
+    rig = Rig(plan, exit_after_s=600)
+    assert rig.cap is not None
+
+    def broken_restore() -> tuple[str, ...]:
+        raise RuntimeError("NVML went away")
+
+    rig.cap.restore = broken_restore  # type: ignore[method-assign]
+
+    outcome = rig.build().run()
+
+    assert outcome.exit_code == 0
+    assert outcome.restore_failures == ("thirst doctor --restore",)
+
+
 # ------------------------------------------------------------ cap variants
 
 

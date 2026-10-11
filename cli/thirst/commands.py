@@ -15,7 +15,7 @@ from .gpus import child_environment, resolve_model, select_gpu_indices
 from .jobrun import cmd_run
 from .jobsetup import detect_gpus, load_client, web_url
 from .nvml import EnergyCounterUnsupported, LimitNotSupported, LimitPermissionDenied
-from .planning import build_plan_request, parse_deadline
+from .planning import build_plan_request, checked_plan, parse_deadline
 from .runner import pausable_decision
 from .schedule import plan_line
 
@@ -42,6 +42,7 @@ def cmd_register(args: argparse.Namespace, ctx: Context) -> int:
             "Tell Thirst where the API is: pass --api-url, or set THIRST_API_URL "
             "(your team lead has the address)."
         )
+    api_url = config.check_api_url(api_url)  # https only: the site token is sent to this address
     if config.config_path().exists() and not args.force:
         raise ConfigError(
             f"This computer is already registered ({config.config_path()}). "
@@ -63,7 +64,12 @@ def cmd_register(args: argparse.Namespace, ctx: Context) -> int:
         body["org"] = args.org
     created = ctx.make_client(api_url, "", "").post_site(body)
     saved = config.save(
-        config.Config(api_url=api_url, site_id=created["site_id"], token=created["token"])
+        config.Config(
+            api_url=api_url,
+            site_id=created["site_id"],
+            token=created["token"],
+            public=body["public"],
+        )
     )
     ctx.out(f"Registered site {created['site_id']} (division {created.get('division', '?')}).")
     ctx.out(f"Site page: {web_url(ctx.env).rstrip('/')}/sites/{created['site_id']}")
@@ -77,6 +83,7 @@ def cmd_register(args: argparse.Namespace, ctx: Context) -> int:
 
 
 def print_savings(ctx: Context, plan: dict[str, Any]) -> None:
+    assumptions = f"{web_url(ctx.env).rstrip('/')}/assumptions"
     ranges = (plan.get("chosen") or {}).get("savings_ranges") or {}
     ctx.out("Expected savings compared with starting right away (ranges, modelled):")
     for key, label in (("water_pct", "Water"), ("co2_pct", "CO2"), ("energy_pct", "Energy")):
@@ -85,7 +92,7 @@ def print_savings(ctx: Context, plan: dict[str, Any]) -> None:
             ctx.out(f"  {label:<7}{low} to {high}%")
     if plan.get("notes"):
         ctx.out("Notes: " + ", ".join(str(n) for n in plan["notes"]))
-    ctx.out(f"Plan id: {plan.get('plan_id', '?')}. Assumptions: /assumptions")
+    ctx.out(f"Plan id: {plan.get('plan_id', '?')}. Assumptions: {assumptions}")
 
 
 def cmd_plan(args: argparse.Namespace, ctx: Context) -> int:
@@ -105,9 +112,10 @@ def cmd_plan(args: argparse.Namespace, ctx: Context) -> int:
         force_now=False,
     )
     plan = client.post_plan(request)
-    if args.json:
+    if args.json:  # raw on purpose: --json is for debugging what the server said
         ctx.out(json.dumps(plan, indent=2, sort_keys=True))
         return 0
+    plan = checked_plan(plan)
     if decision.reason:
         ctx.out(decision.reason)
     ctx.out(plan_line(plan["chosen"]))
@@ -146,7 +154,7 @@ def cmd_receipt(args: argparse.Namespace, ctx: Context) -> int:
 
 
 class _Report:
-    """Collects the doctor's checks; prints [ok] or [FAIL] with a fix hint."""
+    """Collects the doctor's checks; prints [ok], [warn] or [FAIL] with a fix hint."""
 
     def __init__(self, ctx: Context) -> None:
         self._ctx = ctx
@@ -154,6 +162,11 @@ class _Report:
 
     def ok(self, label: str, detail: str = "") -> None:
         self._ctx.out(f"[ok]   {label}" + (f": {detail}" if detail else ""))
+
+    def warn(self, label: str, detail: str, hint: str = "") -> None:
+        """Worth knowing, but nothing is broken: not counted as a failure."""
+        suffix = f"  -> {hint}" if hint else ""
+        self._ctx.out(f"[warn] {label}: {detail}{suffix}")
 
     def fail(self, label: str, detail: str, hint: str = "") -> None:
         self.failed += 1
@@ -186,10 +199,21 @@ def _check_config_and_api(report: _Report, ctx: Context) -> None:
         report.ok("Your clock vs the server", f"{skew:.0f} s apart")
 
 
+_NO_LIMIT_READOUT = (
+    "This GPU does not let software read or change its power limit (common on laptops; "
+    "`nvidia-smi` shows [N/A]). Jobs still run and their energy is still measured"
+)
+
+
 def _check_cap_permission(report: _Report, ctx: Context, api: Any) -> None:
     label = "GPU power cap permission"
     try:
-        api.set_limit_mw(0, api.current_limit_mw(0))  # set the current limit to itself
+        current = api.current_limit_mw(0)
+    except GpuError:
+        report.warn(label, _NO_LIMIT_READOUT, "use `thirst run --no-cap`")
+        return
+    try:
+        api.set_limit_mw(0, current)  # set the current limit to itself
     except LimitPermissionDenied:
         if ctx.smi(["sudo", "-n", "nvidia-smi", "-L"]) == 0:
             report.ok(label, "NVML needs root, but `sudo -n nvidia-smi` works")
@@ -343,6 +367,12 @@ def _finish_sweep(ctx: Context, out: Path, model_id: str, result: sweep.SweepRes
             ctx.err(f"  {message}")
         ctx.err(f"Run it once more. The raw result was saved to {rejected}.")
         return EXIT_GPU
-    sweep.write_result(out, model_id, result.entry)
+    saved = sweep.write_result(out, model_id, result.entry)
+    if saved.get("runs", 1) > 1:
+        ctx.out(f"Combined with the earlier runs ({saved['runs']} in all), median per level:")
+        for level, values in saved["levels"].items():
+            ctx.out(
+                f"  {round(float(level) * 100)}%: tau {values['tau']:.3f}, eps {values['eps']:.3f}"
+            )
     ctx.out(f"Wrote {out}. Commit it so the engine uses the measured numbers.")
     return 0

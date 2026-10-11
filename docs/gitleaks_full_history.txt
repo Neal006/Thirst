@@ -1,0 +1,21 @@
+Full-history secret scan (TODO 1.8, plan 7.10.b)
+Date: 2026-10-11, about 15:20 IST
+Tool: gitleaks 8.28.0 with the repo's .gitleaks.toml
+Repo state: branch feat/web-ui-accessibility at c88afa1, with origin/main at 232578e and every
+remote branch fetched (git rev-list --all --count = 54 commits)
+
+Command 1 (every commit on every branch):
+  gitleaks detect --source . --log-opts="--all" --redact
+Result:
+  39 commits scanned (merge commits without their own changes are skipped)
+  scanned ~2.54 MB
+  no leaks found
+
+Command 2 (the working tree, including untracked files):
+  gitleaks detect --source . --no-git --redact
+Result:
+  scanned ~3.61 MB
+  no leaks found
+
+Still to do by a person: delete the PyPI token that was pasted in chat (TODO 1.7). A token that
+never reached git cannot be found by this scan.

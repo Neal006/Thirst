@@ -29,24 +29,24 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - uses: astral-sh/setup-uv@v6
-      - uses: actions/setup-node@v4
+      - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - uses: aws-actions/setup-sam@v2
+      - uses: aws-actions/setup-sam@v3
         with:
           use-installer: true
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ env.AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
@@ -81,3 +81,37 @@ jobs:
             echo "- Website: https://main.${AMPLIFY_APP_ID}.amplifyapp.com"
             echo "- API: ${{ steps.api.outputs.url }}"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # TODO 5.5: run the read-only Playwright + axe suite against the live site after every deploy.
+  # It only sends GET and POST /plan (see web/e2e/fixtures.ts), so it is safe against production.
+  # A failure here does not undo the deploy; it shows up as a red job with the report attached.
+  e2e:
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install the site's dependencies and Chromium
+        working-directory: web
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Playwright + axe against the live site
+        working-directory: web
+        env:
+          E2E_BASE_URL: https://main.${{ env.AMPLIFY_APP_ID }}.amplifyapp.com
+        run: npm run e2e
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: e2e-report
+          path: web/e2e/.out/
+          retention-days: 14

@@ -1,32 +1,67 @@
-# React + TypeScript + Vite
+# Thirst website (`web/`)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The React site that the live app runs: https://main.dzxkrtlc7xqfx.amplifyapp.com
 
-Currently, two official plugins are available:
+Built with Vite, React 19, TypeScript, React Router 7 and Recharts. Tests use Vitest + Testing Library, browser tests use Playwright, and lint is oxlint. **Needs Node 22.12+.**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Run it
 
-## React Compiler
+```bash
+npm ci
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+# A: against the real API code on your machine (no AWS), in another terminal from the repo root:
+#    python scripts/local_api.py           → http://127.0.0.1:3000
+VITE_API_URL=http://127.0.0.1:3000 npm run dev      # → http://localhost:5173
 
-## Expanding the Oxlint configuration
+# B: against the live API (5173 is an allowed CORS origin)
+VITE_API_URL=https://l6y3i40hh4.execute-api.ap-south-1.amazonaws.com npm run dev
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+# C: offline with fixture data (dev only)
+VITE_USE_MOCKS=true npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+| Variable | Meaning |
+|---|---|
+| `VITE_API_URL` | API base URL. A production build **fails** unless it is `https://`. |
+| `VITE_USE_MOCKS` | `true` serves fixture data in dev. A production build **fails** if it is `true`, and the mock code is left out of the bundle. |
+
+See `.env.example`.
+
+## Checks
+
+```bash
+npm test -- --run        # ~525 Vitest tests, including the honesty scan (src/test/honesty.ts)
+npm run lint             # oxlint
+npm run build            # tsc -b + vite build
+npm run e2e              # Playwright against the live site (read-only guard), desktop + 360 px phone
+                         # (Deploy also runs it after every deploy)
+npm run e2e:typecheck
+E2E_BASE_URL=http://localhost:5173 npm run e2e      # against a local `npm run preview -- --port 5173`
+npm run fixtures         # copy tests/fixtures/*.json into src/api/mocks/fixtures
+```
+
+**Honesty rule.** `src/test/honesty.ts` scans the rendered DOM. A test fails if a user-facing number has no tag chip (`measured`, `modelled`, `sourced`, `calibrated`, `placeholder`) next to it.
+
+**Accessibility.** The e2e suite runs axe and fails on any serious or critical issue. Keep text contrast ≥ 4.5:1 and tap targets ≥ 24 px.
+
+## Map
+
+| Path | What |
+|---|---|
+| `src/routes.tsx` | `/` home (loaded eagerly). `/plan`, `/cities`, `/leaderboard`, `/sites/:siteId`, `/receipts/:siteId/:jobId` and `/assumptions` load on first visit (react-router `lazy`). `/plan` reads share links (`?city&gpu&n&hours&deadline&pause&cooling`). |
+| `src/pages/` | One file per page. `LandingPage` + `pages/landing.css` is the home page. |
+| `src/components/landing/` | Home-page graphics: `Hero`, `WaterClock`, `Beakers`, `PowerCap`, `LoopStrip`, `BoardPreview` |
+| `src/components/` | Planner (`JobForm`, `ResultCard`, `PlanViews` with Timetable/Hourly/Calendar/Chart, `PlanActions` with the run command, calendar file and share link, `PlanChart`, `AlphaSlider`, `ParetoChart`/`ParetoTable`), board (`DivisionTabs`, `LeaderboardTable`, `ScoreRing`), receipts, `TagChip` |
+| `src/api/` | `client.ts` (fetch, timeouts, abort), `guards.ts` (runtime checks of every response), `types.ts`, `defaultClient.ts` (picks mocks or the real API), `mocks/` |
+| `src/hooks/` | `usePlan`, `useLoad`, `useAssumptions`, `useCityForecast` (one shared `/plan` per city and cooling), `useLeaderboard` |
+| `src/lib/` | Formatting, tags, deadlines (IST), job-form presets and share-link parsing, plan views and actions (`planViews.ts`), recent plans in `localStorage` (`recentPlans.ts`), badges, landing-page maths |
+| `src/index.css`, `theme.css`, `pages.css` | Light "Monsoon" theme (Archivo + IBM Plex Mono, background `#f7f8f6`, teal `#126e6b`, amber `#f0b43c`, ink `#1d2321`). The old token names `--cobalt` and `--signal` point at the new colours. Motion stops under `prefers-reduced-motion`. |
+| `e2e/` | Playwright specs. `fixtures.ts` holds the read-only guard (only GET and `POST /plan` may leave the browser). |
+
+## Deploy
+
+**Don't deploy by hand in normal use.**
+- **Automatic:** merging to `main` runs CI, then `.github/workflows/deploy.yml`. That builds with the stack's API URL and uploads the zip to Amplify app `dzxkrtlc7xqfx` through `scripts/deploy_web.py`.
+- **By hand:** `python scripts/deploy_web.py --app-id dzxkrtlc7xqfx --api-url <ApiUrl> --profile thirst`.
+
+`amplify.yml` only applies if the Amplify app is ever connected to Git.

@@ -9,6 +9,7 @@ The command is always an argument list and never goes through a shell.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import signal
@@ -56,8 +57,13 @@ class InterruptFlag:
         return self._event.wait(timeout)
 
 
+# SIGHUP comes when an SSH session drops: without a handler the CLI dies with the GPU still capped.
+_HANGUP = getattr(signal, "SIGHUP", None)  # not on Windows
+_GUARDED = tuple(sig for sig in (signal.SIGINT, signal.SIGTERM, _HANGUP) if sig is not None)
+
+
 class SignalGuard:
-    """While active, SIGINT and SIGTERM only set the flag. Does nothing off the main thread."""
+    """While active, SIGINT, SIGTERM and (POSIX) SIGHUP only set the flag. Main thread only."""
 
     def __init__(self, flag: InterruptFlag) -> None:
         self._flag = flag
@@ -68,7 +74,7 @@ class SignalGuard:
 
     def __enter__(self) -> SignalGuard:
         if threading.current_thread() is threading.main_thread():
-            for sig in (signal.SIGINT, signal.SIGTERM):
+            for sig in _GUARDED:
                 self._old[sig] = signal.signal(sig, self._handler)
         return self
 
@@ -142,7 +148,13 @@ class SubprocessChild:
             if source is None:
                 return
             read = getattr(source, "read1", source.read)
-            while chunk := read(_CHUNK):
+            while True:
+                try:
+                    chunk = read(_CHUNK)
+                except (OSError, ValueError):  # the pipe broke or was closed: nothing more to copy
+                    return
+                if not chunk:
+                    return
                 sink(chunk)
                 self._write_log(chunk)
 
@@ -151,10 +163,18 @@ class SubprocessChild:
         return thread
 
     def _write_log(self, data: bytes) -> None:
+        """Append to the log. If the log fails (disk full, removed drive) stop logging, but keep
+        draining the pipe: a tee thread that died would leave the job blocked on a full pipe."""
         with self._log_lock:
-            if self._log is not None:
+            if self._log is None:
+                return
+            try:
                 self._log.write(data)
                 self._log.flush()
+            except (OSError, ValueError):
+                log, self._log = self._log, None
+                with contextlib.suppress(OSError, ValueError):
+                    log.close()
 
     def poll(self) -> int | None:
         return self._proc.poll()

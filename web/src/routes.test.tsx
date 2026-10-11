@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
@@ -9,6 +9,9 @@ import { appRoutes, createAppRoutes } from './routes'
 import { clientWith, fetchSpy, jsonReply, type FetchFn } from './test/api'
 import { findUntaggedNumbers } from './test/honesty'
 import { distinctPlan } from './test/planFixture'
+
+// Pages load on first visit; the planner chunk (charts) can take over a second cold in jsdom.
+const PAGE_LOAD = { timeout: 5000 }
 
 const distinctApi: FetchFn = async (input, init) =>
   new URL(String(input)).pathname === '/plan' ? jsonReply(200, distinctPlan()) : mockFetch(input, init)
@@ -41,7 +44,7 @@ describe('routes', () => {
 
   it('opens the planner at /plan', async () => {
     renderAt('/plan')
-    expect(await screen.findByRole('heading', { level: 1, name: /when should your gpu job run/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: /when should your gpu job run/i }, PAGE_LOAD)).toBeInTheDocument()
   })
 
   it('moves between pages with the navigation', async () => {
@@ -50,6 +53,8 @@ describe('routes', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Leaderboard' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('link', { name: 'Assumptions' }))
     expect(await screen.findByRole('heading', { level: 1, name: 'Assumptions' })).toBeInTheDocument()
+    await userEvent.click(within(screen.getByRole('navigation', { name: /main/i })).getByRole('link', { name: 'Cities' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Compare cities' })).toBeInTheDocument()
   })
 
   it('sets the tab title for each page', async () => {
@@ -114,7 +119,7 @@ describe('a page that crashes', () => {
     const spy = quietly()
     renderBroken()
     await userEvent.click(await screen.findByRole('link', { name: /go to the planner/i }))
-    expect(await screen.findByRole('heading', { level: 1, name: /when should your gpu job run/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: /when should your gpu job run/i }, PAGE_LOAD)).toBeInTheDocument()
     spy.mockRestore()
   })
 })
@@ -142,7 +147,7 @@ describe('G5: no number with a unit is shown without a tag (plan 6.4.c)', () => 
   it('the home page with the live forecast, facts and the board preview', async () => {
     renderAt('/')
     await honest(async () => {
-      await screen.findAllByText('Best start')
+      await screen.findAllByText('Cleanest hour')
       await screen.findByText('Start now')
       await screen.findByRole('list', { name: /top small labs/i })
     })

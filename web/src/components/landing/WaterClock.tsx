@@ -133,7 +133,7 @@ export function WaterClock({ response }: { response: PlanResponse }) {
       </svg>
       {row ? (
         <div className="clock-face" aria-live="polite">
-          <span className="clock-label">{active === null ? 'Best start' : formatDay(row.slot)}</span>
+          <span className="clock-label">{active === null ? 'Cleanest hour' : formatDay(row.slot)}</span>
           <span className="clock-time">{formatClock(row.slot)}</span>
           <span className="clock-read">
             <span className="range-value">{waterPerKwh(row).toFixed(2)} L</span> <TagChip tag={tags.water} />

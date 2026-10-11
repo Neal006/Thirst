@@ -54,6 +54,20 @@ def test_signal_guard_sets_the_flag_and_restores_the_old_handlers() -> None:
     assert (signal.getsignal(signal.SIGINT), signal.getsignal(signal.SIGTERM)) == before
 
 
+@POSIX_ONLY
+def test_signal_guard_turns_a_dropped_ssh_session_into_an_interrupt() -> None:
+    flag = process.InterruptFlag()
+    before = signal.getsignal(signal.SIGHUP)
+
+    with process.SignalGuard(flag):
+        handler = signal.getsignal(signal.SIGHUP)
+        assert callable(handler)
+        handler(signal.SIGHUP, None)  # type: ignore[operator]
+        assert flag.is_set()  # the run stops cleanly and the cap is restored
+
+    assert signal.getsignal(signal.SIGHUP) == before
+
+
 def test_signal_guard_in_a_thread_does_not_crash() -> None:
     flag = process.InterruptFlag()
     errors: list[BaseException] = []
@@ -109,6 +123,34 @@ def test_output_is_tee_d_to_the_log_file_and_the_terminal(
     seen = capfd.readouterr()
     assert "to-out" in seen.out
     assert "to-err" in seen.err
+
+
+class _BrokenLog:
+    """A log file on a disk that just filled up."""
+
+    def write(self, data: bytes) -> int:
+        raise OSError(28, "No space left on device")
+
+    def flush(self) -> None:
+        raise OSError(28, "No space left on device")
+
+    def close(self) -> None:
+        pass
+
+
+def test_a_failing_log_never_blocks_the_job(tmp_path: Path) -> None:
+    # TODO 4.2: if the tee thread died on a log error, a chatty job would block on a full pipe.
+    child = spawn("import time, sys; time.sleep(0.5); sys.stdout.write('x' * 1_000_000)", tmp_path)
+    assert isinstance(child, process.SubprocessChild)
+    with child._log_lock:  # noqa: SLF001 - simulate the disk filling up mid-run
+        real = child._log  # noqa: SLF001
+        child._log = _BrokenLog()  # type: ignore[assignment]  # noqa: SLF001
+    try:
+        assert child.wait(20) == 0
+        assert child._log is None  # noqa: SLF001 - logging stopped, copying went on
+    finally:
+        if real is not None:
+            real.close()
 
 
 def test_the_environment_reaches_the_command(tmp_path: Path) -> None:
@@ -220,8 +262,7 @@ def test_pause_really_stops_the_process_and_resume_continues_it(tmp_path: Path) 
 # A training script that cleans up on SIGTERM (checkpoint, close files). Linux kills a stopped
 # process at once for a SIGTERM it does not handle, but a handled one waits for SIGCONT.
 HANDLES_SIGTERM = (
-    "import signal, sys\n"
-    "signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))\n"
+    "import signal, sys\nsignal.signal(signal.SIGTERM, lambda *_: sys.exit(0))\n"
 ) + COUNTER
 
 

@@ -16,7 +16,15 @@ function CaptureBanner({ receipt }: { receipt: ReceiptDetail }) {
     return <p className="card">No room to shift: this job doesn't count toward your score.</p>
   }
   if (receipt.capture === null) {
-    return <p className="card">A Capture number is not available for this receipt.</p>
+    return <p className="card">The share of the saving is not available for this receipt.</p>
+  }
+  if (receipt.capture < 0) {
+    // Worse than the base plan: say so in words. "You took -20%" would read as nonsense.
+    return (
+      <p className="card">
+        You used more than the base plan, so there was no saving to capture this time.
+      </p>
+    )
   }
   const percent = receipt.capture * 100
   return (

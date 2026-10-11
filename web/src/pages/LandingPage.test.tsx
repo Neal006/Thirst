@@ -92,7 +92,7 @@ describe('LandingPage', () => {
 
   it('gives copyable commands to get started', () => {
     renderWithApi(<LandingPage />)
-    expect(screen.getByText(/^pip install "git\+https:\/\/github.com\/Neal006\/Thirst#subdirectory=cli"$/)).toBeInTheDocument()
+    expect(screen.getByText(/^pip install thirst$/)).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: 'Copy' })).toHaveLength(3)
   })
 })

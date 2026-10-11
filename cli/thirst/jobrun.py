@@ -4,17 +4,20 @@ from __future__ import annotations
 
 import argparse
 import logging
+from contextlib import AbstractContextManager
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from . import config, outbox, powercap, receipt
 from .context import ApiClient, Context
-from .errors import EXIT_BAD_ARGS, EXIT_GPU, EXIT_INTERRUPTED, CliError, GpuError
+from .errors import EXIT_BAD_ARGS, EXIT_GPU, EXIT_INTERRUPTED, CliError, ConfigError, GpuError
 from .gpus import child_environment
 from .jobsetup import JobGpus, detect_gpus, load_client, web_url
+from .ledger import IST
 from .meter import EnergyMeter, Meter
 from .modelled import ModelledMeter, load_bundled_sweep, power_model
-from .planning import build_plan_request, parse_deadline
+from .planning import build_plan_request, checked_plan, parse_deadline
 from .powercap import PowerCap
 from .runner import (
     CapController,
@@ -36,6 +39,9 @@ _MARKER_PRESENT = (
     "A previous run may have left a GPU power cap in place. "
     "Run `thirst doctor --restore` first, then try again."
 )
+_SYNC_LATER = (
+    "Stopped while sending the receipt. It is saved on this computer: run `thirst sync` to send it."
+)
 _ACTIONS = {
     "start": "start the command at {level}% power",
     "pause": "pause the command (SIGSTOP)",
@@ -55,19 +61,33 @@ class _Instruments:
 def _plan_from_server(
     client: ApiClient, request: dict[str, Any]
 ) -> tuple[str, dict[str, Any], tuple[Segment, ...]]:
-    plan = client.post_plan(request)
-    chosen = plan.get("chosen")
-    plan_id = plan.get("plan_id")
-    if not isinstance(chosen, dict) or not isinstance(plan_id, str):
-        raise CliError("The server sent a plan the CLI cannot read. Try again in a minute.")
-    return plan_id, chosen, segments_from_plan(chosen.get("schedule") or [])
+    plan = checked_plan(client.post_plan(request))
+    chosen = plan["chosen"]
+    return plan["plan_id"], chosen, segments_from_plan(chosen["schedule"])
 
 
-def _print_dry_run(ctx: Context, segments: tuple[Segment, ...]) -> None:
+def _moment(value: Any) -> datetime | None:
+    try:
+        moment = datetime.fromisoformat(str(value))
+    except ValueError:
+        return None
+    return moment.astimezone(IST) if moment.tzinfo is not None else None
+
+
+def _print_dry_run(ctx: Context, segments: tuple[Segment, ...], chosen: dict[str, Any]) -> None:
+    """The changes in order. Slots are whole hours, but the first start and the planned end use
+    the plan's exact times so they match the plan line above (a job submitted at 12:47 starts at
+    12:47, not 12:00)."""
+    start, finish = _moment(chosen.get("start")), _moment(chosen.get("finish"))
     ctx.out("Dry run: nothing is started. The CLI would make these changes:")
     for step in transitions(segments):
+        when = step.when
+        if step.action == "start" and start is not None and start > when:
+            when = start
+        if step.action == "end" and finish is not None and finish < when:
+            when = finish
         text = _ACTIONS[step.action].format(level=round(step.level * 100))
-        ctx.out(f"  {step.when:%d %b %H:%M}  {text}")
+        ctx.out(f"  {when:%d %b %H:%M}  {text}")
 
 
 def _instruments(ctx: Context, args: argparse.Namespace, gpus: JobGpus, sleep: Any) -> _Instruments:
@@ -115,27 +135,60 @@ def _report_restore_failures(ctx: Context, outcome: RunOutcome) -> None:
     ctx.err("Or run `thirst doctor --restore` later.")
 
 
+def _save_copy(
+    ctx: Context, body: dict[str, Any], response: dict[str, Any] | None, status: str
+) -> bool:
+    """The copy for `thirst receipt show`. A disk problem must not cost the user the receipt."""
+    try:
+        receipt.save_receipt(body, response, status)
+    except OSError as exc:
+        ctx.err(f"thirst: could not save a local copy of the receipt ({exc.strerror or exc}).")
+        return False
+    return True
+
+
+def _site_is_public(ctx: Context) -> bool:
+    try:
+        return config.load(ctx.env).public
+    except ConfigError:
+        return True
+
+
 def _handle_receipt(
     ctx: Context,
     client: ApiClient,
     body: dict[str, Any],
     gpus: JobGpus,
     outcome: RunOutcome,
-) -> None:
+    guard: AbstractContextManager[Any],
+) -> int | None:
+    """Save, then post. Returns an exit code only when Ctrl-C stopped the post."""
     for note in outcome.notes:
         ctx.out(f"Note: {note}")
     for warning in receipt.plausibility_warnings(body, gpus.model.p_max_w):
         ctx.out(f"Warning: {warning}")
-    posted = outbox.post_or_queue(client, body)
+    with guard:  # hours of measurement: the disk writes finish even if Ctrl-C arrives now
+        copied = _save_copy(ctx, body, None, "pending")
+        failure = outbox.queue_safely(body)
+    try:
+        posted = outbox.post_queued(client, body, failure)
+    except KeyboardInterrupt:
+        ctx.err(_SYNC_LATER if failure is None else "Stopped while sending the receipt.")
+        return EXIT_INTERRUPTED
     status = posted.status
-    receipt.save_receipt(body, posted.response, status)
+    if copied:
+        _save_copy(ctx, body, posted.response, status)
     if status == "posted" and posted.response:
-        text = receipt.format_scored(body, posted.response, web_url(ctx.env))
+        text = receipt.format_scored(
+            body, posted.response, web_url(ctx.env), public=_site_is_public(ctx)
+        )
     elif status == "queued":
+        ctx.out(f"Note: {posted.message}")
         text = receipt.format_local(body, queued=True)
     else:
         text = receipt.format_local(body, queued=False, note=posted.message)
     ctx.out(text.rstrip("\n"))
+    return None
 
 
 def _finish(
@@ -146,6 +199,7 @@ def _finish(
     outcome: RunOutcome,
     meter: EnergyMeter,
     ids: tuple[str, str, str],
+    guard: AbstractContextManager[Any],
 ) -> int:
     _report_restore_failures(ctx, outcome)
     if not outcome.started:
@@ -174,7 +228,9 @@ def _finish(
         ctx.out("This was a test run (--slot-seconds), so the receipt was not posted.")
         ctx.out(receipt.format_local(body, queued=False, note="Test run, not posted.").rstrip())
     else:
-        _handle_receipt(ctx, client, body, gpus, outcome)
+        stopped = _handle_receipt(ctx, client, body, gpus, outcome, guard)
+        if stopped is not None:
+            return stopped
     return _exit_code(outcome)
 
 
@@ -210,7 +266,8 @@ def _execute(
     )
     try:
         outcome = runner.run()
-        return _finish(ctx, args, client, gpus, outcome, parts.meter, (site_id, plan_id, job_id))
+        ids = (site_id, plan_id, job_id)
+        return _finish(ctx, args, client, gpus, outcome, parts.meter, ids, ctx.make_guard(flag))
     finally:
         parts.meter.close()
 
@@ -250,7 +307,8 @@ def cmd_run(args: argparse.Namespace, ctx: Context) -> int:
         if args.slot_seconds:
             segments = compress(segments, args.slot_seconds, ctx.wall())
         if args.dry_run:
-            _print_dry_run(ctx, segments)
+            # compressed test slots are not real times, so they are printed as they are
+            _print_dry_run(ctx, segments, {} if args.slot_seconds else chosen)
             return 0
         return _execute(ctx, args, client, cfg.site_id, plan_id, segments, gpus, decision)
     finally:

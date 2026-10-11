@@ -1,5 +1,19 @@
 # Thirst: Product Requirements Document (PRD)
 
+> **Status (11 Oct 2026).** Features F1–F11 are live:
+> - Website: https://main.dzxkrtlc7xqfx.amplifyapp.com
+> - CLI: `pip install thirst`
+>
+> F12: the template explanation is live; the Strands/Bedrock agent waits on account access.
+>
+> Not met yet:
+> - **F3 slider:** it uses the returned Pareto points, but shows no change until the power-cap sweep is measured.
+> - **F13 India-finding chart:** phase 03 not done.
+> - **F14 extra boards:** not built.
+> - **Metrics needing a desktop GPU:** a measured sweep and a measured receipt.
+>
+> Evidence for each metric is in [`docs/SUBMISSION.md`](docs/SUBMISSION.md).
+
 Version 0.3 · 9 Oct 2026 · Track 02: Heat and Water · Read `Idea.md` first for the why.
 Owner: team hello_world · Status: **approved for build** · Code freeze: Sun 11 Oct, 11:00 IST
 
@@ -130,7 +144,7 @@ Cut in this order: F14 → F13 → F12 → F4 (keep slider, drop Pareto dots) �
 
 ### 6.2 CLI flow (lab member)
 
-1. `pip install thirst` (from the repo).
+1. `pip install thirst` (from PyPI; 0.3.2 since 11 Oct).
 2. `thirst register --name "CSE GPU Lab" --city Chennai --cooling room_ac --gpus 4` prints the site id and saves the token to `~/.thirst/config.toml`.
 3. `thirst run --hours 6 --deadline "2026-10-10 09:00" --pausable -- python train.py`
 4. CLI prints one line: "Plan: start 01:00, cap 85%, pause 04:00 to 05:00, done by 08:10". It waits.

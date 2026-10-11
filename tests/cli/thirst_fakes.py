@@ -65,6 +65,7 @@ class FakeNvml:
     driver: str = "550.54"
     permission_denied: bool = False
     limit_unsupported: bool = False
+    limit_unreadable: bool = False  # laptops: NVML cannot even read the power limit ([N/A])
     set_failures_left: int = 0
     set_calls: list[tuple[int, int]] = field(default_factory=list)
     shutdowns: int = 0
@@ -97,6 +98,8 @@ class FakeNvml:
         return self.gpus[index].default_limit_mw
 
     def current_limit_mw(self, index: int) -> int:
+        if self.limit_unreadable:
+            raise GpuError("The NVIDIA driver reported an error while reading the GPU.")
         return self.gpus[index].current_limit_mw
 
     def set_limit_mw(self, index: int, milliwatts: int) -> None:

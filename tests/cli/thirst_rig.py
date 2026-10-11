@@ -74,6 +74,8 @@ class FakeApi:
         self.plan_error: Exception | None = None
         self.receipt_error: Exception | None = None
         self.receipt_result: dict[str, Any] | None = None
+        self.receipt_duplicate = False
+        self.on_receipt: Callable[[], None] | None = None  # runs just before the post
         self.site_result: dict[str, Any] = {"site_id": SITE, "token": TOKEN, "division": "D1"}
         self.site_error: Exception | None = None
         self.server_time: datetime = ist("2026-10-10 01:00:00")
@@ -96,8 +98,12 @@ class FakeApi:
 
     def post_receipt(self, payload: Any) -> ReceiptPost:
         self.receipts.append(dict(payload))
+        if self.on_receipt is not None:
+            self.on_receipt()
         if self.receipt_error is not None:
             raise self.receipt_error
+        if self.receipt_duplicate:
+            return ReceiptPost(response=None, duplicate=True)
         return ReceiptPost(response=self.receipt_result, duplicate=False)
 
     def get_server_time(self) -> datetime:

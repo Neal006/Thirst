@@ -38,6 +38,18 @@ describe('SitePage with receipts', () => {
     expect(header).toHaveTextContent(/platinum/i)
   })
 
+  it('puts the site name in the tab title', async () => {
+    renderSite('s_demoaaaaaa')
+    await screen.findByRole('heading', { level: 1, name: /demo lab, chennai/i })
+    expect(document.title).toMatch(/^Demo Lab, Chennai.* - Thirst$/)
+  })
+
+  it('uses a plain title while the site loads or when it is missing', async () => {
+    renderSite('s_nobodyhere', async () => jsonReply(404, { error: 'site_not_found', message: "We couldn't find that site." }))
+    await screen.findByRole('alert')
+    expect(document.title).toBe('Site - Thirst')
+  })
+
   it('breaks the score into A, B (never rated) and C with its parts', async () => {
     renderSite('s_demoaaaaaa')
     await screen.findByRole('heading', { level: 1 })

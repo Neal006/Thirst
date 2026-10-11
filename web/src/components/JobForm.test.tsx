@@ -53,7 +53,7 @@ describe('JobForm defaults', () => {
 
   it('explains that distributed jobs cannot pause yet', () => {
     setup()
-    expect(field(/can the job be paused/i)).toHaveAccessibleDescription(/single-process training only/i)
+    expect(field(/can the job be paused/i)).toHaveAccessibleDescription(/single-machine training only/i)
   })
 
   it('asks for the PUE only with a cooling tower, starting at 1.4', async () => {

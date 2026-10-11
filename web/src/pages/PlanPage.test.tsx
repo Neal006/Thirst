@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mockFetch } from '../api/mocks/mockFetch'
 import { calledPaths, fetchSpy, jsonReply, renderWithApi, type FetchFn } from '../test/api'
-import { distinctPlan } from '../test/planFixture'
+import { BASE_PLAN, distinctPlan } from '../test/planFixture'
 import { PlanPage } from './PlanPage'
 
 afterEach(() => {
@@ -58,7 +58,10 @@ describe('PlanPage with a plan', () => {
     expect(body).toMatchObject({ city: 'Chennai', gpu_model: 'RTX-4090', gpu_count: 2, alpha: 0.5 })
     expect(card()).toHaveTextContent('Start at 06:00')
     expect(screen.getByRole('slider')).toBeInTheDocument()
-    expect(screen.getAllByRole('img').length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByRole('tab', { name: 'Timetable' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('table', { name: /timetable/i })).toBeInTheDocument()
+    expect(screen.getByRole('table', { name: /slider positions/i })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Run this plan' })).toHaveTextContent('thirst run --hours')
   })
 
   it('moves the slider and changes the card without any request', async () => {
@@ -67,7 +70,7 @@ describe('PlanPage with a plan', () => {
     fireEvent.change(screen.getByRole('slider'), { target: { value: '1' } })
     await waitFor(() => expect(card()).toHaveTextContent('Start at 11:00'))
     expect(card()).toHaveTextContent('GPU at 100%')
-    expect(card()).toHaveTextContent(/saves about 15 to 25%/i)
+    expect(card()).toHaveTextContent(/uses about 15 to 25%/i)
     fireEvent.change(screen.getByRole('slider'), { target: { value: '0' } })
     await waitFor(() => expect(card()).toHaveTextContent('Start at 01:00'))
     expect(spy).not.toHaveBeenCalled()
@@ -92,7 +95,7 @@ describe('PlanPage with a plan', () => {
 
   it('shows the little-room copy when the plan says no_room', async () => {
     await planIt(fetchSpy(distinctApi(distinctPlan({ notes: ['no_room'] }))))
-    expect(card()).toHaveTextContent('Little room to shift before your deadline; starting now is fine.')
+    expect(card()).toHaveTextContent('Little room to shift before your deadline, so starting now is fine.')
   })
 
   it('warns when the forecast is old', async () => {
@@ -238,5 +241,15 @@ describe('PlanPage opened from a link', () => {
   it('ignores a city it does not know', async () => {
     renderWithApi(<PlanPage />, { path: '/plan?city=Atlantis' })
     expect(await screen.findByLabelText(/^city/i)).toHaveDisplayValue('Chennai')
+  })
+})
+
+describe('PlanPage when every trade-off option is the same plan', () => {
+  it('hides the slider and says why, with a placeholder chip (TODO 5.7)', async () => {
+    await planIt(fetchSpy(distinctApi(BASE_PLAN)))
+    expect(screen.queryByRole('slider')).not.toBeInTheDocument()
+    const note = screen.getByText(/every option gives the same plan/i).closest('p') as HTMLElement
+    expect(note).toHaveTextContent(/placeholder power-cap data/i)
+    expect(within(note).getByRole('link', { name: /placeholder/i })).toBeInTheDocument()
   })
 })

@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { Amount } from '../components/Amount'
 import { Badge } from '../components/Badge'
 import { RecentReceipts } from '../components/RecentReceipts'
@@ -17,7 +17,6 @@ function Header({ site, badge }: { site: SiteResponse['site']; badge: string | n
   return (
     <section aria-label="Site details" className="page-head site-head">
       <div>
-        <p className="eyebrow">Site · {site.division}</p>
         <h1>
           {site.name} {site.simulated ? <SimulatedChip /> : null}
         </h1>
@@ -26,6 +25,9 @@ function Header({ site, badge }: { site: SiteResponse['site']; badge: string | n
           <span className="chip">{divisionLabel(site.division)}</span> <Badge badge={badge} />
         </p>
       </div>
+      <Link className="btn" to={`/plan?city=${encodeURIComponent(site.city)}&cooling=${site.cooling}`}>
+        Plan a job here <span className="btn-arrow" aria-hidden="true">→</span>
+      </Link>
     </section>
   )
 }
@@ -37,9 +39,9 @@ function Monthly({ month }: { month: MonthlyAbsolute }) {
       <ul className="stat-list tiles">
         <li><span className="stat-label">GPU energy</span><Amount value={month.kwh} unit="kWh" tag="modelled" /></li>
         <li><span className="stat-label">Water used</span><Amount value={month.litres} unit="L" tag="modelled" /></li>
-        <li><span className="stat-label">Stress-weighted water</span><Amount value={month.stress_litres} unit="L" tag="modelled" /></li>
+        <li><span className="stat-label">Water, weighted by scarcity</span><Amount value={month.stress_litres} unit="L" tag="modelled" /></li>
         <li><span className="stat-label">CO₂</span><Amount value={month.kg_co2} unit="kg" tag="modelled" /></li>
-        <li><span className="stat-label">City water</span><Amount value={month.person_days} unit="person-days" tag="modelled" /></li>
+        <li><span className="stat-label">One person's city water for</span><Amount value={month.person_days} unit="person-days" tag="modelled" /></li>
       </ul>
     </section>
   )
@@ -47,8 +49,8 @@ function Monthly({ month }: { month: MonthlyAbsolute }) {
 
 export function SitePage() {
   const { siteId = '' } = useParams()
-  usePageTitle('Site')
   const { state, reload } = useSite(siteId)
+  usePageTitle(state.status === 'ready' ? state.data.site.name : 'Site')
   const assumptions = useAssumptions().state
   const steps = badgeSteps(assumptions.status === 'ready' ? assumptions.data.factors : undefined)
   if (state.status === 'loading') return <Spinner label="Loading the site…" lines={5} />
