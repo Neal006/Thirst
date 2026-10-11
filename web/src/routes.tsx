@@ -1,13 +1,21 @@
+import type { ComponentType } from 'react'
 import type { RouteObject } from 'react-router-dom'
 import { Layout } from './components/Layout'
-import { AssumptionsPage } from './pages/AssumptionsPage'
 import { LandingPage } from './pages/LandingPage'
-import { LeaderboardPage } from './pages/LeaderboardPage'
 import { NotFound } from './pages/NotFound'
-import { PlanPage } from './pages/PlanPage'
-import { ReceiptPage } from './pages/ReceiptPage'
 import { RouteError } from './pages/RouteError'
-import { SitePage } from './pages/SitePage'
+
+/**
+ * Pages other than home load on first visit (each is its own chunk; the charts library only comes
+ * with the planner), so the home page stays light.
+ */
+const lazyPage = (load: () => Promise<ComponentType>) => async () => ({ Component: await load() })
+
+const planPage = lazyPage(async () => (await import('./pages/PlanPage')).PlanPage)
+const receiptPage = lazyPage(async () => (await import('./pages/ReceiptPage')).ReceiptPage)
+const leaderboardPage = lazyPage(async () => (await import('./pages/LeaderboardPage')).LeaderboardPage)
+const sitePage = lazyPage(async () => (await import('./pages/SitePage')).SitePage)
+const assumptionsPage = lazyPage(async () => (await import('./pages/AssumptionsPage')).AssumptionsPage)
 
 /**
  * Home (/), plan (/plan), receipt, leaderboard, site and assumptions (anchors like /assumptions#tau_70).
@@ -27,11 +35,11 @@ export function createAppRoutes(extraPages: RouteObject[] = []): RouteObject[] {
           errorElement: <RouteError />,
           children: [
             { index: true, element: <LandingPage /> },
-            { path: 'plan', element: <PlanPage /> },
-            { path: 'receipts/:siteId/:jobId', element: <ReceiptPage /> },
-            { path: 'leaderboard', element: <LeaderboardPage /> },
-            { path: 'sites/:siteId', element: <SitePage /> },
-            { path: 'assumptions', element: <AssumptionsPage /> },
+            { path: 'plan', lazy: planPage },
+            { path: 'receipts/:siteId/:jobId', lazy: receiptPage },
+            { path: 'leaderboard', lazy: leaderboardPage },
+            { path: 'sites/:siteId', lazy: sitePage },
+            { path: 'assumptions', lazy: assumptionsPage },
             ...extraPages,
             { path: '*', element: <NotFound /> },
           ],
