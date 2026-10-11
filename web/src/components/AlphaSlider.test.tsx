@@ -31,13 +31,22 @@ describe('AlphaSlider', () => {
     expect(onChange).toHaveBeenCalledWith(0.8)
   })
 
-  it('ignores a value that is not a number', () => {
+  it('turns junk typed into the slider into a value on the grid', () => {
     const onChange = vi.fn()
-    render(<AlphaSlider value={0.5} onChange={onChange} />)
+    render(<AlphaSlider value={0.2} onChange={onChange} />)
+    // The browser sanitises junk in a range input to its midpoint; the slider reports exactly that.
     fireEvent.change(screen.getByRole('slider'), { target: { value: 'abc' } })
-    // The browser turns junk into the midpoint; either way the value stays on the grid.
-    for (const [alpha] of onChange.mock.calls) {
-      expect(Number.isFinite(alpha)).toBe(true)
-    }
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange).toHaveBeenCalledWith(0.5)
+  })
+
+  it('never reports NaN: a reading that is not a number falls back to the middle', () => {
+    const onChange = vi.fn()
+    render(<AlphaSlider value={0.2} onChange={onChange} />)
+    const slider = screen.getByRole('slider')
+    Object.defineProperty(slider, 'valueAsNumber', { configurable: true, get: () => Number.NaN })
+    fireEvent.change(slider, { target: { value: '0.9' } })
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange).toHaveBeenCalledWith(0.5)
   })
 })

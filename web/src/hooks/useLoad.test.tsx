@@ -59,6 +59,62 @@ describe('useLoad', () => {
     await waitFor(() => expect(load).toHaveBeenCalledTimes(2))
   })
 
+  it('discards a slow answer made for an old key', async () => {
+    const resolvers: Array<(value: string) => void> = []
+    const load = () => new Promise<string>((resolve) => resolvers.push(resolve))
+    const { result, rerender } = renderHook(({ k }) => useLoad(load, k), {
+      wrapper,
+      initialProps: { k: 'one' },
+    })
+    await waitFor(() => expect(resolvers).toHaveLength(1))
+    rerender({ k: 'two' })
+    await waitFor(() => expect(resolvers).toHaveLength(2))
+    // The answer for "one" arrives late, after the key moved on: it must not show.
+    await act(async () => resolvers[0]('old answer'))
+    expect(result.current.state).toEqual({ status: 'loading' })
+    await act(async () => resolvers[1]('new answer'))
+    expect(result.current.state).toEqual({ status: 'ready', data: 'new answer' })
+  })
+
+  it('discards the answer of an earlier attempt after a reload', async () => {
+    const resolvers: Array<(value: string) => void> = []
+    const load = () => new Promise<string>((resolve) => resolvers.push(resolve))
+    const { result } = renderHook(() => useLoad(load, 'a'), { wrapper })
+    await waitFor(() => expect(resolvers).toHaveLength(1))
+    act(() => result.current.reload())
+    await waitFor(() => expect(resolvers).toHaveLength(2))
+    await act(async () => resolvers[0]('stale'))
+    expect(result.current.state).toEqual({ status: 'loading' })
+    await act(async () => resolvers[1]('fresh'))
+    expect(result.current.state).toEqual({ status: 'ready', data: 'fresh' })
+  })
+
+  it('does not loop when the caller passes a new load function on every render', async () => {
+    const calls = vi.fn()
+    // Not memoised on purpose: a new function each render.
+    const { result } = renderHook(() =>
+      useLoad(async () => {
+        calls()
+        return 'x'
+      }, 'a'),
+    { wrapper })
+    await waitFor(() => expect(result.current.state.status).toBe('ready'))
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    })
+    expect(calls).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses the newest load function when the key changes', async () => {
+    const { result, rerender } = renderHook(
+      ({ k, value }) => useLoad(async () => value, k),
+      { wrapper, initialProps: { k: 'one', value: 'first' } },
+    )
+    await waitFor(() => expect(result.current.state).toEqual({ status: 'ready', data: 'first' }))
+    rerender({ k: 'two', value: 'second' })
+    await waitFor(() => expect(result.current.state).toEqual({ status: 'ready', data: 'second' }))
+  })
+
   it('passes an abort signal that fires when the component goes away', async () => {
     let seen: AbortSignal | undefined
     const load = vi.fn(async (_api: unknown, signal: AbortSignal) => {

@@ -58,7 +58,10 @@ describe('PlanPage with a plan', () => {
     expect(body).toMatchObject({ city: 'Chennai', gpu_model: 'RTX-4090', gpu_count: 2, alpha: 0.5 })
     expect(card()).toHaveTextContent('Start at 06:00')
     expect(screen.getByRole('slider')).toBeInTheDocument()
-    expect(screen.getAllByRole('img').length).toBeGreaterThanOrEqual(2)
+    // The plan chart is a described image; the Pareto chart is hidden from assistive technology
+    // on purpose and its 11 choices are a table instead.
+    expect(screen.getAllByRole('img')).toHaveLength(1)
+    expect(screen.getByRole('table', { name: /slider positions/i })).toBeInTheDocument()
   })
 
   it('moves the slider and changes the card without any request', async () => {
