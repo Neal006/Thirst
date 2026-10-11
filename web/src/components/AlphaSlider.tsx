@@ -26,7 +26,7 @@ export function AlphaSlider({ value, onChange }: AlphaSliderProps) {
           step={0.1}
           value={alpha}
           aria-valuetext={alphaText(alpha)}
-          onChange={(event) => onChange(snapAlpha(parseFloat(event.currentTarget.value)))}
+          onChange={(event) => onChange(snapAlpha(event.currentTarget.valueAsNumber))}
         />
         <span className="alpha-end alpha-end-water" aria-hidden="true">
           Water
