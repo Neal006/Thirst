@@ -1,0 +1,152 @@
+1
+00:00:00,450 --> 00:00:04,110
+Every hour a GPU trains a model, it drinks water twice:
+
+2
+00:00:04,110 --> 00:00:08,356
+at the building that cools it, and at the power plant that feeds it.
+
+3
+00:00:08,356 --> 00:00:11,165
+In Chennai, that water is already scarce.
+
+4
+00:00:11,850 --> 00:00:13,463
+Thirst makes it visible.
+
+5
+00:00:13,463 --> 00:00:18,013
+This dial is Chennai's next 24 hours from today's live forecast.
+
+6
+00:00:18,013 --> 00:00:22,724
+Longer wedges are thirstier hours; the amber arc is the best window.
+
+7
+00:00:22,724 --> 00:00:28,112
+Same job, two start times, and with a cooling tower the water is taken twice.
+
+8
+00:00:28,850 --> 00:00:30,607
+The second lever is speed.
+
+9
+00:00:30,607 --> 00:00:36,655
+At 70% power the same job takes a little longer but uses noticeably less energy.
+
+10
+00:00:36,655 --> 00:00:39,166
+That's a real cut, not just a shift.
+
+11
+00:00:39,850 --> 00:00:46,198
+A student plans tonight's job: two RTX 4090s, six hours of work, done by nine.
+
+12
+00:00:46,198 --> 00:00:51,736
+In about a second Thirst says when to start, how fast to run and when it finishes,
+
+13
+00:00:51,736 --> 00:00:56,215
+with one line on why that time, and savings as ranges, each labelled.
+
+14
+00:00:56,215 --> 00:01:02,280
+Read the next 48 hours as a timetable, hour by hour, on a calendar, or as a chart.
+
+15
+00:01:05,350 --> 00:01:08,088
+Then act on it: copy the exact command,
+
+16
+00:01:08,088 --> 00:01:14,873
+add the run to your calendar with a reminder, or send a link that reopens the same job for your labmate.
+
+17
+00:01:16,850 --> 00:01:20,360
+Or compare cities: the same job in six Indian cities,
+
+18
+00:01:20,360 --> 00:01:25,124
+with each one's best start, the next two days, and the water it would take.
+
+19
+00:01:26,850 --> 00:01:29,773
+On the GPU machine, it's one package.
+
+20
+00:01:33,350 --> 00:01:38,343
+thirst run waits for the right hour, lowers the GPU power limit,
+
+21
+00:01:38,343 --> 00:01:45,044
+runs your script, and always puts the limit back, even on Ctrl-C or a dropped SSH session.
+
+22
+00:01:45,044 --> 00:01:46,530
+Then a signed receipt.
+
+23
+00:01:46,530 --> 00:01:51,392
+On this machine the energy is modelled; on a lab GPU it's measured.
+
+24
+00:01:52,850 --> 00:01:58,031
+Receipts add up to a score: of the saving that was possible, how much did you take?
+
+25
+00:01:58,031 --> 00:02:03,239
+We score the choice, not the climate, and labs compete in weight classes,
+
+26
+00:02:03,239 --> 00:02:06,801
+so a four-GPU college lab never faces a data centre.
+
+27
+00:02:06,801 --> 00:02:09,225
+Demo labs are marked simulated.
+
+28
+00:02:10,350 --> 00:02:12,905
+It all runs serverless on AWS.
+
+29
+00:02:12,905 --> 00:02:14,762
+Amplify hosts the site.
+
+30
+00:02:14,762 --> 00:02:19,059
+API Gateway and AWS Lambda run the planner and scoring.
+
+31
+00:02:19,059 --> 00:02:23,214
+Amazon DynamoDB keeps the weather, plans and receipts.
+
+32
+00:02:23,214 --> 00:02:26,997
+EventBridge Scheduler refreshes the forecast every hour.
+
+33
+00:02:26,997 --> 00:02:31,526
+An explainer on Amazon Bedrock with the Strands Agents SDK
+
+34
+00:02:31,526 --> 00:02:34,286
+is wired in, waiting on model access.
+
+35
+00:02:34,286 --> 00:02:39,200
+AWS SAM deploys it all from GitHub, with no stored keys.
+
+36
+00:02:39,850 --> 00:02:44,523
+And every number wears a label: measured, modelled, sourced, or placeholder.
+
+37
+00:02:44,523 --> 00:02:48,606
+Today our power-cap curve is still a placeholder, and we say so.
+
+38
+00:02:49,350 --> 00:02:53,233
+Thirst. Run at the right hour, and the right speed, and prove it.
+
