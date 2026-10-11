@@ -156,7 +156,7 @@ Your score asks one question: *of the saving that was possible for this job, how
 
 | Label | Meaning |
 |---|---|
-| ![measured](https://img.shields.io/badge/-measured-0b8a50) | Read from the hardware on your machine |
+| ![measured](https://img.shields.io/badge/-measured-087a46) | Read from the hardware on your machine |
 | ![modelled](https://img.shields.io/badge/-modelled-0a4fe0) | Calculated from a model; the Assumptions page shows how |
 | ![sourced](https://img.shields.io/badge/-sourced-0a7280) | Taken from a published source we cite |
 | ![calibrated](https://img.shields.io/badge/-calibrated-6438d4) | Adjusted so the model matches a published yearly figure |
@@ -231,6 +231,15 @@ Deploys run from GitHub Actions after CI passes on `main` (`.github/workflows/de
 
 Checks: `make check` (or the commands in the [`Makefile`](Makefile) on Windows) and `npm --prefix web test -- --run`.
 Deep dives: [`Idea.md`](Idea.md) (why) · [`prd.md`](prd.md) (what) · [`trd.md`](trd.md) (how) · [`docs/implementation-plan/`](docs/implementation-plan/README.md) · [`AGENTS.md`](AGENTS.md).
+
+---
+
+## AI tools used
+
+- **Claude Code** (Anthropic; Claude Opus and Claude Sonnet models) helped plan, write, test and review the code, and set up AWS and CI. Commits it helped write carry a `Co-Authored-By: Claude …` trailer.
+- **Amazon Bedrock + Strands Agents** inside the product only explain a plan in plain words. The solver makes every decision.
+
+The full writeup, with how each AWS service is used and the limits we know about, is in [`docs/WRITEUP.md`](docs/WRITEUP.md).
 
 ---
 
