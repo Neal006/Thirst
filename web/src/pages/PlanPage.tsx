@@ -9,6 +9,7 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { useAssumptions } from '../hooks/useAssumptions'
 import { usePlan } from '../hooks/usePlan'
 import { defaultValues, type JobFormValues } from '../lib/jobForm'
+import { JobSentenceBox } from '../components/JobSentenceBox'
 
 /** F1 to F5: the form, and the plan with its charts and slider. */
 export function PlanPage() {
@@ -45,16 +46,17 @@ export function PlanPage() {
           <h2>Your job</h2>
           <span className="muted">India time</span>
         </div>
-        <JobForm
-          gpus={gpus}
-          cities={cities}
-          busy={plan.status === 'loading'}
-          onSubmit={plan.submit}
-          getDraft={() => draft.current ?? fromLink()}
-          onValuesChange={(values) => {
-            draft.current = values
-          }}
-        />
+<JobForm
+           gpus={gpus}
+           cities={cities}
+           busy={plan.status === 'loading'}
+           onSubmit={plan.submit}
+           getDraft={() => draft.current ?? fromLink()}
+           onValuesChange={(values) => {
+             draft.current = values
+           }}
+         />
+         <JobSentenceBox />
       </>
     )
   }

@@ -95,6 +95,13 @@ export interface PlanInputs {
   site_id: string | null
 }
 
+export interface ExplainResponse {
+  explanation: string
+  source: string
+  note: string | null
+  form: Record<string, any> | null
+}
+
 export interface PlanResponse {
   plan_id: string
   submit_ts: string

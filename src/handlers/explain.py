@@ -324,7 +324,16 @@ def post_explain() -> Response[str]:
     try:
         answer = _plain(_run_with_timeout(_build_runner(), ctx))
     except Exception as err:  # the model, the network and the SDK can all fail
-        logger.warning(f"agent_failed reason={type(err).__name__}")
+        # Narrow handling for known AWS SDK errors to avoid leaking details
+        from botocore.exceptions import ClientError
+        reason = getattr(err, "response", {}).get("Error", {}).get("Code", type(err).__name__)
+        if isinstance(err, ClientError):
+            reason = err.response.get("Error", {}).get("Code", type(err).__name__)
+        # Map AWS authorisation errors to a specific note for the client
+        if reason == "AccessDeniedException":
+            logger.warning(f"bedrock_not_authorized reason={reason}")
+            return _answer(template, "template", "bedrock_not_authorized")
+        logger.warning(f"agent_failed reason={reason}")
         return _answer(template, "template", "agent_failed")
     if not answer or _invents_numbers(answer, facts, *seen):
         logger.warning("agent_rejected reason=unsupported_number_or_empty")

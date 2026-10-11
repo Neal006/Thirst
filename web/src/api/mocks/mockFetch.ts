@@ -92,6 +92,17 @@ export async function mockFetch(input: RequestInfo | URL, init?: RequestInit): P
   const parts = url.pathname.split('/').filter(Boolean)
 
   if (method === 'POST' && url.pathname === '/plan') return plan(init)
+  if (method === 'POST' && url.pathname === '/explain') {
+    const body = parseBody(init)
+    const text = typeof body.text === 'string' ? body.text : ''
+    // simple deterministic mock: echo back a placeholder explanation
+    return reply(200, {
+      explanation: `Explanation for: ${text.substring(0, 50)}`,
+      source: 'template',
+      note: 'agent_disabled',
+      form: null,
+    })
+  }
   if (method === 'GET' && url.pathname === '/assumptions') return reply(200, MOCK_ASSUMPTIONS)
   if (method === 'GET' && url.pathname === '/leaderboard') {
     return leaderboard(url.searchParams.get('division') ?? 'D1')
