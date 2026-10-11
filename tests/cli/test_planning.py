@@ -123,3 +123,55 @@ def test_work_hours_must_be_above_zero_and_at_most_48(hours: float) -> None:
 def test_gpu_count_must_be_at_least_one() -> None:
     with pytest.raises(CliError):
         request(gpu_count=0)
+
+
+# ------------------------------------------------------------ reading the server's plan (TODO 4.2)
+
+
+def good_plan() -> dict[str, Any]:
+    return {
+        "plan_id": "p_abcdefghij",
+        "chosen": {
+            "start": "2026-10-10T01:00:00+05:30",
+            "finish": "2026-10-10T02:00:00+05:30",
+            "level_summary": "85%",
+            "schedule": [],
+            "savings_ranges": {"water_pct": [14, 29], "co2_pct": [9.5, 18]},
+        },
+        "notes": [],
+    }
+
+
+def test_a_good_plan_passes_unchanged() -> None:
+    plan = good_plan()
+
+    assert planning.checked_plan(plan) is plan
+
+
+@pytest.mark.parametrize(
+    "spoil",
+    [
+        lambda p: p.pop("plan_id"),
+        lambda p: p.update(chosen="nope"),
+        lambda p: p["chosen"].update(start="tomorrow"),
+        lambda p: p["chosen"].update(finish="2026-10-10T02:00:00"),  # no time zone
+        lambda p: p["chosen"].update(schedule=None),
+        lambda p: p["chosen"]["savings_ranges"].update(water_pct=[14]),
+        lambda p: p["chosen"]["savings_ranges"].update(co2_pct=["9", 18]),
+        lambda p: p["chosen"]["savings_ranges"].update(co2_pct=[math.nan, 18]),
+        lambda p: p.update(notes="none"),
+    ],
+)
+def test_a_broken_plan_is_one_plain_error(spoil: Any) -> None:
+    plan = good_plan()
+    spoil(plan)
+
+    with pytest.raises(CliError) as err:
+        planning.checked_plan(plan)
+
+    assert "cannot read" in err.value.message
+
+
+def test_a_plan_that_is_not_an_object_is_refused() -> None:
+    with pytest.raises(CliError):
+        planning.checked_plan(["not", "a", "plan"])

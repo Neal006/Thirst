@@ -30,10 +30,11 @@ See `.env.example`.
 ## Checks
 
 ```bash
-npm test -- --run        # ~510 Vitest tests, including the honesty scan (src/test/honesty.ts)
+npm test -- --run        # ~525 Vitest tests, including the honesty scan (src/test/honesty.ts)
 npm run lint             # oxlint
 npm run build            # tsc -b + vite build
 npm run e2e              # Playwright against the live site (read-only guard), desktop + 360 px phone
+                         # (Deploy also runs it after every deploy)
 npm run e2e:typecheck
 E2E_BASE_URL=http://localhost:5173 npm run e2e      # against a local `npm run preview -- --port 5173`
 npm run fixtures         # copy tests/fixtures/*.json into src/api/mocks/fixtures
@@ -47,14 +48,14 @@ npm run fixtures         # copy tests/fixtures/*.json into src/api/mocks/fixture
 
 | Path | What |
 |---|---|
-| `src/routes.tsx` | `/` home (loaded eagerly). `/plan`, `/leaderboard`, `/sites/:siteId`, `/receipts/:siteId/:jobId` and `/assumptions` load on first visit (react-router `lazy`). |
+| `src/routes.tsx` | `/` home (loaded eagerly). `/plan`, `/cities`, `/leaderboard`, `/sites/:siteId`, `/receipts/:siteId/:jobId` and `/assumptions` load on first visit (react-router `lazy`). `/plan` reads share links (`?city&gpu&n&hours&deadline&pause&cooling`). |
 | `src/pages/` | One file per page. `LandingPage` + `pages/landing.css` is the home page. |
 | `src/components/landing/` | Home-page graphics: `Hero`, `WaterClock`, `Beakers`, `PowerCap`, `LoopStrip`, `BoardPreview` |
-| `src/components/` | Planner (`JobForm`, `ResultCard`, `PlanChart`, `AlphaSlider`, `ParetoChart`/`ParetoTable`), board (`DivisionTabs`, `LeaderboardTable`, `ScoreRing`), receipts, `TagChip` |
+| `src/components/` | Planner (`JobForm`, `ResultCard`, `PlanViews` with Timetable/Hourly/Calendar/Chart, `PlanActions` with the run command, calendar file and share link, `PlanChart`, `AlphaSlider`, `ParetoChart`/`ParetoTable`), board (`DivisionTabs`, `LeaderboardTable`, `ScoreRing`), receipts, `TagChip` |
 | `src/api/` | `client.ts` (fetch, timeouts, abort), `guards.ts` (runtime checks of every response), `types.ts`, `defaultClient.ts` (picks mocks or the real API), `mocks/` |
 | `src/hooks/` | `usePlan`, `useLoad`, `useAssumptions`, `useCityForecast` (one shared `/plan` per city and cooling), `useLeaderboard` |
-| `src/lib/` | Formatting, tags, deadlines (IST), job-form presets, badges, landing-page maths |
-| `src/index.css`, `theme.css`, `pages.css` | Light theme tokens (Archivo + IBM Plex Mono, cobalt `#0a5cff`, signal yellow `#ffcc00`, ink `#0b1620`) |
+| `src/lib/` | Formatting, tags, deadlines (IST), job-form presets and share-link parsing, plan views and actions (`planViews.ts`), recent plans in `localStorage` (`recentPlans.ts`), badges, landing-page maths |
+| `src/index.css`, `theme.css`, `pages.css` | Light "Monsoon" theme (Archivo + IBM Plex Mono, background `#f7f8f6`, teal `#126e6b`, amber `#f0b43c`, ink `#1d2321`). The old token names `--cobalt` and `--signal` point at the new colours. Motion stops under `prefers-reduced-motion`. |
 | `e2e/` | Playwright specs. `fixtures.ts` holds the read-only guard (only GET and `POST /plan` may leave the browser). |
 
 ## Deploy

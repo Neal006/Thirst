@@ -537,6 +537,21 @@ def test_sweep_writes_the_measured_numbers(rig: CliRig, tmp_path: Path) -> None:
     assert rig.nvml.gpus[0].current_limit_mw == 450_000  # the cap is back
 
 
+def test_running_the_sweep_twice_reports_the_median(rig: CliRig, tmp_path: Path) -> None:
+    # Plan 4.5.d / TODO 2.2: the second run is combined with the first, not swapped in.
+    sweep_rig(rig)
+    out = tmp_path / "powercap_sweep.json"
+    rig.main("sweep", "--idle-seconds", "10", "--out", str(out))
+    sweep_rig(rig)
+
+    code = rig.main("sweep", "--idle-seconds", "10", "--out", str(out))
+
+    assert code == 0
+    entry = json.loads(out.read_text(encoding="utf-8"))["gpus"]["RTX-4090"]
+    assert entry["runs"] == 2
+    assert "Combined with the earlier runs (2 in all)" in rig.text
+
+
 def test_sweep_keeps_other_gpus_in_the_file(rig: CliRig, tmp_path: Path) -> None:
     sweep_rig(rig)
     out = tmp_path / "powercap_sweep.json"

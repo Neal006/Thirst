@@ -11,6 +11,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import statistics
 import tempfile
 import time
 from collections.abc import Callable, Mapping, Sequence
@@ -20,7 +21,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from .errors import CliError, GpuError
-from .gpus import GpuModel
+from .gpus import ORDER_VAR, PCI_ORDER, GpuModel
 from .ledger import IST
 from .nvml import EnergyCounterUnsupported, NvmlApi
 from .powercap import PowerCap, SmiRunner, run_command
@@ -215,11 +216,79 @@ def _raw(level: float, result: LevelResult, steps: int, gpu_count: int) -> dict[
 # ------------------------------------------------------------ the output file
 
 
+_RUN_FIELDS = ("measured_at", "levels", "u", "p_idle_w")
+
+
+def _is_full_entry(entry: Any) -> bool:
+    return (
+        isinstance(entry, Mapping)
+        and isinstance(entry.get("levels"), Mapping)
+        and bool(entry["levels"])
+        and _is_number(entry.get("u"))
+        and _is_number(entry.get("p_idle_w"))
+    )
+
+
+def _is_number(value: Any) -> bool:
+    return isinstance(value, int | float) and not isinstance(value, bool)
+
+
+def _same_setup(old: Any, new: Mapping[str, Any]) -> bool:
+    """Two runs can be combined only if both are complete and used the same workload."""
+    return (
+        _is_full_entry(old)
+        and _is_full_entry(new)
+        and old.get("workload") == new.get("workload")
+        and old.get("steps") == new.get("steps")
+        and set(old["levels"]) == set(new["levels"])
+    )
+
+
+def _run_summary(entry: Mapping[str, Any]) -> dict[str, Any]:
+    return {key: entry[key] for key in _RUN_FIELDS if key in entry}
+
+
+def combine_runs(old: Mapping[str, Any], new: Mapping[str, Any]) -> dict[str, Any]:
+    """Plan 4.5.d: after a second run, keep the median per level and every run's raw rows.
+
+    ``history`` holds each run's summary, so a third run still takes the true median. Medians of
+    an even count are the mean of the middle two. The engine only reads ``levels``, ``u`` and
+    ``p_idle_w``, so the file stays compatible.
+    """
+    history = [*(old.get("history") or [_run_summary(old)]), _run_summary(new)]
+    levels = {
+        key: {
+            name: statistics.median(float(run["levels"][key][name]) for run in history)
+            for name in ("tau", "eps")
+        }
+        for key in new["levels"]
+    }
+    old_raw = [
+        {**row, "run": row.get("run", 1)} for row in (old.get("raw") or []) if isinstance(row, dict)
+    ]
+    new_raw = [{**row, "run": len(history)} for row in (new.get("raw") or [])]
+    return {
+        **new,
+        "levels": levels,
+        "u": statistics.median(float(run["u"]) for run in history),
+        "p_idle_w": statistics.median(float(run["p_idle_w"]) for run in history),
+        "runs": len(history),
+        "history": history,
+        "raw": old_raw + new_raw,
+    }
+
+
 def merge_sweep(
     existing: Mapping[str, Any], gpu_id: str, entry: Mapping[str, Any]
 ) -> dict[str, Any]:
-    """A new document where this GPU's entry is replaced and the other GPUs are kept."""
-    gpus = {**(existing.get("gpus") or {}), gpu_id: dict(entry)}
+    """A new document with this GPU's entry updated and the other GPUs kept.
+
+    A new run with the same workload is combined with the earlier runs (median per level, plan
+    4.5.d). A run with a different workload, or an incomplete earlier entry, is replaced.
+    """
+    gpus = dict(existing.get("gpus") or {})
+    old = gpus.get(gpu_id)
+    gpus[gpu_id] = combine_runs(old, entry) if _same_setup(old, entry) else dict(entry)
     return {**existing, "gpus": gpus}
 
 
@@ -237,8 +306,8 @@ def _read_existing(path: Path) -> dict[str, Any]:
     return data
 
 
-def write_result(path: Path, gpu_id: str, entry: Mapping[str, Any]) -> None:
-    """Merge ``entry`` into the sweep file and write it atomically."""
+def write_result(path: Path, gpu_id: str, entry: Mapping[str, Any]) -> dict[str, Any]:
+    """Merge ``entry`` into the sweep file and write it atomically. Returns this GPU's entry."""
     merged = merge_sweep(_read_existing(path), gpu_id, entry)
     path.parent.mkdir(parents=True, exist_ok=True)
     handle, temp_name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
@@ -250,6 +319,7 @@ def write_result(path: Path, gpu_id: str, entry: Mapping[str, Any]) -> None:
         with contextlib.suppress(OSError):
             os.unlink(temp_name)
         raise
+    return dict(merged["gpus"][gpu_id])
 
 
 # ------------------------------------------------------------ the real workload (needs the GPU box)
@@ -259,6 +329,10 @@ class TorchResnetWorkload:
     """ResNet-18 on random 128x3x32x32 tensors, SGD (TRD 6.4). Needs torch and a CUDA GPU."""
 
     def __init__(self, device_index: int = 0) -> None:
+        # NVML numbers GPUs in PCI bus order. CUDA's default is "fastest first", so without this
+        # the sweep could time one GPU while metering another on a mixed box (TODO 4.2). It must be
+        # set before torch initialises CUDA. A user's own choice is kept.
+        os.environ.setdefault(ORDER_VAR, PCI_ORDER)
         try:
             import torch
             import torchvision

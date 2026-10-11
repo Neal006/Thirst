@@ -10,7 +10,7 @@
 >
 > Open (people):
 > - Video, blog and team registration.
-> - Repo public, full-history gitleaks, Cost Explorer screenshot.
+> - Repo public, Cost Explorer screenshot, deleting the PyPI token pasted in chat. (The full-history gitleaks scan is done: no leaks.)
 > - Submit, then keep the stack running.
 >
 > Release: the CLI is tagged `cli-v0.3.1`; the whole-project tag (7.7.e) is not yet pushed.
@@ -174,7 +174,7 @@ Storyboard from PRD §10. Collect the assets **before** recording:
 ## 7.10 Submission checklist (Sun 14:00 to 16:00, P0, gate M7)
 
 - [ ] **7.10.a** Every team member is registered and on the team (PRD §11).
-- [ ] **7.10.b** Secret scan of the whole history: `gitleaks detect --source . --log-opts="--all"` is clean. Check `samconfig.toml` and notebooks too.
+- [x] **7.10.b** Secret scan of the whole history: `gitleaks detect --source . --log-opts="--all"` is clean. Check `samconfig.toml` and notebooks too. Done 2026-10-11: no leaks in 54 commits or the working tree ([`../gitleaks_full_history.txt`](../gitleaks_full_history.txt)). Deleting the PyPI token pasted in chat is still open.
 - [ ] **7.10.c** Flip the repo to **public** (D3): `gh repo edit Neal006/thirst --visibility public --accept-visibility-change-consequences`. The MIT `LICENSE` is present. Commits are only from 8 Oct onwards.
 - [ ] **7.10.d** The README has the AI coding tools used, and credits and licences.
 - [ ] **7.10.e** The live URL works signed-out and on a phone.

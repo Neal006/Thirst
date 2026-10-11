@@ -120,8 +120,26 @@ Thirst receipt j_tksft2nswiku
 |---|---|
 | `thirst plan …` | See the plan without running anything |
 | `thirst run --now …` | Start right away (still measured, still a receipt) |
-| `thirst run --modelled …` | Thirst estimates the energy and says so on the receipt. With no NVIDIA GPU, add `--gpu-model` and `--gpus` (ids are on the Assumptions page) |
+| `thirst run --dry-run …` | Show what would happen, start nothing |
+| `thirst run --no-cap …` | Laptop GPU that can't be capped? Run measured but uncapped |
+| `thirst run --modelled …` | Thirst estimates the energy and says so on the receipt. It uses the detected GPU. With no NVIDIA GPU, add `--gpu-model RTX-4090 --gpus 2` (ids are on the Assumptions page) |
 | `thirst doctor` | Checks your setup: GPU, power-cap permission, clock, API |
+| `thirst sync` · `thirst receipt show <job_id>` | Send receipts saved while offline · print a saved receipt |
+
+Full walk-through with real outputs: [`docs/USER_TEST_GUIDE.md`](docs/USER_TEST_GUIDE.md).
+
+---
+
+## Status (11 Oct 2026)
+
+| | |
+|---|---|
+| ✅ Live | Website, API and hourly weather refresh on AWS; `pip install thirst` (0.3.1); 42 GPU models |
+| ✅ Tested | ~1,800 unit and integration tests in CI; Playwright on desktop and phone against the live site, with axe accessibility checks |
+| ⚠️ Placeholder | The power-cap speed/energy curve is still a placeholder until we measure it on a desktop GPU. So every plan picks 70%, all 11 water/carbon options are the same plan, and the planner hides the slider and says why. The app labels it. |
+| ⏳ Pending | AI explanations on Amazon Bedrock (account access pending; a template explanation is served meanwhile) |
+
+What's left, in detail: [`docs/TODO.md`](docs/TODO.md).
 
 ---
 
@@ -240,8 +258,17 @@ cd web && VITE_API_URL=http://127.0.0.1:3000 npm run dev      # site on :5173
 Deploys run from GitHub Actions after CI passes on `main` (`.github/workflows/deploy.yml`, AWS access through OIDC, no stored keys). By hand: `python scripts/build_layer.py && sam build && sam deploy --profile thirst`, then `python scripts/deploy_web.py --app-id dzxkrtlc7xqfx --api-url <ApiUrl> --profile thirst`.
 
 Checks: `make check` (or the commands in the [`Makefile`](Makefile) on Windows) and `npm --prefix web test -- --run`.
-Try it end to end: [`docs/USER_TEST_GUIDE.md`](docs/USER_TEST_GUIDE.md) · what's left: [`docs/TODO.md`](docs/TODO.md).
-Deep dives: [`Idea.md`](Idea.md) (why) · [`prd.md`](prd.md) (what) · [`trd.md`](trd.md) (how) · [`docs/implementation-plan/`](docs/implementation-plan/README.md) · [`AGENTS.md`](AGENTS.md).
+| Doc | What's in it |
+|---|---|
+| [`docs/USER_TEST_GUIDE.md`](docs/USER_TEST_GUIDE.md) | Test everything as a normal user, with real outputs |
+| [`docs/TODO.md`](docs/TODO.md) | Everything left, by priority |
+| [`docs/WRITEUP.md`](docs/WRITEUP.md) · [`docs/SUBMISSION.md`](docs/SUBMISSION.md) · [`docs/VIDEO_SCRIPT.md`](docs/VIDEO_SCRIPT.md) | Hackathon writeup, checklist, 3-minute video script |
+| [`SPEC.md`](SPEC.md) · [`ASSUMPTIONS.md`](ASSUMPTIONS.md) | The score rules · every factor with its value, status and source (generated) |
+| [`Idea.md`](Idea.md) · [`prd.md`](prd.md) · [`trd.md`](trd.md) | Why · what · how |
+| [`docs/implementation-plan/`](docs/implementation-plan/README.md) · [`AGENTS.md`](AGENTS.md) | Build plan with status · project memory for contributors and AI agents |
+| [`cli/README.md`](cli/README.md) · [`web/README.md`](web/README.md) | CLI reference · website dev guide |
+
+Releasing the CLI: bump `cli/pyproject.toml` and `cli/thirst/__init__.py`, merge, then `git tag cli-vX.Y.Z && git push origin cli-vX.Y.Z` (PyPI Trusted Publishing, no token).
 
 ---
 

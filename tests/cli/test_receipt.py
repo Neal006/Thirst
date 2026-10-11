@@ -312,6 +312,18 @@ def test_unrated_site_score_is_explained() -> None:
     assert "not rated yet" in receipt.format_scored(body, changed)
 
 
+def test_a_modelled_receipt_names_the_plan_level_it_assumed() -> None:
+    # TODO 4.1.g: "uncapped" next to a 70% saving read as a contradiction.
+    body = receipt.build_body(
+        facts(cap_applied=False, cap_method="none"), summary(*SEVEN, method="modelled")
+    )
+
+    text = receipt.format_scored(body, FIXTURE)
+
+    assert "modelled at 70% (plan level)" in text
+    assert "uncapped" not in text
+
+
 def test_uncapped_runs_say_so() -> None:
     body = receipt.build_body(facts(cap_applied=False, cap_method="none"), summary(*SEVEN))
 

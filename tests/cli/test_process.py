@@ -125,6 +125,34 @@ def test_output_is_tee_d_to_the_log_file_and_the_terminal(
     assert "to-err" in seen.err
 
 
+class _BrokenLog:
+    """A log file on a disk that just filled up."""
+
+    def write(self, data: bytes) -> int:
+        raise OSError(28, "No space left on device")
+
+    def flush(self) -> None:
+        raise OSError(28, "No space left on device")
+
+    def close(self) -> None:
+        pass
+
+
+def test_a_failing_log_never_blocks_the_job(tmp_path: Path) -> None:
+    # TODO 4.2: if the tee thread died on a log error, a chatty job would block on a full pipe.
+    child = spawn("import time, sys; time.sleep(0.5); sys.stdout.write('x' * 1_000_000)", tmp_path)
+    assert isinstance(child, process.SubprocessChild)
+    with child._log_lock:  # noqa: SLF001 - simulate the disk filling up mid-run
+        real = child._log  # noqa: SLF001
+        child._log = _BrokenLog()  # type: ignore[assignment]  # noqa: SLF001
+    try:
+        assert child.wait(20) == 0
+        assert child._log is None  # noqa: SLF001 - logging stopped, copying went on
+    finally:
+        if real is not None:
+            real.close()
+
+
 def test_the_environment_reaches_the_command(tmp_path: Path) -> None:
     child = spawn(
         "import os, sys; sys.exit(7 if os.environ.get('CUDA_DEVICE_ORDER') == 'PCI_BUS_ID' else 1)",

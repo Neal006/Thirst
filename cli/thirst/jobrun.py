@@ -17,7 +17,7 @@ from .jobsetup import JobGpus, detect_gpus, load_client, web_url
 from .ledger import IST
 from .meter import EnergyMeter, Meter
 from .modelled import ModelledMeter, load_bundled_sweep, power_model
-from .planning import build_plan_request, parse_deadline
+from .planning import build_plan_request, checked_plan, parse_deadline
 from .powercap import PowerCap
 from .runner import (
     CapController,
@@ -61,12 +61,9 @@ class _Instruments:
 def _plan_from_server(
     client: ApiClient, request: dict[str, Any]
 ) -> tuple[str, dict[str, Any], tuple[Segment, ...]]:
-    plan = client.post_plan(request)
-    chosen = plan.get("chosen")
-    plan_id = plan.get("plan_id")
-    if not isinstance(chosen, dict) or not isinstance(plan_id, str):
-        raise CliError("The server sent a plan the CLI cannot read. Try again in a minute.")
-    return plan_id, chosen, segments_from_plan(chosen.get("schedule") or [])
+    plan = checked_plan(client.post_plan(request))
+    chosen = plan["chosen"]
+    return plan["plan_id"], chosen, segments_from_plan(chosen["schedule"])
 
 
 def _moment(value: Any) -> datetime | None:

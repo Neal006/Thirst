@@ -167,9 +167,15 @@ def _span(body: Mapping[str, Any]) -> str:
 
 
 def _cap_text(body: Mapping[str, Any]) -> str:
+    lowest = min((s["level"] for s in body["slots"]), default=1.0)
+    if body["method"] == "modelled":
+        # The modelled meter assumes the plan's power level was followed (TODO 4.1.g), so say that
+        # instead of "uncapped", which described the real GPU and contradicted the saving shown.
+        if lowest >= 1.0:
+            return "modelled at full power"
+        return f"modelled at {round(lowest * 100)}% (plan level)"
     if not body["cap_applied"]:
         return "uncapped"
-    lowest = min((s["level"] for s in body["slots"]), default=1.0)
     return f"cap {round(lowest * 100)}%"
 
 

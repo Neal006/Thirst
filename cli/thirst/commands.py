@@ -15,7 +15,7 @@ from .gpus import child_environment, resolve_model, select_gpu_indices
 from .jobrun import cmd_run
 from .jobsetup import detect_gpus, load_client, web_url
 from .nvml import EnergyCounterUnsupported, LimitNotSupported, LimitPermissionDenied
-from .planning import build_plan_request, parse_deadline
+from .planning import build_plan_request, checked_plan, parse_deadline
 from .runner import pausable_decision
 from .schedule import plan_line
 
@@ -112,9 +112,10 @@ def cmd_plan(args: argparse.Namespace, ctx: Context) -> int:
         force_now=False,
     )
     plan = client.post_plan(request)
-    if args.json:
+    if args.json:  # raw on purpose: --json is for debugging what the server said
         ctx.out(json.dumps(plan, indent=2, sort_keys=True))
         return 0
+    plan = checked_plan(plan)
     if decision.reason:
         ctx.out(decision.reason)
     ctx.out(plan_line(plan["chosen"]))
@@ -366,6 +367,12 @@ def _finish_sweep(ctx: Context, out: Path, model_id: str, result: sweep.SweepRes
             ctx.err(f"  {message}")
         ctx.err(f"Run it once more. The raw result was saved to {rejected}.")
         return EXIT_GPU
-    sweep.write_result(out, model_id, result.entry)
+    saved = sweep.write_result(out, model_id, result.entry)
+    if saved.get("runs", 1) > 1:
+        ctx.out(f"Combined with the earlier runs ({saved['runs']} in all), median per level:")
+        for level, values in saved["levels"].items():
+            ctx.out(
+                f"  {round(float(level) * 100)}%: tau {values['tau']:.3f}, eps {values['eps']:.3f}"
+            )
     ctx.out(f"Wrote {out}. Commit it so the engine uses the measured numbers.")
     return 0

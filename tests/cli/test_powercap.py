@@ -438,12 +438,50 @@ def test_default_smi_runs_a_list_without_a_shell(monkeypatch: pytest.MonkeyPatch
         return subprocess.CompletedProcess(argv, 0)
 
     monkeypatch.setattr(powercap.subprocess, "run", fake_run)
+    monkeypatch.setattr(powercap.shutil, "which", lambda name: None)
 
     assert powercap.run_command(["nvidia-smi", "-i", "0", "-pl", "300"]) == 0
 
     assert captured["argv"] == ["nvidia-smi", "-i", "0", "-pl", "300"]
     assert captured["kwargs"].get("shell", False) is False
     assert captured["kwargs"]["timeout"] > 0
+
+
+def test_nvidia_smi_and_sudo_run_by_their_full_paths(monkeypatch: pytest.MonkeyPatch) -> None:
+    # TODO 4.2: a bare name is looked up in PATH, which a writable directory could hijack.
+    captured: dict[str, Any] = {}
+
+    def fake_run(argv: Any, **kwargs: Any) -> subprocess.CompletedProcess[bytes]:
+        captured["argv"] = argv
+        return subprocess.CompletedProcess(argv, 0)
+
+    paths = {"nvidia-smi": "/usr/bin/nvidia-smi", "sudo": "/usr/bin/sudo"}
+    monkeypatch.setattr(powercap.subprocess, "run", fake_run)
+    monkeypatch.setattr(powercap.shutil, "which", paths.get)
+
+    powercap.run_command(["sudo", "-n", "nvidia-smi", "-i", "0", "-pl", "300"])
+
+    assert captured["argv"] == [
+        "/usr/bin/sudo",
+        "-n",
+        "/usr/bin/nvidia-smi",
+        "-i",
+        "0",
+        "-pl",
+        "300",
+    ]
+
+
+def test_only_known_tools_are_resolved(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(powercap.shutil, "which", lambda name: f"/bin/{name}")
+
+    assert powercap.absolute_argv(["nvidia-smi", "-i", "300", "-pl", "sudo-ish"]) == [
+        "/bin/nvidia-smi",
+        "-i",
+        "300",
+        "-pl",
+        "sudo-ish",
+    ]
 
 
 def test_missing_nvidia_smi_is_a_failure_not_a_crash(monkeypatch: pytest.MonkeyPatch) -> None:

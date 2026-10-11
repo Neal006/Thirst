@@ -7,10 +7,12 @@
 > - Published as `thirst` 0.3.1 on PyPI by tag `cli-v0.3.1` (Trusted Publishing).
 > - Tested end to end against the live API from a fresh install ([`../USER_TEST_GUIDE.md`](../USER_TEST_GUIDE.md)).
 >
+> On `feat/web-ui-accessibility` ([`09-ux-overhaul.md`](09-ux-overhaul.md)): the 7 UX issues from the live walkthroughs are fixed, and so are most review leftovers (site key kept out of the job's environment, `/plan` reply checked, full `nvidia-smi` path, sweep CUDA order, tee errors, Python 3.10 tests). 4.5.d's median of two sweep runs is implemented. They ship with release 0.3.2.
+>
 > Open:
-> - Hardware: 4.5.d–g sweep on a desktop GPU, 4.6.h SIGSTOP on CUDA, 4.9 overnight receipt, real power-limit/clock-lock checks.
+> - Hardware: 4.5.e–g sweep on a desktop GPU, 4.6.h SIGSTOP on CUDA, 4.9 overnight receipt, real power-limit/clock-lock checks.
+> - Per-run restore markers (needs the GPU box to test).
 > - 4.11 `--offline`.
-> - Review leftovers and 7 UX issues from the live walkthroughs ([`../FIXLIST.md`](../FIXLIST.md)).
 
 Owner: **B** · Window: **Fri 13:00 to 22:00** · Gate: **M3 Scope lock** (overnight job started at 22:00)
 Source: TRD §6 (hardware), §7.1 (signing), PRD US3/US4, F7/F8, PRD §6.2 (CLI flow).

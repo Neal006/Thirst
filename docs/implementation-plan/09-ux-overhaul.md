@@ -103,10 +103,27 @@ The merge brought code-split routes, Playwright e2e with axe, the Pareto table, 
 | e2e | New specs for the plan views, the run box, share links, the Cities page and the phone nav |
 | Docs | `USER_TEST_GUIDE.md` and `VIDEO_SCRIPT.md` describe the new screens |
 
+### Round 3: everything left in `TODO.md` that needed no person, hardware or AWS
+
+After merging `main` again (PRs #12 to #14), four files had lost PR #14's doc refresh in the merge (`AGENTS.md`, `README.md`, `cli/README.md`, `docs/USER_TEST_GUIDE.md`) and `docs/TODO.md` had lost its new 4.1.g. They were three-way merged again so both sides' edits are kept.
+
+| TODO | What changed |
+|---|---|
+| 1.8 | Full-history gitleaks scan: no leaks in 54 commits or the working tree (`docs/gitleaks_full_history.txt`) |
+| 2.2 | A second sweep run is combined with the first: median per level, all runs kept in `history`, raw rows tagged by run (`sweep.combine_runs`) |
+| 3.5 | Workflows on Node 24 action versions. Every input they use was checked against the new `action.yml` files |
+| 4.1.g | Modelled receipts say "modelled at 70% (plan level)" instead of "uncapped" |
+| 4.2 | `/plan` reply checked before use, full `nvidia-smi`/`sudo` paths, sweep `CUDA_DEVICE_ORDER`, tee survives log errors, register retry tested |
+| 4.1 (prep) | CLI version bumped to 0.3.2, so the release is one tag push after the merge |
+| 5.5 | Deploy runs the read-only e2e suite against the live site after each deploy |
+
+`docs/TODO.md` now lists only open work, with who can do it and why it is still open. Done items are in its §7.
+
 ### Not done here (needs people, hardware or AWS)
 
-- Power-cap sweep, a real `nvml_*` receipt, CSEP and Aqueduct data (TODO 2.x).
-- Bedrock access, SNS confirmation, Node 24 action versions, leaderboard precompute (TODO 3.x). Bumping the deploy workflow during judging is a risk, so 3.5 is left for after.
-- Lighthouse on the live site (5.3): needs the live site with real network, not this sandbox.
-- CLI review leftovers 4.2 (per-run restore markers, token in the child env, and so on).
-- Releasing the CLI fixes above needs a new PyPI version (0.3.2) through the workflow from PR #12.
+- Submission tasks for people (video, blog, registration, repo public, PyPI token, Cost Explorer screenshot, the formal clean-machine timer, merging and tagging).
+- Power-cap sweep runs, a real `nvml_*` receipt, CSEP and Aqueduct data, the India finding (TODO 2.x).
+- Bedrock access, SNS confirmation, the leaderboard precompute (changes the live write path during judging) (TODO 3.x).
+- Lighthouse on the live site (5.3).
+- Per-run restore markers (safety-critical, needs a GPU box to test) and `--offline` plans (TODO 4).
+- Releasing CLI 0.3.2: the version is bumped on the branch, the tag push after the merge is the owner's.
