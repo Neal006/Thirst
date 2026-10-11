@@ -85,10 +85,14 @@ def test_run_saves_the_receipt_locally(ready: CliRig) -> None:
     assert saved["response"] == ready.api.receipt_result
 
 
+@pytest.mark.xfail(
+    strict=True, reason="TODO H4: jobrun must keep the signal guard while the receipt is saved"
+)
 def test_run_installs_the_signal_guard(ready: CliRig) -> None:
     ready.main(*run_args())
 
-    assert ready.log == ["guard_enter", "guard_exit"]
+    # once around the run itself, once while the receipt is written to disk
+    assert ready.log == ["guard_enter", "guard_exit", "guard_enter", "guard_exit"]
 
 
 def test_run_exits_with_the_commands_exit_code(ready: CliRig) -> None:
@@ -249,6 +253,116 @@ def test_implausible_energy_warns_and_is_still_posted(ready: CliRig) -> None:
 
     assert "more than" in ready.text + ready.errors
     assert len(ready.api.receipts) == 1
+
+
+def test_a_duplicate_receipt_is_reported_as_already_recorded(ready: CliRig) -> None:
+    ready.api.receipt_duplicate = True
+
+    code = ready.main(*run_args())
+
+    assert code == 0
+    assert "already recorded" in ready.text
+    assert outbox.pending() == []
+    assert receipt.load_receipt(the_job_id(ready))["status"] == "duplicate"
+
+
+@pytest.mark.xfail(
+    strict=True, reason="TODO M1: the 401 message must tell the user to fix the clock or token"
+)
+def test_a_401_keeps_the_receipt_queued_and_says_what_to_fix(ready: CliRig) -> None:
+    ready.api.receipt_error = ApiError("Too old.", "stale_timestamp", 401)
+
+    code = ready.main(*run_args())
+
+    assert code == 0
+    assert outbox.pending() == [the_job_id(ready)]
+    assert "clock" in ready.text
+    assert receipt.load_receipt(the_job_id(ready))["status"] == "queued"
+
+
+@pytest.mark.xfail(
+    strict=True, reason="TODO H4: save the local receipt copy before the first network attempt"
+)
+def test_the_receipt_is_on_disk_before_the_first_network_attempt(ready: CliRig) -> None:
+    seen: dict[str, object] = {}
+
+    def spy() -> None:
+        seen["outbox"] = outbox.pending()
+        seen["receipts"] = list(config.receipts_dir().glob("*.json"))
+
+    ready.api.on_receipt = spy
+
+    ready.main(*run_args())
+
+    assert seen["outbox"] == [the_job_id(ready)]
+    assert len(seen["receipts"]) == 1  # type: ignore[arg-type]
+    assert outbox.pending() == []  # the server took it, so it left the outbox
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="TODO H4: Ctrl-C during the post must say the receipt waits for `thirst sync`",
+)
+def test_ctrl_c_while_posting_keeps_the_receipt_for_sync(ready: CliRig) -> None:
+    ready.api.receipt_error = KeyboardInterrupt()
+
+    code = ready.main(*run_args())
+
+    assert code == 130
+    assert outbox.pending() == [the_job_id(ready)]
+    assert "thirst sync" in ready.errors
+    assert receipt.load_receipt(the_job_id(ready))["status"] == "pending"
+
+
+def test_an_outbox_write_error_still_prints_and_posts_the_receipt(
+    ready: CliRig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def broken(_: object) -> object:
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(outbox, "enqueue", broken)
+
+    code = ready.main(*run_args())
+
+    assert code == 0
+    assert "Thirst receipt j_" in ready.text
+    assert len(ready.api.receipts) == 1
+
+
+def test_an_outbox_write_error_with_the_server_down_is_said_out_loud(
+    ready: CliRig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def broken(_: object) -> object:
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(outbox, "enqueue", broken)
+    ready.api.receipt_error = ApiError("Could not reach the Thirst server.", "network_error", 0)
+
+    code = ready.main(*run_args())
+
+    assert code == 0
+    assert "could not be saved to the outbox" in ready.text
+    assert "Thirst receipt j_" in ready.text  # the numbers are still on screen
+    assert "queued, run" not in ready.text
+
+
+@pytest.mark.xfail(
+    strict=True, reason="TODO H4: an OSError writing the local copy must not fail the run"
+)
+def test_a_local_copy_write_error_does_not_lose_the_receipt(
+    ready: CliRig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def broken(*_: object) -> object:
+        raise OSError(13, "Permission denied")
+
+    monkeypatch.setattr(receipt, "save_receipt", broken)
+
+    code = ready.main(*run_args())
+
+    assert code == 0
+    assert len(ready.api.receipts) == 1
+    assert "Thirst receipt j_" in ready.text
+    assert outbox.pending() == []
 
 
 # ------------------------------------------------------------ pausing and the plan's timeline

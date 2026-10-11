@@ -19,6 +19,7 @@ from urllib.parse import urlsplit
 
 import tomli_w
 
+from . import ids
 from .errors import ConfigError
 
 if sys.version_info >= (3, 11):
@@ -34,8 +35,6 @@ CREDENTIAL_ENV = "THIRST_TOKEN"
 DEFAULT_API_URL = "https://l6y3i40hh4.execute-api.ap-south-1.amazonaws.com"
 DEFAULT_WEB_URL = "https://main.dzxkrtlc7xqfx.amplifyapp.com"
 
-_SITE_ID = re.compile(r"s_[a-z2-7]{10}")
-_TOKEN = re.compile(r"[0-9a-f]{64}")
 _REGISTER_FIRST = "Run `thirst register` first."
 
 
@@ -108,9 +107,9 @@ def check_api_url(raw: str) -> str:
 def validated(cfg: Config) -> Config:
     """Return the config with a normalised URL, or raise ``ConfigError`` naming the bad key."""
     url = check_api_url(cfg.api_url)
-    if not _SITE_ID.fullmatch(cfg.site_id):
+    if not ids.SITE_ID.fullmatch(cfg.site_id):
         raise ConfigError("site_id in config.toml is not a valid site id, such as s_abcdefghij.")
-    if not _TOKEN.fullmatch(cfg.token):
+    if not ids.TOKEN.fullmatch(cfg.token):
         raise ConfigError("token must be 64 lowercase hex characters. Run `thirst register` again.")
     return replace(cfg, api_url=url)
 
