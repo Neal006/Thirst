@@ -122,9 +122,9 @@ This shows what a lab member sees in the terminal. To try it without leaving a l
 pip install thirst
 thirst --version
 ```
-Expected: `thirst 0.3.0`.
+Expected: `thirst 0.3.1` (or newer).
 
-PyPI still has 0.3.0. The newest fixes are on `main` and can be installed with `pip install ./cli` from a checkout.
+To try unreleased changes from `main`, install from a checkout with `pip install ./cli`.
 
 ### B2. Check the setup before registering
 

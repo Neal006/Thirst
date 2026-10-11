@@ -40,4 +40,4 @@ Submit Sun 11 Oct, 14:00 to 16:00 IST. Status as of 2026-10-11 ~13:00 IST.
 
 - Bedrock access is blocked at the account level ("Operation not allowed" for every model). `/explain` returns the template until an AWS Support case clears it. Then set `BedrockModelId` in `samconfig.toml` and push to `main`.
 - Placeholder power-cap data: every plan picks 70% and the trade-off slider has no visible effect until the sweep is measured.
-- PyPI `thirst` 0.3.0 was published before the CLI review fixes (PR #7). Publishing 0.3.1 needs a new PyPI token or Trusted Publishing.
+- PyPI `thirst` 0.3.1 is published (with the PR #7 fixes and the 31 new GPUs) through Trusted Publishing: future releases are `git tag cli-vX.Y.Z && git push origin cli-vX.Y.Z`, no token.
