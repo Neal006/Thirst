@@ -34,6 +34,7 @@ _LAUNCHERS = {"torchrun", "deepspeed", "mpirun", "mpiexec", "srun", "horovodrun"
 _DISTRIBUTED_MODULES = {"torch.distributed.run", "torch.distributed.launch"}
 _INTERNAL_ERROR = "The run stopped because of an internal error. Details are in the log."
 _KILL_WAIT_S = 5.0
+_RESTORE_BY_HAND = ("thirst doctor --restore",)
 
 
 class CapController(Protocol):
@@ -169,6 +170,7 @@ class Runner:
         self._events: list[str] = []
         self._notes: list[str] = []
         self._child: Child | None = None
+        self._paused = False  # the child is stopped (SIGSTOP), whatever state the runner is in
         self._level = 1.0
         self._cap_ok = True
         self._started = False
@@ -312,6 +314,7 @@ class Runner:
             self._pausable = False
             self._event("pause_failed")
             return
+        self._paused = True
         self._meter.set_state("idle")
         self._enter("PAUSED")
 
@@ -319,6 +322,7 @@ class Runner:
         self._set_cap(level)
         self._meter.set_state("run", level)
         child.resume()
+        self._paused = False
         self._enter("RUNNING")
 
     def _change_level(self, level: float) -> None:
@@ -342,7 +346,9 @@ class Runner:
             self._cap_applied = bool(self._cap.applied) and self._cap_ok
             self._cap_method = self._cap.cap_method if self._cap_applied else "none"
             self._notes.extend(self._cap.notes)
-            self._restore_failures = self._safely(self._cap.restore) or ()
+            restored = self._safely(self._cap.restore)
+            # None: restore itself crashed, so nothing says the limit is back. Scripts must notice.
+            self._restore_failures = _RESTORE_BY_HAND if restored is None else tuple(restored)
         self._end_ts = self._wall() if self._started else None
 
     def _stop_child(self) -> None:
@@ -352,8 +358,9 @@ class Runner:
         try:
             code = child.poll()
             if code is None:
-                if self.states[-1] == "PAUSED":
+                if self._paused:  # also after an error moved the state on to FAILED
                     child.resume()  # SIGCONT first: a stopped process cannot handle SIGTERM
+                    self._paused = False
                 child.terminate()
                 code = child.wait(self._opt.grace_s)
                 if code is None:

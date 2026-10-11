@@ -28,14 +28,14 @@ def body(job: str = JOB) -> dict[str, object]:
 class FakeClient:
     """Plays scripted outcomes for post_receipt, in order; an Exception is raised."""
 
-    def __init__(self, *outcomes: ReceiptPost | Exception) -> None:
+    def __init__(self, *outcomes: ReceiptPost | BaseException) -> None:
         self.outcomes = list(outcomes)
         self.sent: list[dict[str, object]] = []
 
     def post_receipt(self, payload: dict[str, object]) -> ReceiptPost:
         self.sent.append(payload)
         outcome = self.outcomes.pop(0)
-        if isinstance(outcome, Exception):
+        if isinstance(outcome, BaseException):
             raise outcome
         return outcome
 
@@ -88,7 +88,7 @@ def test_post_or_queue_queues_on_network_failure() -> None:
     outcome = outbox.post_or_queue(client, body())
 
     assert outcome.status == "queued"
-    assert "internet" in outcome.message or "reach" in outcome.message
+    assert outcome.message == "Could not reach the Thirst server."
     assert outbox.pending() == [JOB]
 
 
@@ -189,3 +189,118 @@ def test_sync_with_an_empty_outbox_does_nothing() -> None:
     result = outbox.sync(FakeClient())
 
     assert result == outbox.SyncResult((), (), (), (), None)
+
+
+# ------------------------------------------------------------ M1 / H4: a receipt is never lost
+
+
+def unauthorised(code: str = "stale_timestamp") -> ApiError:
+    return ApiError("The request is too old.", code=code, status=401)
+
+
+@pytest.mark.parametrize("code", ["stale_timestamp", "bad_signature", "missing_signature"])
+def test_post_or_queue_keeps_a_401_queued_and_explains_it(code: str) -> None:
+    outcome = outbox.post_or_queue(FakeClient(unauthorised(code)), body())
+
+    assert outcome.status == "queued"
+    assert "clock" in outcome.message
+    assert "token" in outcome.message
+    assert outbox.pending() == [JOB]
+
+
+def test_sync_stops_on_a_401_and_keeps_every_receipt_queued(home: Path) -> None:
+    outbox.enqueue(body(JOB))
+    outbox.enqueue(body(JOB2))
+    client = FakeClient(unauthorised())
+
+    result = outbox.sync(client)
+
+    assert result.still_queued == (JOB, JOB2)
+    assert result.rejected == ()
+    assert result.error is not None
+    assert "clock" in result.error
+    assert len(client.sent) == 1
+    assert outbox.pending() == [JOB, JOB2]
+    assert not (home / "outbox" / "rejected").exists()
+
+
+def test_the_receipt_is_in_the_outbox_before_the_first_network_attempt() -> None:
+    seen: list[list[str]] = []
+
+    class Spy(FakeClient):
+        def post_receipt(self, payload: dict[str, object]) -> ReceiptPost:
+            seen.append(outbox.pending())
+            return super().post_receipt(payload)
+
+    outbox.post_or_queue(Spy(OK), body())
+
+    assert seen == [[JOB]]
+    assert outbox.pending() == []  # removed again after the server accepted it
+
+
+def test_an_interrupt_during_the_post_leaves_the_receipt_queued() -> None:
+    with pytest.raises(KeyboardInterrupt):
+        outbox.post_or_queue(FakeClient(KeyboardInterrupt()), body())
+
+    assert outbox.pending() == [JOB]
+
+
+def test_a_failing_outbox_write_does_not_stop_the_post(monkeypatch: pytest.MonkeyPatch) -> None:
+    def broken(_: dict[str, object]) -> Path:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(outbox, "enqueue", broken)
+
+    outcome = outbox.post_or_queue(FakeClient(OK), body())
+
+    assert outcome.status == "posted"
+
+
+def test_a_failing_outbox_write_with_the_server_down_is_reported_not_hidden(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def broken(_: dict[str, object]) -> Path:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(outbox, "enqueue", broken)
+
+    outcome = outbox.post_or_queue(FakeClient(net_down()), body())
+
+    assert outcome.status == "unsaved"
+    assert "could not be saved" in outcome.message
+
+
+def test_a_rejected_receipt_is_moved_to_rejected_not_deleted(home: Path) -> None:
+    bad = ApiError("Too much energy.", "implausible_energy", 422)
+
+    outbox.post_or_queue(FakeClient(bad), body())
+
+    assert outbox.pending() == []
+    assert (home / "outbox" / "rejected" / f"{JOB}.json").is_file()
+
+
+def test_sync_keeps_a_receipt_it_could_not_read_for_now(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    outbox.enqueue(body(JOB))
+
+    def flaky(self: Path, *args: object, **kwargs: object) -> str:
+        raise PermissionError("busy")
+
+    monkeypatch.setattr(Path, "read_bytes", flaky)
+
+    result = outbox.sync(FakeClient())
+
+    assert result.rejected == ()
+    assert result.still_queued == (JOB,)
+    assert (home / "outbox" / f"{JOB}.json").is_file()
+
+
+def test_sync_rejects_an_oversized_file(home: Path) -> None:
+    (home / "outbox").mkdir(parents=True)
+    huge = json.dumps({**body(), "pad": "x" * (outbox.MAX_FILE_BYTES + 1)})
+    (home / "outbox" / f"{JOB}.json").write_text(huge, encoding="utf-8")
+
+    result = outbox.sync(FakeClient())
+
+    assert [job for job, _ in result.rejected] == [JOB]

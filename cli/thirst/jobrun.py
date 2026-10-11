@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from typing import Any
 
@@ -35,6 +36,9 @@ _NO_COMMAND = (
 _MARKER_PRESENT = (
     "A previous run may have left a GPU power cap in place. "
     "Run `thirst doctor --restore` first, then try again."
+)
+_SYNC_LATER = (
+    "Stopped while sending the receipt. It is saved on this computer: run `thirst sync` to send it."
 )
 _ACTIONS = {
     "start": "start the command at {level}% power",
@@ -115,27 +119,51 @@ def _report_restore_failures(ctx: Context, outcome: RunOutcome) -> None:
     ctx.err("Or run `thirst doctor --restore` later.")
 
 
+def _save_copy(
+    ctx: Context, body: dict[str, Any], response: dict[str, Any] | None, status: str
+) -> bool:
+    """The copy for `thirst receipt show`. A disk problem must not cost the user the receipt."""
+    try:
+        receipt.save_receipt(body, response, status)
+    except OSError as exc:
+        ctx.err(f"thirst: could not save a local copy of the receipt ({exc.strerror or exc}).")
+        return False
+    return True
+
+
 def _handle_receipt(
     ctx: Context,
     client: ApiClient,
     body: dict[str, Any],
     gpus: JobGpus,
     outcome: RunOutcome,
-) -> None:
+    guard: AbstractContextManager[Any],
+) -> int | None:
+    """Save, then post. Returns an exit code only when Ctrl-C stopped the post."""
     for note in outcome.notes:
         ctx.out(f"Note: {note}")
     for warning in receipt.plausibility_warnings(body, gpus.model.p_max_w):
         ctx.out(f"Warning: {warning}")
-    posted = outbox.post_or_queue(client, body)
+    with guard:  # hours of measurement: the disk writes finish even if Ctrl-C arrives now
+        copied = _save_copy(ctx, body, None, "pending")
+        failure = outbox.queue_safely(body)
+    try:
+        posted = outbox.post_queued(client, body, failure)
+    except KeyboardInterrupt:
+        ctx.err(_SYNC_LATER if failure is None else "Stopped while sending the receipt.")
+        return EXIT_INTERRUPTED
     status = posted.status
-    receipt.save_receipt(body, posted.response, status)
+    if copied:
+        _save_copy(ctx, body, posted.response, status)
     if status == "posted" and posted.response:
         text = receipt.format_scored(body, posted.response, web_url(ctx.env))
     elif status == "queued":
+        ctx.out(f"Note: {posted.message}")
         text = receipt.format_local(body, queued=True)
     else:
         text = receipt.format_local(body, queued=False, note=posted.message)
     ctx.out(text.rstrip("\n"))
+    return None
 
 
 def _finish(
@@ -146,6 +174,7 @@ def _finish(
     outcome: RunOutcome,
     meter: EnergyMeter,
     ids: tuple[str, str, str],
+    guard: AbstractContextManager[Any],
 ) -> int:
     _report_restore_failures(ctx, outcome)
     if not outcome.started:
@@ -174,7 +203,9 @@ def _finish(
         ctx.out("This was a test run (--slot-seconds), so the receipt was not posted.")
         ctx.out(receipt.format_local(body, queued=False, note="Test run, not posted.").rstrip())
     else:
-        _handle_receipt(ctx, client, body, gpus, outcome)
+        stopped = _handle_receipt(ctx, client, body, gpus, outcome, guard)
+        if stopped is not None:
+            return stopped
     return _exit_code(outcome)
 
 
@@ -210,7 +241,8 @@ def _execute(
     )
     try:
         outcome = runner.run()
-        return _finish(ctx, args, client, gpus, outcome, parts.meter, (site_id, plan_id, job_id))
+        ids = (site_id, plan_id, job_id)
+        return _finish(ctx, args, client, gpus, outcome, parts.meter, ids, ctx.make_guard(flag))
     finally:
         parts.meter.close()
 

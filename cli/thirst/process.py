@@ -56,8 +56,13 @@ class InterruptFlag:
         return self._event.wait(timeout)
 
 
+# SIGHUP comes when an SSH session drops: without a handler the CLI dies with the GPU still capped.
+_HANGUP = getattr(signal, "SIGHUP", None)  # not on Windows
+_GUARDED = tuple(sig for sig in (signal.SIGINT, signal.SIGTERM, _HANGUP) if sig is not None)
+
+
 class SignalGuard:
-    """While active, SIGINT and SIGTERM only set the flag. Does nothing off the main thread."""
+    """While active, SIGINT, SIGTERM and (POSIX) SIGHUP only set the flag. Main thread only."""
 
     def __init__(self, flag: InterruptFlag) -> None:
         self._flag = flag
@@ -68,7 +73,7 @@ class SignalGuard:
 
     def __enter__(self) -> SignalGuard:
         if threading.current_thread() is threading.main_thread():
-            for sig in (signal.SIGINT, signal.SIGTERM):
+            for sig in _GUARDED:
                 self._old[sig] = signal.signal(sig, self._handler)
         return self
 
