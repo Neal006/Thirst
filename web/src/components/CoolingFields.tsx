@@ -16,7 +16,7 @@ const isCooling = (value: string): value is CoolingId =>
 export function CoolingFields({ cooling, pue, pueError, onCooling, onPue }: CoolingFieldsProps) {
   return (
     <>
-      <FormField id="cooling" label="Cooling">
+      <FormField id="cooling" label="Cooling" help="Not sure? Pick Room AC for a lab or office.">
         {(c) => (
           <select
             {...c}
@@ -35,7 +35,7 @@ export function CoolingFields({ cooling, pue, pueError, onCooling, onPue }: Cool
         <FormField
           id="pue"
           label="PUE (power usage effectiveness)"
-          help="Total site power divided by IT power. 1.4 is a common value."
+          help="Total site power divided by GPU and server power. 1.4 is common."
           error={pueError}
         >
           {(c) => (

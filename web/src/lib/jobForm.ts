@@ -210,3 +210,59 @@ export function validateJobForm(
   }
   return { ok: true, body }
 }
+
+const isCoolingId = (value: string | null): value is CoolingId =>
+  COOLING_OPTIONS.some((option) => option.id === value)
+
+/**
+ * Form values from a planner link (/plan?city=&gpu=&n=&hours=&deadline=&pause=&cooling=). Unknown
+ * or broken values are ignored, so a bad link still opens a usable form. `full` is true when the
+ * link describes a whole job (a share link), which the page plans right away.
+ */
+export function valuesFromQuery(
+  params: URLSearchParams,
+  base: JobFormValues,
+  gpus: readonly GpuRow[],
+  cities: readonly CityRow[],
+): { values: JobFormValues; full: boolean } | null {
+  const city = params.get('city')
+  const gpu = params.get('gpu')
+  const n = params.get('n')
+  const hours = params.get('hours')
+  const deadline = params.get('deadline')
+  const pause = params.get('pause')
+  const cooling = params.get('cooling')
+  const values = { ...base }
+  let used = false
+  if (city && cities.some((c) => c.id === city)) {
+    values.city = city
+    used = true
+  }
+  if (gpu && gpus.some((g) => g.id === gpu)) {
+    values.gpuModel = gpu
+    used = true
+  }
+  if (n && /^\d+$/.test(n)) {
+    values.gpuCount = n
+    used = true
+  }
+  if (hours && Number.isFinite(Number(hours))) {
+    values.workHours = hours
+    used = true
+  }
+  if (deadline && istLocalToMs(deadline) !== null) {
+    values.deadline = deadline
+    used = true
+  }
+  if (pause === '0' || pause === '1') {
+    values.pausable = pause === '1'
+    used = true
+  }
+  if (isCoolingId(cooling)) {
+    values.cooling = cooling
+    used = true
+  }
+  if (!used) return null
+  const full = Boolean(gpu && n && hours && deadline)
+  return { values, full }
+}

@@ -1,6 +1,7 @@
 import type { RouteObject } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { AssumptionsPage } from './pages/AssumptionsPage'
+import { CitiesPage } from './pages/CitiesPage'
 import { LandingPage } from './pages/LandingPage'
 import { LeaderboardPage } from './pages/LeaderboardPage'
 import { NotFound } from './pages/NotFound'
@@ -28,6 +29,7 @@ export function createAppRoutes(extraPages: RouteObject[] = []): RouteObject[] {
           children: [
             { index: true, element: <LandingPage /> },
             { path: 'plan', element: <PlanPage /> },
+            { path: 'cities', element: <CitiesPage /> },
             { path: 'receipts/:siteId/:jobId', element: <ReceiptPage /> },
             { path: 'leaderboard', element: <LeaderboardPage /> },
             { path: 'sites/:siteId', element: <SitePage /> },

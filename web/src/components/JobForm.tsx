@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { CityRow, GpuRow, PlanRequestBody } from '../api/types'
 import {
+  COOLING_OPTIONS,
   defaultValues,
   presetValues,
   PRESETS,
@@ -143,7 +144,6 @@ export function JobForm({
       <FormField
         id="deadline"
         label="Deadline (India time)"
-        help="Read as India time (IST), whatever your computer's clock says."
         error={errors.deadline}
       >
         {(c) => (
@@ -152,21 +152,6 @@ export function JobForm({
             type="datetime-local"
             value={values.deadline}
             onChange={(e) => set({ deadline: e.target.value })}
-          />
-        )}
-      </FormField>
-      <FormField
-        id="pausable"
-        inline
-        label="Can the job be paused and resumed safely?"
-        help="Single-process training only. Multi-GPU distributed jobs can't pause yet."
-      >
-        {(c) => (
-          <input
-            {...c}
-            type="checkbox"
-            checked={values.pausable}
-            onChange={(e) => set({ pausable: e.target.checked })}
           />
         )}
       </FormField>
@@ -181,13 +166,36 @@ export function JobForm({
           </select>
         )}
       </FormField>
-      <CoolingFields
-        cooling={values.cooling}
-        pue={values.pue}
-        pueError={errors.pue}
-        onCooling={(cooling) => set({ cooling })}
-        onPue={(pue) => set({ pue })}
-      />
+      <details className="more-options" open={errors.pue ? true : undefined}>
+        <summary>
+          More options
+          <span className="muted">
+            {values.pausable ? 'Can pause' : 'No pausing'} · {COOLING_OPTIONS.find((o) => o.id === values.cooling)?.label}
+          </span>
+        </summary>
+        <FormField
+          id="pausable"
+          inline
+          label="Can the job be paused and resumed safely?"
+          help="Single-machine training only. Multi-GPU distributed jobs can't pause yet."
+        >
+          {(c) => (
+            <input
+              {...c}
+              type="checkbox"
+              checked={values.pausable}
+              onChange={(e) => set({ pausable: e.target.checked })}
+            />
+          )}
+        </FormField>
+        <CoolingFields
+          cooling={values.cooling}
+          pue={values.pue}
+          pueError={errors.pue}
+          onCooling={(cooling) => set({ cooling })}
+          onPue={(pue) => set({ pue })}
+        />
+      </details>
       <button type="submit" className="btn btn-primary" disabled={busy}>
         {busy ? 'Planning…' : 'Plan'}
       </button>

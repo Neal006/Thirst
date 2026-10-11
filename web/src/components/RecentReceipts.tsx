@@ -19,7 +19,7 @@ function Row({ siteId, receipt }: { siteId: string; receipt: ReceiptRow }) {
       <td data-label="GPU energy">
         <Amount value={receipt.kwh} unit="kWh" tag={isMeasuredMethod(receipt.method) ? 'measured' : 'modelled'} />
       </td>
-      <td data-label="Capture">
+      <td data-label="Saving taken">
         {capture === null || receipt.no_room ? (
           'No room to shift'
         ) : (
@@ -53,7 +53,7 @@ export function RecentReceipts({ siteId, receipts }: { siteId: string; receipts:
             <tr>
               <th scope="col">Finished</th>
               <th scope="col">GPU energy</th>
-              <th scope="col">Capture</th>
+              <th scope="col">Saving taken</th>
               <th scope="col"><span className="visually-hidden">Receipt</span></th>
             </tr>
           </thead>

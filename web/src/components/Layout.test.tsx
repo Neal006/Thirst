@@ -23,7 +23,7 @@ function renderAt(path: string) {
 }
 
 describe('Layout', () => {
-  it('shows the three main links in the navigation', () => {
+  it('shows the four main links in the navigation', () => {
     renderAt('/')
     const nav = screen.getByRole('navigation', { name: /main/i })
     expect(within(nav).getByRole('link', { name: 'Plan' })).toHaveAttribute('href', '/plan')
@@ -31,7 +31,8 @@ describe('Layout', () => {
       'href',
       '/leaderboard',
     )
-    expect(within(nav).getByRole('link', { name: 'Assumptions' })).toHaveAttribute(
+    expect(within(nav).getByRole('link', { name: 'Cities' })).toHaveAttribute('href', '/cities')
+    expect(within(nav).getByRole('link', { name: 'Method' })).toHaveAttribute(
       'href',
       '/assumptions',
     )

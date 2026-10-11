@@ -41,19 +41,10 @@ export function BoardPreview() {
     <section className="section board reveal" aria-labelledby="board-title">
       <div className="section-head section-head-split">
         <div>
-          <p className="eyebrow">Leaderboard · small labs</p>
+          <p className="eyebrow">Leaderboard</p>
           <h2 id="board-title" className="section-title">
-            Score the choice, not the climate
+            Labs score for when they run, not where
           </h2>
-        </div>
-        <div className="capture-formula" aria-label="Capture equals one minus J actual, over one minus J best">
-          <span className="cf-name">Capture</span>
-          <span className="cf-eq">=</span>
-          <span className="cf-frac">
-            <span>1 − J<sub>actual</sub></span>
-            <span>1 − J<sub>best</sub></span>
-          </span>
-          <span className="cf-note">share of the possible saving you took</span>
         </div>
       </div>
       {state.status === 'loading' ? (

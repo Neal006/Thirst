@@ -10,7 +10,7 @@ interface AlphaSliderProps {
 export function AlphaSlider({ value, onChange }: AlphaSliderProps) {
   const alpha = snapAlpha(value)
   return (
-    <div className="card alpha-card">
+    <div className="alpha-card">
       <label htmlFor="alpha-slider">
         <strong>Save carbon ←→ Save water</strong>
       </label>

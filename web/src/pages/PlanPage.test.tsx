@@ -58,7 +58,10 @@ describe('PlanPage with a plan', () => {
     expect(body).toMatchObject({ city: 'Chennai', gpu_model: 'RTX-4090', gpu_count: 2, alpha: 0.5 })
     expect(card()).toHaveTextContent('Start at 06:00')
     expect(screen.getByRole('slider')).toBeInTheDocument()
-    expect(screen.getAllByRole('img').length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByRole('tab', { name: 'Timetable' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('table', { name: /timetable/i })).toBeInTheDocument()
+    expect(screen.getAllByRole('img').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByRole('region', { name: 'Run this plan' })).toHaveTextContent('thirst run --hours')
   })
 
   it('moves the slider and changes the card without any request', async () => {
@@ -67,7 +70,7 @@ describe('PlanPage with a plan', () => {
     fireEvent.change(screen.getByRole('slider'), { target: { value: '1' } })
     await waitFor(() => expect(card()).toHaveTextContent('Start at 11:00'))
     expect(card()).toHaveTextContent('GPU at 100%')
-    expect(card()).toHaveTextContent(/saves about 15 to 25%/i)
+    expect(card()).toHaveTextContent(/uses about 15 to 25%/i)
     fireEvent.change(screen.getByRole('slider'), { target: { value: '0' } })
     await waitFor(() => expect(card()).toHaveTextContent('Start at 01:00'))
     expect(spy).not.toHaveBeenCalled()
@@ -92,7 +95,7 @@ describe('PlanPage with a plan', () => {
 
   it('shows the little-room copy when the plan says no_room', async () => {
     await planIt(fetchSpy(distinctApi(distinctPlan({ notes: ['no_room'] }))))
-    expect(card()).toHaveTextContent('Little room to shift before your deadline; starting now is fine.')
+    expect(card()).toHaveTextContent('Little room to shift before your deadline, so starting now is fine.')
   })
 
   it('warns when the forecast is old', async () => {

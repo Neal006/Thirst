@@ -37,7 +37,7 @@ const slotLabel = (slot: string): string => `${formatDay(slot)} ${formatClock(sl
 
 function tickLabel(slot: string): string {
   const clock = formatClock(slot)
-  return clock === '00:00' ? `${formatDay(slot).split(' ')[0]} 00:00` : clock
+  return clock === '00:00' ? formatDay(slot).split(' ')[0] : clock
 }
 
 /** F2: water and CO2 per kWh for the next 48 hours, with the selected plan on top. */
@@ -69,7 +69,6 @@ export function PlanChart({ response, entry }: PlanChartProps) {
   return (
     <figure className="chart-figure">
       <div className="chart-head">
-        <h3>Next 48 hours</h3>
         <span className="chart-units">
           <span>bars: litres per kWh</span>
           <span>line: kg CO₂ per kWh</span>
@@ -78,7 +77,7 @@ export function PlanChart({ response, entry }: PlanChartProps) {
       <div
         className="chart-box"
         role="img"
-        aria-label="Chart of water and CO₂ per kWh over the next 48 hours, with your plan shaded in yellow"
+        aria-label="Chart of water and CO₂ per kWh over the next 48 hours, with your plan shaded"
       >
         <ResponsiveContainer width="100%" height={CHART_HEIGHT} initialDimension={INITIAL}>
           <ComposedChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
@@ -88,14 +87,14 @@ export function PlanChart({ response, entry }: PlanChartProps) {
                 <line x1="0" y1="0" x2="0" y2="6" stroke="var(--sky)" strokeWidth="3" />
               </pattern>
             </defs>
-            <XAxis dataKey="slot" interval={phone ? 5 : 2} tickFormatter={tickLabel} tick={{ fontSize: 12 }} />
+            <XAxis dataKey="slot" interval={phone ? 11 : 5} tickFormatter={tickLabel} tick={{ fontSize: 12 }} />
             <YAxis yAxisId="water" width={40} tick={{ fontSize: 12 }} />
             <YAxis yAxisId="co2" orientation="right" width={40} tick={{ fontSize: 12 }} />
             <YAxis yAxisId="level" hide domain={[0, 100]} />
             <Tooltip content={tooltip} />
             <Legend wrapperStyle={{ fontSize: 13, color: 'var(--ink)' }} />
             {blocks.map((b) => (
-              <ReferenceArea key={b.from} yAxisId="water" x1={data[b.from]?.slot} x2={data[b.to]?.slot} fill="var(--signal)" fillOpacity={0.55} />
+              <ReferenceArea key={b.from} yAxisId="water" x1={data[b.from]?.slot} x2={data[b.to]?.slot} fill="var(--window)" fillOpacity={0.45} />
             ))}
             <Bar yAxisId="water" stackId="water" dataKey="grid" name="Water from the grid" fill="var(--water)" fillOpacity={0.42} isAnimationActive={false} />
             <Bar yAxisId="water" stackId="water" dataKey="direct" name="Water used on site" fill="url(#plan-site-hatch)" stroke="var(--sky)" isAnimationActive={false} />
@@ -110,7 +109,7 @@ export function PlanChart({ response, entry }: PlanChartProps) {
         {best.water && best.co2 ? (
           <>
             Lowest water hours: {best.water} <TagChip tag={tags.water} />; lowest CO₂ hours: {best.co2}{' '}
-            <TagChip tag={tags.co2} />. The yellow shading is when your job runs.
+            <TagChip tag={tags.co2} />. The shaded hours are when your job runs.
           </>
         ) : (
           <>Not enough hours to name the best window.</>

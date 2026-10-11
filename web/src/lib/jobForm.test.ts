@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MOCK_ASSUMPTIONS } from '../api/mocks/assumptions'
-import { defaultValues, validateJobForm, type JobFormValues } from './jobForm'
+import { defaultValues, validateJobForm, valuesFromQuery, type JobFormValues } from './jobForm'
 
 const { gpus, cities } = MOCK_ASSUMPTIONS
 // 10 Oct 2026, 20:00 India time.
@@ -153,5 +153,30 @@ describe('validateJobForm: bad input gets a plain message next to its field', ()
   it('reports every problem at once', () => {
     const errors = errorsFor({ gpuCount: '0', workHours: '0', deadline: '' })
     expect(Object.keys(errors).sort()).toEqual(['deadline', 'gpuCount', 'workHours'])
+  })
+})
+
+describe('valuesFromQuery', () => {
+  const base = defaults()
+
+  it('returns null when the link names nothing it knows', () => {
+    expect(valuesFromQuery(new URLSearchParams('city=Atlantis'), base, gpus, cities)).toBeNull()
+  })
+
+  it('prefills the city alone without planning', () => {
+    const r = valuesFromQuery(new URLSearchParams('city=Mumbai'), base, gpus, cities)
+    expect(r?.values.city).toBe('Mumbai')
+    expect(r?.full).toBe(false)
+  })
+
+  it('reads a whole share link', () => {
+    const r = valuesFromQuery(
+      new URLSearchParams('city=Mumbai&gpu=RTX-4090&n=4&hours=3&deadline=2026-10-11T09:00&pause=0&cooling=evaporative'),
+      base,
+      gpus,
+      cities,
+    )
+    expect(r?.full).toBe(true)
+    expect(r?.values).toMatchObject({ gpuCount: '4', workHours: '3', pausable: false, cooling: 'evaporative' })
   })
 })
