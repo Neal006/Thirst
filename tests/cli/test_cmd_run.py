@@ -85,9 +85,6 @@ def test_run_saves_the_receipt_locally(ready: CliRig) -> None:
     assert saved["response"] == ready.api.receipt_result
 
 
-@pytest.mark.xfail(
-    strict=True, reason="TODO H4: jobrun must keep the signal guard while the receipt is saved"
-)
 def test_run_installs_the_signal_guard(ready: CliRig) -> None:
     ready.main(*run_args())
 
@@ -266,9 +263,6 @@ def test_a_duplicate_receipt_is_reported_as_already_recorded(ready: CliRig) -> N
     assert receipt.load_receipt(the_job_id(ready))["status"] == "duplicate"
 
 
-@pytest.mark.xfail(
-    strict=True, reason="TODO M1: the 401 message must tell the user to fix the clock or token"
-)
 def test_a_401_keeps_the_receipt_queued_and_says_what_to_fix(ready: CliRig) -> None:
     ready.api.receipt_error = ApiError("Too old.", "stale_timestamp", 401)
 
@@ -280,9 +274,6 @@ def test_a_401_keeps_the_receipt_queued_and_says_what_to_fix(ready: CliRig) -> N
     assert receipt.load_receipt(the_job_id(ready))["status"] == "queued"
 
 
-@pytest.mark.xfail(
-    strict=True, reason="TODO H4: save the local receipt copy before the first network attempt"
-)
 def test_the_receipt_is_on_disk_before_the_first_network_attempt(ready: CliRig) -> None:
     seen: dict[str, object] = {}
 
@@ -299,10 +290,6 @@ def test_the_receipt_is_on_disk_before_the_first_network_attempt(ready: CliRig) 
     assert outbox.pending() == []  # the server took it, so it left the outbox
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="TODO H4: Ctrl-C during the post must say the receipt waits for `thirst sync`",
-)
 def test_ctrl_c_while_posting_keeps_the_receipt_for_sync(ready: CliRig) -> None:
     ready.api.receipt_error = KeyboardInterrupt()
 
@@ -346,9 +333,6 @@ def test_an_outbox_write_error_with_the_server_down_is_said_out_loud(
     assert "queued, run" not in ready.text
 
 
-@pytest.mark.xfail(
-    strict=True, reason="TODO H4: an OSError writing the local copy must not fail the run"
-)
 def test_a_local_copy_write_error_does_not_lose_the_receipt(
     ready: CliRig, monkeypatch: pytest.MonkeyPatch
 ) -> None:

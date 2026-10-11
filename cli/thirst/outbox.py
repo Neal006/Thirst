@@ -38,7 +38,16 @@ _UNSAVED = (
     "Free some disk space or check permissions on ~/.thirst."
 )
 
-__all__ = ["JOB_ID", "MAX_FILE_BYTES", "PostOutcome", "SyncResult", "post_or_queue", "sync"]
+__all__ = [
+    "JOB_ID",
+    "MAX_FILE_BYTES",
+    "PostOutcome",
+    "SyncResult",
+    "post_or_queue",
+    "post_queued",
+    "queue_safely",
+    "sync",
+]
 
 
 class ReceiptSender(Protocol):
@@ -114,7 +123,7 @@ def _message(err: ApiError) -> str:
     return _UNAUTHORISED if err.status == 401 else err.message
 
 
-def _try_enqueue(body: dict[str, Any]) -> str | None:
+def queue_safely(body: dict[str, Any]) -> str | None:
     """None when the receipt is in the outbox, else the reason it could not be written."""
     try:
         enqueue(body)
@@ -128,7 +137,11 @@ def _try_enqueue(body: dict[str, Any]) -> str | None:
 
 def post_or_queue(client: ReceiptSender, body: dict[str, Any]) -> PostOutcome:
     """Persist the receipt, then post it. It leaves the outbox only when the server has it."""
-    failure = _try_enqueue(body)
+    return post_queued(client, body, queue_safely(body))
+
+
+def post_queued(client: ReceiptSender, body: dict[str, Any], failure: str | None) -> PostOutcome:
+    """Post a receipt that ``queue_safely`` already tried to store (``failure``: its answer)."""
     job_id = str(body.get("job_id"))
     try:
         sent = client.post_receipt(body)
@@ -138,7 +151,7 @@ def post_or_queue(client: ReceiptSender, body: dict[str, Any]) -> PostOutcome:
                 _reject(job_id)
             return PostOutcome("rejected", None, err.message)
         if failure is not None:
-            failure = _try_enqueue(body)  # one more try now that time has passed
+            failure = queue_safely(body)  # one more try now that time has passed
         if failure is not None:
             return PostOutcome(
                 "unsaved", None, f"{_message(err)} " + _UNSAVED.format(reason=failure)
