@@ -12,7 +12,7 @@
   --surface-sunk: #eef2f5;
   --text: var(--ink);
   --text-muted: #566675;
-  --text-faint: #8695a3;
+  --text-faint: #606f7d;
   --border: #d5dde4;
   --border-strong: #a9b6c2;
   --link: #0a4fe0;
@@ -22,8 +22,8 @@
   --sky: #7fb0ff;
   --signal: #ffcc00;
   --signal-soft: #fff4c2;
-  --alarm: #e5432d;
-  --leaf: #0c9a5b;
+  --alarm: #c9321d;
+  --leaf: #087a46;
 
   /* chart colours, chosen to stay apart for colour-blind readers */
   --water: var(--cobalt);
@@ -39,7 +39,7 @@
   --warn-border: #b38700;
   --highlight: var(--signal-soft);
 
-  --tag-measured: #0b8a50;
+  --tag-measured: #087a46;
   --tag-modelled: #0a4fe0;
   --tag-placeholder: #8a6200;
   --tag-sourced: #0a7280;
@@ -345,8 +345,11 @@ code {
 
 /* ---------- tags (PRD G5) ---------- */
 
+/* Every chip is a link: at least 24px tall so it is an easy tap target (WCAG 2.5.8). */
 .tag {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
   padding: 0 6px;
   border: 1px solid currentColor;
   border-radius: 3px;
@@ -449,7 +452,7 @@ code {
 }
 
 .badge-gold {
-  color: #9a6b00;
+  color: #7a5400;
   background: var(--signal-soft);
   border-color: #d9a900;
 }
