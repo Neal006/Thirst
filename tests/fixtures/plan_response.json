@@ -6157,7 +6157,7 @@
   "notes": [
     "non_pausable_won"
   ],
-  "factor_version": "2026-10-09.1+f26f2905a606",
+  "factor_version": "2026-10-09.1+818242cbedfe",
   "assumptions_url": "/assumptions",
   "forecast_snapshot": {
     "city": "Chennai",
@@ -6616,6 +6616,6 @@
     ],
     "source": "live",
     "slot0_capacity": 0.766667,
-    "factor_version": "2026-10-09.1+f26f2905a606"
+    "factor_version": "2026-10-09.1+818242cbedfe"
   }
 }

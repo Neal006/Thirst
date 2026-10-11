@@ -171,6 +171,384 @@
       "source": "NVIDIA product page (board power); idle = 10% of max is a placeholder",
       "source_url": "https://www.nvidia.com/en-in/",
       "notes": "Re-verify board power in plan 1.7."
+    },
+    {
+      "id": "RTX-3050-Laptop",
+      "label": "NVIDIA GeForce RTX 3050 Laptop GPU",
+      "p_max_w": 80,
+      "p_idle_w": 8.0,
+      "nvml_name_patterns": [
+        "RTX 3050 Laptop",
+        "RTX 3050 6GB Laptop"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA laptop comparison page, row 'GPU Subsystem Power (W)' = 35 - 80 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/geforce/laptops/compare/30-series/",
+      "notes": "Laptop part: the maker sets the power per laptop model. p_max_w is the TOP of NVIDIA's stated 'GPU Subsystem Power' range (35 - 80 W), the same upper-bound convention as the desktop rows, so a real run is not rejected as implausible; a laptop set lower is over-estimated until NVML measures it. Idle is a placeholder. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-3050-Ti-Laptop",
+      "label": "NVIDIA GeForce RTX 3050 Ti Laptop GPU",
+      "p_max_w": 80,
+      "p_idle_w": 8.0,
+      "nvml_name_patterns": [
+        "RTX 3050 Ti Laptop"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA laptop comparison page, row 'GPU Subsystem Power (W)' = 35 - 80 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/geforce/laptops/compare/30-series/",
+      "notes": "Laptop part: the maker sets the power per laptop model. p_max_w is the TOP of NVIDIA's stated 'GPU Subsystem Power' range (35 - 80 W), the same upper-bound convention as the desktop rows, so a real run is not rejected as implausible; a laptop set lower is over-estimated until NVML measures it. Idle is a placeholder. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-3060-Laptop",
+      "label": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "p_max_w": 115,
+      "p_idle_w": 11.5,
+      "nvml_name_patterns": [
+        "RTX 3060 Laptop"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA laptop comparison page, row 'GPU Subsystem Power (W)' = 60 - 115 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/geforce/laptops/compare/30-series/",
+      "notes": "Laptop part: the maker sets the power per laptop model. p_max_w is the TOP of NVIDIA's stated 'GPU Subsystem Power' range (60 - 115 W), the same upper-bound convention as the desktop rows, so a real run is not rejected as implausible; a laptop set lower is over-estimated until NVML measures it. Idle is a placeholder. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-3070-Laptop",
+      "label": "NVIDIA GeForce RTX 3070 Laptop GPU",
+      "p_max_w": 125,
+      "p_idle_w": 12.5,
+      "nvml_name_patterns": [
+        "RTX 3070 Laptop"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA laptop comparison page, row 'GPU Subsystem Power (W)' = 80 - 125 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/geforce/laptops/compare/30-series/",
+      "notes": "Laptop part: the maker sets the power per laptop model. p_max_w is the TOP of NVIDIA's stated 'GPU Subsystem Power' range (80 - 125 W), the same upper-bound convention as the desktop rows, so a real run is not rejected as implausible; a laptop set lower is over-estimated until NVML measures it. Idle is a placeholder. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-3070-Ti-Laptop",
+      "label": "NVIDIA GeForce RTX 3070 Ti Laptop GPU",
+      "p_max_w": 125,
+      "p_idle_w": 12.5,
+      "nvml_name_patterns": [
+        "RTX 3070 Ti Laptop"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA laptop comparison page, row 'GPU Subsystem Power (W)' = 80 - 125 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/geforce/laptops/compare/30-series/",
+      "notes": "Laptop part: the maker sets the power per laptop model. p_max_w is the TOP of NVIDIA's stated 'GPU Subsystem Power' range (80 - 125 W), the same upper-bound convention as the desktop rows, so a real run is not rejected as implausible; a laptop set lower is over-estimated until NVML measures it. Idle is a placeholder. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-3080-Laptop",
+      "label": "NVIDIA GeForce RTX 3080 Laptop GPU",
+      "p_max_w": 150,
+      "p_idle_w": 15.0,
+      "nvml_name_patterns": [
+        "RTX 3080 Laptop"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA laptop comparison page, row 'GPU Subsystem Power (W)' = 80 - 150 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/geforce/laptops/compare/30-series/",
+      "notes": "Laptop part: the maker sets the power per laptop model. p_max_w is the TOP of NVIDIA's stated 'GPU Subsystem Power' range (80 - 150 W), the same upper-bound convention as the desktop rows, so a real run is not rejected as implausible; a laptop set lower is over-estimated until NVML measures it. Idle is a placeholder. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-3080-Ti-Laptop",
+      "label": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+      "p_max_w": 150,
+      "p_idle_w": 15.0,
+      "nvml_name_patterns": [
+        "RTX 3080 Ti Laptop"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA laptop comparison page, row 'GPU Subsystem Power (W)' = 80 - 150 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-in/geforce/laptops/compare/30-series/",
+      "notes": "Laptop part: the maker sets the power per laptop model. p_max_w is the TOP of NVIDIA's stated 'GPU Subsystem Power' range (80 - 150 W), the same upper-bound convention as the desktop rows, so a real run is not rejected as implausible; a laptop set lower is over-estimated until NVML measures it. Idle is a placeholder. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-4050-Laptop",
+      "label": "NVIDIA GeForce RTX 4050 Laptop GPU",
+      "p_max_w": 115,
+      "p_idle_w": 11.5,
+      "nvml_name_patterns": [
+        "RTX 4050 Laptop"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA laptop comparison page, row 'GPU Subsystem Power (W)' = 35 - 115 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-us/geforce/laptops/compare/",
+      "notes": "Laptop part: the maker sets the power per laptop model. p_max_w is the TOP of NVIDIA's stated 'GPU Subsystem Power' range (35 - 115 W), the same upper-bound convention as the desktop rows, so a real run is not rejected as implausible; a laptop set lower is over-estimated until NVML measures it. Idle is a placeholder. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-4060-Laptop",
+      "label": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "p_max_w": 115,
+      "p_idle_w": 11.5,
+      "nvml_name_patterns": [
+        "RTX 4060 Laptop"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA laptop comparison page, row 'GPU Subsystem Power (W)' = 35 - 115 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-us/geforce/laptops/compare/",
+      "notes": "Laptop part: the maker sets the power per laptop model. p_max_w is the TOP of NVIDIA's stated 'GPU Subsystem Power' range (35 - 115 W), the same upper-bound convention as the desktop rows, so a real run is not rejected as implausible; a laptop set lower is over-estimated until NVML measures it. Idle is a placeholder. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-4070-Laptop",
+      "label": "NVIDIA GeForce RTX 4070 Laptop GPU",
+      "p_max_w": 115,
+      "p_idle_w": 11.5,
+      "nvml_name_patterns": [
+        "RTX 4070 Laptop"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA laptop comparison page, row 'GPU Subsystem Power (W)' = 35 - 115 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-us/geforce/laptops/compare/",
+      "notes": "Laptop part: the maker sets the power per laptop model. p_max_w is the TOP of NVIDIA's stated 'GPU Subsystem Power' range (35 - 115 W), the same upper-bound convention as the desktop rows, so a real run is not rejected as implausible; a laptop set lower is over-estimated until NVML measures it. Idle is a placeholder. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-4080-Laptop",
+      "label": "NVIDIA GeForce RTX 4080 Laptop GPU",
+      "p_max_w": 150,
+      "p_idle_w": 15.0,
+      "nvml_name_patterns": [
+        "RTX 4080 Laptop"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA laptop comparison page, row 'GPU Subsystem Power (W)' = 60 - 150 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-us/geforce/laptops/compare/",
+      "notes": "Laptop part: the maker sets the power per laptop model. p_max_w is the TOP of NVIDIA's stated 'GPU Subsystem Power' range (60 - 150 W), the same upper-bound convention as the desktop rows, so a real run is not rejected as implausible; a laptop set lower is over-estimated until NVML measures it. Idle is a placeholder. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-4090-Laptop",
+      "label": "NVIDIA GeForce RTX 4090 Laptop GPU",
+      "p_max_w": 150,
+      "p_idle_w": 15.0,
+      "nvml_name_patterns": [
+        "RTX 4090 Laptop"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA laptop comparison page, row 'GPU Subsystem Power (W)' = 80 - 150 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-us/geforce/laptops/compare/",
+      "notes": "Laptop part: the maker sets the power per laptop model. p_max_w is the TOP of NVIDIA's stated 'GPU Subsystem Power' range (80 - 150 W), the same upper-bound convention as the desktop rows, so a real run is not rejected as implausible; a laptop set lower is over-estimated until NVML measures it. Idle is a placeholder. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-3060-Ti",
+      "label": "NVIDIA GeForce RTX 3060 Ti",
+      "p_max_w": 200,
+      "p_idle_w": 20.0,
+      "nvml_name_patterns": [
+        "RTX 3060 Ti"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA RTX 3060 / 3060 Ti page, 'Graphics Card Power (W)' = 200 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/30-series/rtx-3060-3060ti/",
+      "notes": "Founders Edition or reference design; partner boards may differ. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-3070",
+      "label": "NVIDIA GeForce RTX 3070",
+      "p_max_w": 220,
+      "p_idle_w": 22.0,
+      "nvml_name_patterns": [
+        "RTX 3070"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA RTX 3070 / 3070 Ti page, 'Graphics Card Power (W)' = 220 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/30-series/rtx-3070-3070ti/",
+      "notes": "Founders Edition or reference design; partner boards may differ. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-3070-Ti",
+      "label": "NVIDIA GeForce RTX 3070 Ti",
+      "p_max_w": 290,
+      "p_idle_w": 29.0,
+      "nvml_name_patterns": [
+        "RTX 3070 Ti"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA RTX 3070 / 3070 Ti page, 'Graphics Card Power (W)' = 290 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/30-series/rtx-3070-3070ti/",
+      "notes": "Founders Edition or reference design; partner boards may differ. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-3080",
+      "label": "NVIDIA GeForce RTX 3080",
+      "p_max_w": 350,
+      "p_idle_w": 35.0,
+      "nvml_name_patterns": [
+        "RTX 3080"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA RTX 3080 / 3080 Ti page, 'Graphics Card Power (W)' (350 W or 320 W, the page does not say which memory size; the higher is used) = 350 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/30-series/rtx-3080-3080ti/",
+      "notes": "Founders Edition or reference design; partner boards may differ. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-3080-Ti",
+      "label": "NVIDIA GeForce RTX 3080 Ti",
+      "p_max_w": 350,
+      "p_idle_w": 35.0,
+      "nvml_name_patterns": [
+        "RTX 3080 Ti"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA RTX 3080 / 3080 Ti page, 'Graphics Card Power (W)' = 350 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/30-series/rtx-3080-3080ti/",
+      "notes": "Founders Edition or reference design; partner boards may differ. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-4060",
+      "label": "NVIDIA GeForce RTX 4060",
+      "p_max_w": 115,
+      "p_idle_w": 11.5,
+      "nvml_name_patterns": [
+        "RTX 4060"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA RTX 4060 / 4060 Ti page, 'Total Graphics Power (W)' = 115 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/40-series/rtx-4060-4060ti/",
+      "notes": "Founders Edition or reference design; partner boards may differ. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-4060-Ti",
+      "label": "NVIDIA GeForce RTX 4060 Ti",
+      "p_max_w": 165,
+      "p_idle_w": 16.5,
+      "nvml_name_patterns": [
+        "RTX 4060 Ti"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA RTX 4060 / 4060 Ti page, 'Total Graphics Power (W)' (165 or 160 W; the higher is used) = 165 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/40-series/rtx-4060-4060ti/",
+      "notes": "Founders Edition or reference design; partner boards may differ. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-4070",
+      "label": "NVIDIA GeForce RTX 4070",
+      "p_max_w": 200,
+      "p_idle_w": 20.0,
+      "nvml_name_patterns": [
+        "RTX 4070"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA RTX 4070 family page, 'Total Graphics Power (W)' = 200 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/40-series/rtx-4070-family/",
+      "notes": "Founders Edition or reference design; partner boards may differ. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-4070-SUPER",
+      "label": "NVIDIA GeForce RTX 4070 SUPER",
+      "p_max_w": 220,
+      "p_idle_w": 22.0,
+      "nvml_name_patterns": [
+        "RTX 4070 SUPER"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA RTX 4070 family page, 'Total Graphics Power (W)' = 220 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/40-series/rtx-4070-family/",
+      "notes": "Founders Edition or reference design; partner boards may differ. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-4070-Ti",
+      "label": "NVIDIA GeForce RTX 4070 Ti",
+      "p_max_w": 285,
+      "p_idle_w": 28.5,
+      "nvml_name_patterns": [
+        "RTX 4070 Ti"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA RTX 4070 family page, 'Total Graphics Power (W)' = 285 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/40-series/rtx-4070-family/",
+      "notes": "Founders Edition or reference design; partner boards may differ. Also catches the 4070 Ti SUPER name; that card's own figure was not read, so check it. Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-A4000",
+      "label": "NVIDIA RTX A4000",
+      "p_max_w": 140,
+      "p_idle_w": 14.0,
+      "nvml_name_patterns": [
+        "RTX A4000"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA RTX A4000 page, 'Max Power Consumption' = 140 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-us/design-visualization/rtx-a4000/",
+      "notes": "Checked 2026-10-11."
+    },
+    {
+      "id": "RTX-A5000",
+      "label": "NVIDIA RTX A5000",
+      "p_max_w": 230,
+      "p_idle_w": 23.0,
+      "nvml_name_patterns": [
+        "RTX A5000"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA RTX A5000 page, 'Max Power Consumption' = 230 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-us/design-visualization/rtx-a5000/",
+      "notes": "Checked 2026-10-11."
+    },
+    {
+      "id": "A10",
+      "label": "NVIDIA A10",
+      "p_max_w": 150,
+      "p_idle_w": 15.0,
+      "nvml_name_patterns": [
+        "NVIDIA A10"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA A10 page, 'Max thermal design power (TDP)' = 150 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-us/data-center/products/a10-gpu/",
+      "notes": "Does not match the A10G name. Checked 2026-10-11."
+    },
+    {
+      "id": "A30",
+      "label": "NVIDIA A30",
+      "p_max_w": 165,
+      "p_idle_w": 16.5,
+      "nvml_name_patterns": [
+        "NVIDIA A30"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA A30 page, 'Max thermal design power (TDP)' = 165 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://www.nvidia.com/en-us/data-center/products/a30-gpu/",
+      "notes": "Checked 2026-10-11."
+    },
+    {
+      "id": "V100-PCIE",
+      "label": "NVIDIA Tesla V100 PCIe",
+      "p_max_w": 250,
+      "p_idle_w": 25.0,
+      "nvml_name_patterns": [
+        "V100-PCIE"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA Tesla V100 datasheet, 'Max Power Comsumption' (sic), PCIe column = 250 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://images.nvidia.com/content/technologies/volta/pdf/tesla-volta-v100-datasheet-letter-fnl-web.pdf",
+      "notes": "NVML name pattern taken from the usual nvidia-smi names (Tesla V100-PCIE-16GB), not checked on a machine. Checked 2026-10-11."
+    },
+    {
+      "id": "V100-SXM2",
+      "label": "NVIDIA Tesla V100 SXM2",
+      "p_max_w": 300,
+      "p_idle_w": 30.0,
+      "nvml_name_patterns": [
+        "V100-SXM2"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA Tesla V100 datasheet, 'Max Power Comsumption' (sic), SXM2 column = 300 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://images.nvidia.com/content/technologies/volta/pdf/tesla-volta-v100-datasheet-letter-fnl-web.pdf",
+      "notes": "NVML name pattern taken from the usual nvidia-smi names (Tesla V100-SXM2-16GB), not checked on a machine. Checked 2026-10-11."
+    },
+    {
+      "id": "P100-PCIE",
+      "label": "NVIDIA Tesla P100 PCIe",
+      "p_max_w": 250,
+      "p_idle_w": 25.0,
+      "nvml_name_patterns": [
+        "P100-PCIE"
+      ],
+      "status": "sourced",
+      "source": "NVIDIA Tesla P100 PCIe datasheet, 'Max Power Consumption' = 250 W (looked 2026-10-11); idle = 10% of max is a placeholder",
+      "source_url": "https://images.nvidia.com/content/tesla/pdf/nvidia-tesla-p100-PCIe-datasheet.pdf",
+      "notes": "NVML name pattern taken from the usual nvidia-smi names (Tesla P100-PCIE-16GB), not checked on a machine. Checked 2026-10-11."
     }
   ]
 }
