@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
+import type { Tag } from '../api/types'
 import { TagChip } from '../components/TagChip'
 import { useExplain } from '../hooks/useExplain'
 
@@ -14,18 +15,23 @@ export function JobSentenceBox() {
     }
   }
 
-  // Render explanation with numbers wrapped in a tag chip to satisfy honesty checks
+  // Render explanation with number tags based on source and user input
   const renderExplanation = (exp: string) => {
     const parts = exp.split(/(\d+(?:\.\d+)?%?)/g)
+    // collect numbers present in the original user text for possible "input" tagging
+    const userNums = new Set((text.match(/\d+(?:\.\d+)?%?/g) || []))
     return (
       <p>
         {parts.map((part, i) => {
           if (/^\d+(?:\.\d+)?%?$/.test(part)) {
-            // number part – render with a modelled tag chip
+            let tag: Tag = 'modelled'
+            if (response?.source === 'template') tag = 'template'
+            else if (response?.source === 'agent' || response?.source === 'bedrock') tag = 'ai_generated'
+            if (userNums.has(part)) tag = 'input'
             return (
               <span key={i}>
                 {part}
-                <TagChip tag="modelled" />
+                <TagChip tag={tag} />
               </span>
             )
           }

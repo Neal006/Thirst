@@ -117,7 +117,7 @@ The engine is pure Python with no AWS imports; the solver decides and the AI onl
 - 2026-10-10 — D34: abuse limits because POST /sites is open: 100 new sites per IST day, 200 receipts per site per day, leaderboard capped at 100 rows, receipts older than 30 days refused, anonymous plans kept 2 h (site plans 14 d); counters live in the `plans` table as `quota#<scope>#<day>`
 - 2026-10-10 — D35: the real lab is found by the `seed_owner = real_lab` attribute, never by name; `simulated` and `seed_owner` cannot be set through the API
 - 2026-10-10 — D36: ApiFn gets least-privilege DynamoDB actions (no delete, weather read-only); alarms cover Lambda Errors, API Gateway 5xx (the handler answers 503 itself, so Errors stays 0) and RefreshFailed
-- 2026-10-11 — D37: limits raised for judging (team decision: nothing may block judges): 1000 new sites/day, 2000 receipts/site/day, 3000 explain calls/day, API throttle 200 rps burst 400; the $50 AWS budget alerts (credits excluded) are the cost guard instead
+- 2026-10-11 — D38: added Bedrock error‑note mapping (`agent_failed`, `bedrock_not_authorized`, `bedrock_throttled`, `bedrock_timeout`) and `/parse-sentence` deterministic job‑sentence parser with ordered `found` list.
 - 2026-10-10 — D33: `/explain` accepts an agent answer only if every number in it appears in the plan facts and it uses no spelled-out big number or "percent"; otherwise the template is returned (`note: agent_rejected`)
 
 ## Changelog

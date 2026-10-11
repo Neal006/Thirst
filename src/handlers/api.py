@@ -401,6 +401,17 @@ def get_leaderboard() -> Response[str]:
 def get_assumptions() -> Response[str]:
     return _json(200, assumptions.build(load_factors()), cache="max-age=300")
 
+# ---------------------------------------------------------------------- POST /parse-sentence
+from .job_sentence import parse_job_sentence
+
+@app.post("/parse-sentence")
+def post_parse_sentence() -> Response[str]:
+    body = _parse(_body(MAX_BODY_SMALL))
+    if not isinstance(body, Mapping) or not isinstance(body.get("sentence"), str):
+        raise ApiError(400, "invalid_field", "body: send a JSON with a string field 'sentence'.")
+    result = parse_job_sentence(body["sentence"])
+    return _json(200, result)
+
 
 # ---------------------------------------------------------------------- entry point
 

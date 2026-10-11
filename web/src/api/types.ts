@@ -9,7 +9,9 @@ export type Tag =
   | 'sourced'
   | 'calibrated'
   | 'unverified'
-
+  | 'template'
+  | 'ai_generated'
+  | 'input'
 /** [low, central, high] factor sets. */
 export type Triple = [number, number, number]
 /** [min %, max %] as whole numbers. */
