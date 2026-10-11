@@ -50,11 +50,15 @@
    Don't show this on camera: the output prints the config path. After the shoot, a maintainer deletes the site with `scripts/seed.py --delete-site <id>`.
 4. **Pre-record the run (shot 4B)** because it takes minutes. Record it separately and speed it up in the edit.
    - **Best:** a Linux desktop with an NVIDIA GPU and a 1-hour job. It gives a `measured` receipt with a real cap.
-   - **Fallback (any laptop), a modelled receipt:**
+   - **Fallback (any laptop), a modelled receipt.** Tested on 2026-10-11 with `thirst` 0.3.1. Don't use `--now`: following the plan is what earns the saving.
      ```
-     thirst run --now --modelled --gpu-model RTX-4090 --gpus 2 --hours 1 --deadline "<tomorrow> 09:00" -- python -c "import time; time.sleep(3600)"
+     thirst run --modelled --gpu-model RTX-3050-Laptop --gpus 1 --hours 0.05 --deadline "<tomorrow> 09:00" -- python -c "import time; print('training...', flush=True); time.sleep(150); print('done', flush=True)"
      ```
-     Let it run the full hour and speed it up. Say **"modelled"** in the voice-over.
+     - **Duration:** about 2.5 minutes in real time.
+     - **Receipt:** "Saved 20% water and 20% CO2", "You took 100% of the possible saving", "Site score 78.5 gold (Provisional)".
+     - **Short job:** energy prints as `0.00 kWh`. For bigger numbers on screen, use `--gpu-model RTX-4090 --gpus 2 --hours 1` with a 1-hour sleep, then speed it up.
+     - **Voice-over:** say **"modelled"**.
+     - **Private lab:** with `--private` (as registered above) the receipt link returns "not found". Don't open it on camera. If you want to show the receipt page, register the recording lab without `--private`.
 5. Run `clear` before each terminal shot.
 
 ### Audio

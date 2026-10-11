@@ -1,9 +1,10 @@
 # Thirst: what is left to do
 
-Status on **2026-10-11, 13:00 IST**:
+Status on **2026-10-11, 14:00 IST**:
 - The site and API are live on AWS.
-- CI and the Deploy workflow are green.
-- PRs #1–#9 are merged, and `main` is the only branch.
+- CI, Deploy and Publish CLI workflows are green.
+- PRs #1–#13 are merged, and `thirst` 0.3.1 is on PyPI.
+- The owner ran the user test end to end; the test lab was deleted afterwards.
 - Submission window: **Sun 11 Oct 14:00–16:00 IST**.
 
 Each item says who can do it, how long it takes, and how you know it is done. Priority:
@@ -24,7 +25,7 @@ Related docs:
 
 | # | Task | Who | Time | Done when |
 |---|---|---|---|---|
-| 1.1 | Merge the open docs PRs (#10 and the one that adds this file) | anyone with write access | 2 min | `main` has `docs/WRITEUP.md`, `docs/TODO.md`, `docs/USER_TEST_GUIDE.md`, `docs/VIDEO_SCRIPT.md` |
+| 1.1 | ✅ Docs PRs merged (#10, #11, #13) | — | — | done |
 | 1.2 | Every team member registered and on the team on the hackathon site | each member | 5 min | team page lists everyone |
 | 1.3 | Record the video from [`VIDEO_SCRIPT.md`](VIDEO_SCRIPT.md) (< 3:00, captions, AWS named out loud) | 1 person | 90 min | exported file shows < 3:00 |
 | 1.4 | Upload to YouTube as **unlisted**; open it in a private window, signed out | same | 10 min | it plays signed out |
@@ -73,7 +74,7 @@ Notes for 2.1:
 | 3.4 | Confirm the SNS alarm email (check the inbox for "AWS Notification – Subscription Confirmation") | AWS owner | subscription shows Confirmed |
 | 3.5 | Bump GitHub Actions to Node 24 versions (`actions/checkout@v5`, `setup-node@v5`, `setup-python@v6`, `configure-aws-credentials@v5`, …): Deploy logs warn that Node 20 is deprecated | dev | no warning |
 | 3.6 | Leaderboard reads one Query per public site on a cache miss; precompute a per-division item when receipts arrive | dev | one read per board load |
-| 3.7 | Tag the release: `git tag v0.3.0 && git push --tags` (plan 7.7.e) | dev | tag on GitHub |
+| 3.7 | Tag the whole-project release for submission: `git tag v0.3.1 && git push origin v0.3.1` (plan 7.7.e). The CLI already has `cli-v0.3.1`. | dev | tag on GitHub |
 
 ---
 
@@ -89,6 +90,7 @@ Notes for 2.1:
 | 4.1.d | `--modelled` refuses to run without `--gpu-model` and `--gpus` even when a GPU is detected; the README example `thirst run --modelled …` leaves them out | Use the detected GPU when there is one, and fix the README example |
 | 4.1.e | A 2-minute job prints `Energy 0.00 kWh`, `Water 0.0 L` | Below 0.1 kWh, show Wh and mL |
 | 4.1.f | For a `--private` site the receipt prints a web link that returns 404 (private sites hide receipts, D26) | Don't print the link for private sites, or say it is private |
+| 4.1.g | A `--modelled` receipt says "uncapped" but is credited with the 70% plan level's saving, because the modelled meter assumes the plan's level was followed | Say "modelled at 70% (plan level)" so the wording matches the numbers |
 
 ### 4.2 Review leftovers (P1/P2)
 
@@ -153,3 +155,5 @@ Notes for 2.1:
 - Branches cleaned up: only `main` is left
 - The home page now says `pip install thirst` instead of the GitHub install line
 - `thirst` 0.3.1 published to PyPI by GitHub Actions (Trusted Publishing, no token)
+- `ASSUMPTIONS.md` is now generated from the live factor table (`make assumptions`, checked by a test); `SPEC.md` has the full score rules; `web/README.md` replaces the Vite boilerplate
+- Two end-to-end user tests against the live site; both test labs deleted

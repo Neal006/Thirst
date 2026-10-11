@@ -1,4 +1,4 @@
-POST /plan latency  2026-10-11T01:04:33+05:30
+POST /plan latency  2026-10-11T14:09:14+05:30
 url=https://l6y3i40hh4.execute-api.ap-south-1.amazonaws.com  n=50  failures=0
-p50=363 ms  p95=463 ms  max=541 ms
+p50=219 ms  p95=383 ms  max=414 ms
 PASS: p95 limit is 2000 ms and no request may fail

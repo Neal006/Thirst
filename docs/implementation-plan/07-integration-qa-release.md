@@ -1,5 +1,20 @@
 # Phase 07 — Integration, QA, docs, demo, submission
 
+> **Status on 11 Oct 2026.**
+>
+> Done:
+> - The integration loop works live (`--modelled`).
+> - Writeup [`../WRITEUP.md`](../WRITEUP.md), checklist [`../SUBMISSION.md`](../SUBMISSION.md), test guide [`../USER_TEST_GUIDE.md`](../USER_TEST_GUIDE.md), video script [`../VIDEO_SCRIPT.md`](../VIDEO_SCRIPT.md).
+> - The README covers the AI tools and credits.
+> - Bench and cost evidence are recorded in [`../FIXLIST.md`](../FIXLIST.md).
+>
+> Open (people):
+> - Video, blog and team registration.
+> - Repo public, full-history gitleaks, Cost Explorer screenshot.
+> - Submit, then keep the stack running.
+>
+> Release: the CLI is tagged `cli-v0.3.1`; the whole-project tag (7.7.e) is not yet pushed.
+
 Owner: **all** · Window: **Sat 09:00 to Sun 16:00** · Gates: **M4, M5, M6, M7**
 Source: TRD §14 (tests), §15 (schedule), §16 (fallbacks), §17 (submission), PRD §8 (metrics), §10 (video), §12 (releases).
 

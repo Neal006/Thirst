@@ -1,5 +1,11 @@
 # Phase 02 — Engine (pure Python)
 
+> **Status on 11 Oct 2026: ✅ done and reviewed.**
+> - 317 tests, 99% coverage; the fixtures are generated and checked for staleness.
+> - `gpus.json` has 42 sourced models (PR #8).
+> - **Placeholder data** remains where plan 1.7 is open: 18 of 57 factors, and an empty `powercap_sweep.json` (so every plan picks 70%).
+> - The factor table is now generated into [`../../ASSUMPTIONS.md`](../../ASSUMPTIONS.md); the score rules are in [`../../SPEC.md`](../../SPEC.md).
+
 Owner: **B** (2.1 to 2.7, 2.9) · **C** writes the `factors.json`/`gpus.json` content (2.2.a, 2.2.b) · **A** owns `score.py` (2.8, Fri 15:00 to 17:00)
 Window: **Fri 09:30 to 15:30** · Gate: **M1b** (see the [load-balancing table](README.md#load-balancing-after-the-ecc-planner-review))
 Source: TRD §5 (engine spec), §14 (tests), Idea §6–7.

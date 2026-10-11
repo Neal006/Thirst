@@ -1,5 +1,17 @@
 # Phase 04 — CLI and hardware layer
 
+> **Status on 11 Oct 2026.**
+>
+> Software (4.1–4.8): ✅ done and reviewed.
+> - PR #7 fixed H1 (https-only API), H4 (receipt saved before sending), M1 (a 401 explains itself), SIGHUP, SIGCONT after an error while paused, and a crashed cap restore (now exit 5).
+> - Published as `thirst` 0.3.1 on PyPI by tag `cli-v0.3.1` (Trusted Publishing).
+> - Tested end to end against the live API from a fresh install ([`../USER_TEST_GUIDE.md`](../USER_TEST_GUIDE.md)).
+>
+> Open:
+> - Hardware: 4.5.d–g sweep on a desktop GPU, 4.6.h SIGSTOP on CUDA, 4.9 overnight receipt, real power-limit/clock-lock checks.
+> - 4.11 `--offline`.
+> - Review leftovers and 7 UX issues from the live walkthroughs ([`../FIXLIST.md`](../FIXLIST.md)).
+
 Owner: **B** · Window: **Fri 13:00 to 22:00** · Gate: **M3 Scope lock** (overnight job started at 22:00)
 Source: TRD §6 (hardware), §7.1 (signing), PRD US3/US4, F7/F8, PRD §6.2 (CLI flow).
 
