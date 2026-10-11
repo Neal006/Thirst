@@ -1,5 +1,17 @@
 # Phase 05 — Backend and AWS
 
+> **Status on 11 Oct 2026: ✅ deployed** (stack `thirst-dev`, API `https://l6y3i40hh4.execute-api.ap-south-1.amazonaws.com`).
+> - Smoke test green; bench p95 383 ms; 8 simulated demo sites seeded.
+> - CD: `.github/workflows/deploy.yml` runs after CI on `main`, using OIDC role `thirst-github-deploy` (D38: it trusts the repo's immutable subject claim).
+>
+> Changed from this plan:
+> - Throttling is **200 req/s, burst 400**, not 10/20.
+> - Quotas are **1000 sites/day, 2000 receipts/site/day and 3000 explain calls/day** (D37: nothing may block the judges; the budget alerts guard the cost).
+> - The layer is built **without Docker** (`scripts/build_layer.py`), not with `sam build --use-container`.
+> - Bedrock IAM allows `foundation-model/*` plus the inference profile.
+>
+> Open: Bedrock model access is blocked for the account, so `/explain` serves the template; the leaderboard query per site.
+
 Owner: **A** · Window: **Fri 09:30 to Sat 12:00** · Gates: **M2** (`/plan` live by 18:00), **M3** (receipts accepted by 22:00), **M4**
 Source: TRD §2 (architecture), §7 (API), §8 (data model), §9 (refresh), §10 (agent), §12 (infra and cost).
 Region **`ap-south-1`**. Profile `thirst`. Stack name `thirst-dev`.

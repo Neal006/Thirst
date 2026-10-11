@@ -1,6 +1,27 @@
 # Thirst — Implementation Plan (master index)
 
-Version 1.0 · 9 Oct 2026 · Built from `Idea_1.md` (why), `prd.md` (what) and `trd.md` (how).
+> **Status on 11 Oct 2026, 14:00 IST.** Code is live and every phase except 03 is built.
+>
+> | Phase | Status |
+> |---|---|
+> | [01](01-foundations.md) Foundations | ✅ done; real data (1.7), GPU box (1.8) and team registration (1.9) open |
+> | [02](02-engine.md) Engine | ✅ done (317 tests, 99% coverage); placeholder data until 1.7 |
+> | [03](03-step0-notebook.md) Step 0 notebook | ⬜ not done |
+> | [04](04-cli-hardware.md) CLI | ✅ software done and reviewed, `thirst` 0.3.1 on PyPI; hardware checks open |
+> | [05](05-backend-aws.md) Backend + AWS | ✅ deployed, smoke + bench green; Bedrock blocked for the account |
+> | [06](06-frontend.md) Frontend | ✅ done, including Playwright e2e + axe; 6.3.j, 6.8 and 6.10 open |
+> | [07](07-integration-qa-release.md) QA + release | ⚠️ docs done; the people items are in [`../SUBMISSION.md`](../SUBMISSION.md) |
+>
+> Gates:
+> - M1 ✅ · M2 ✅ · M5 ✅
+> - M3 ⚠️ receipts work, no real overnight GPU receipt yet
+> - M4 ⚠️ the plan → run → receipt → board loop works with `--modelled`, not yet measured on a GPU
+> - M6 ✅ code freeze held for features; fixes and docs went in after it
+> - M7 ⬜ submission
+>
+> Decisions taken after this plan: D27–D39 in [`../../AGENTS.md`](../../AGENTS.md). Live status: [`../TODO.md`](../TODO.md).
+
+Version 1.0 · 9 Oct 2026 · Built from `Idea.md` (then `Idea_1.md`, renamed in D1) (why), `prd.md` (what) and `trd.md` (how).
 Code freeze **Sun 11 Oct 11:00 IST** · Submit **Sun 11 Oct 14:00 to 16:00 IST**.
 
 This plan turns the three documents into tasks you can execute in order. Every task has an ID,

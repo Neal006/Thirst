@@ -1,5 +1,11 @@
 # Phase 03 — Step 0: does the water vs carbon trade-off exist in India?
 
+> **Status on 11 Oct 2026: ⬜ not done.**
+> - Neither the "India finding" notebook nor `docs/india_finding.png` exists yet.
+> - The video script uses the home page's water clock instead.
+>
+> Tracked as [`../TODO.md`](../TODO.md) 2.7.
+
 Owner: **C** (data/story) · Window: **Fri 09:30 to 13:00** · Hard deadline: **headline decided by 13:00** (PRD §11)
 Source: TRD §13, Idea §6.6. Output feeds F13 (home-page chart, P1), the video (0:20 to 0:40) and the blog.
 
