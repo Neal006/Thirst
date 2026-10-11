@@ -1,12 +1,20 @@
 import React, { useState } from 'react'
+import { parseJobSentence } from '../lib/jobSentenceParser'
 import type { Tag } from '../api/types'
-import { TagChip } from '../components/TagChip'
 import { useExplain } from '../hooks/useExplain'
 
 /** Simple component to let the user type a one‑sentence job description and get an explanation. */
 export function JobSentenceBox() {
   const [text, setText] = useState('')
   const { status, response, error, explain } = useExplain()
+  const parsed = parseJobSentence(text)
+  const fillPlanner = () => {
+    if (parsed.city) {
+      const params = new URLSearchParams(window.location.search)
+      params.set('city', parsed.city)
+      window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`)
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -62,16 +70,42 @@ export function JobSentenceBox() {
         </div>
       </form>
       {status === 'error' && <p className="error">{error}</p>}
-{response && (
-  <div className="explanation-result">
-    <h4>Explanation ({response.source})</h4>
-    {renderExplanation(response.explanation)}
-    {response.note && <p className="note">Note: {response.note}</p>}
+{parsed.found.length > 0 && (
+  <div className="parsed-form">
+    {parsed.work_hours !== null && (
+      <div>
+        <label>Work hours</label>
+        <input type="number" value={parsed.work_hours} readOnly />
+      </div>
+    )}
+    {parsed.gpu_count !== null && (
+      <div>
+        <label>GPU count</label>
+        <input type="number" value={parsed.gpu_count} readOnly />
+      </div>
+    )}
+    {parsed.city && (
+      <div>
+        <label>City</label>
+        <input type="text" value={parsed.city} readOnly />
+      </div>
+    )}
+    {parsed.workload && (
+      <div>
+        <label>Workload</label>
+        <input type="text" value={parsed.workload} readOnly />
+      </div>
+    )}
   </div>
 )}
-{response && (
-  <button type="button" onClick={() => console.log('fill planner')}>Use parameters</button>
-)}
+        {response && (
+          <>
+            <div className="explanation">
+              {response.explanation}
+            </div>
+            <button type="button" onClick={fillPlanner}>Use parameters</button>
+          </>
+        )}
     </section>
   )
 }
