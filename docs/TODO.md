@@ -89,7 +89,6 @@ Notes for 2.1:
 | 4.1.d | `--modelled` refuses to run without `--gpu-model` and `--gpus` even when a GPU is detected; the README example `thirst run --modelled …` leaves them out | Use the detected GPU when there is one, and fix the README example |
 | 4.1.e | A 2-minute job prints `Energy 0.00 kWh`, `Water 0.0 L` | Below 0.1 kWh, show Wh and mL |
 | 4.1.f | For a `--private` site the receipt prints a web link that returns 404 (private sites hide receipts, D26) | Don't print the link for private sites, or say it is private |
-| 4.1.g | PyPI has 0.3.0, published **before** the PR #7 fixes (receipt saved before sending, SIGHUP, …) | Release 0.3.1 (4.3.a) |
 
 ### 4.2 Review leftovers (P1/P2)
 
@@ -105,7 +104,7 @@ Notes for 2.1:
 
 ### 4.3 Release and hardware checks (P1)
 
-- **4.3.a PyPI.** Add PyPI Trusted Publishing (GitHub OIDC, no token) plus a release workflow. Bump `cli/pyproject.toml` to 0.3.1 and publish.
+- **4.3.a PyPI.** ✅ Done: 0.3.1 is on PyPI through Trusted Publishing (`.github/workflows/publish-cli.yml`). Next release: fix 4.1.a–f, bump to 0.3.2 in `cli/pyproject.toml` and `cli/thirst/__init__.py`, then `git tag cli-v0.3.2 && git push origin cli-v0.3.2`.
 - **4.3.b Hardware checks on a real Linux GPU box** (plan 1.8 / 4.6.h). Each of these is still untested on real hardware:
   - real NVML power limit and restore
   - `--fallback-clocks` (`MIN_LOCK_MHZ=210` is an assumption)
@@ -153,3 +152,4 @@ Notes for 2.1:
 - Deploy fixed: the OIDC role trusts the immutable subject claim (D38)
 - Branches cleaned up: only `main` is left
 - The home page now says `pip install thirst` instead of the GitHub install line
+- `thirst` 0.3.1 published to PyPI by GitHub Actions (Trusted Publishing, no token)
