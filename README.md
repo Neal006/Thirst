@@ -134,7 +134,7 @@ Full walk-through with real outputs: [`docs/USER_TEST_GUIDE.md`](docs/USER_TEST_
 
 | | |
 |---|---|
-| ✅ Live | Website, API and hourly weather refresh on AWS; `pip install thirst` (0.3.1); 42 GPU models |
+| ✅ Live | Website, API and hourly weather refresh on AWS; `pip install thirst` (0.3.2); 42 GPU models |
 | ✅ Tested | ~1,800 unit and integration tests in CI; Playwright on desktop and phone against the live site, with axe accessibility checks |
 | ⚠️ Placeholder | The power-cap speed/energy curve is still a placeholder until we measure it on a desktop GPU. So every plan picks 70%, all 11 water/carbon options are the same plan, and the planner hides the slider and says why. The app labels it. |
 | ⏳ Pending | AI explanations on Amazon Bedrock (account access pending; a template explanation is served meanwhile) |

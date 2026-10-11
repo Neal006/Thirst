@@ -58,7 +58,7 @@
      ```
      - **Duration:** about 2.5 minutes in real time.
      - **Receipt:** "Saved 20% water and 20% CO2", "You took 100% of the possible saving", "Site score 78.5 gold (Provisional)".
-     - **Short job:** with 0.3.1, energy prints as `0.00 kWh`. The CLI on `feat/web-ui-accessibility` (0.3.2 once released) prints Wh, mL and g instead, and says "modelled at 70% (plan level)". For bigger numbers on screen, use `--gpu-model RTX-4090 --gpus 2 --hours 1` with a 1-hour sleep, then speed it up.
+     - **Short job:** with 0.3.1, energy prints as `0.00 kWh`. 0.3.2 (now on PyPI) prints Wh, mL and g instead, and says "modelled at 70% (plan level)". For bigger numbers on screen, use `--gpu-model RTX-4090 --gpus 2 --hours 1` with a 1-hour sleep, then speed it up.
      - **Voice-over:** say **"modelled"**.
      - **Private lab:** with `--private` (as registered above), 0.3.1 prints a receipt link that returns "not found", and 0.3.2 prints no link. Don't open it on camera. If you want to show the receipt page, register the recording lab without `--private`.
 5. Run `clear` before each terminal shot.
