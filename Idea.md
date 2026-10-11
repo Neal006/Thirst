@@ -1,5 +1,9 @@
 # Thirst: a water and carbon planner, receipt and rating for GPU work in India
 
+> **Status (11 Oct 2026).** This idea is built and live: https://main.dzxkrtlc7xqfx.amplifyapp.com · `pip install thirst`.
+> - §7's score is implemented exactly as written; see [`SPEC.md`](SPEC.md).
+> - The open question in §6.6 (midday solar vs cool nights) is not yet answered with data (phase 03).
+
 Version 0.3 (refined) · 9 Oct 2026 · Environmental Hacks (WeMakeDevs x AWS) · Track 02: Heat and Water
 
 > **One line for judges:** Thirst tells you when and how fast to run a GPU job so it takes less water from a stressed city and puts less CO₂ in the air. It proves the result with a measured "water receipt", and it turns receipts into a fair rating where a 4-GPU college lab can beat a big company's lab.

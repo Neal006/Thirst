@@ -2,18 +2,18 @@
 
 This guide walks through Thirst the way a student or lab head would meet it: first the website, then the `thirst` command on their own computer. Each step says **what to do**, **what you should see**, and **what counts as a problem**.
 
-The terminal outputs below are real. They were captured on 2026-10-11 against the live service, on a Windows laptop with an RTX 3050 Laptop GPU. Times, ids and numbers will differ for you.
+The terminal outputs below are real. They were captured on 2026-10-11 against the live service, on a Windows laptop with an RTX 3050 Laptop GPU, using `thirst` 0.3.1 from PyPI; the project owner then ran the same steps. Times, ids and numbers will differ for you, and the test labs shown were deleted afterwards.
 
 | | |
 |---|---|
 | Website | https://main.dzxkrtlc7xqfx.amplifyapp.com |
 | CLI | `pip install thirst` (Python 3.10+) |
-| Time needed | Part A (website): 15 min · Part B (CLI, any computer): 15 min · Part C (NVIDIA GPU): 30 min+ |
+| Time needed | Part A (website): 15 min · Part B (CLI, any computer, incl. checking your lab on the site): 15 min · Part C (NVIDIA GPU): 30 min+ |
 
 > **Note:** Today the power-cap numbers are **placeholders** until our GPU sweep is measured. That has three visible effects:
 > - Every plan picks a 70% power cap.
 > - The water/carbon slider doesn't change the plan.
-> - Savings show as about **18–19% water and CO₂, 20–21% energy** in every city.
+> - Savings show as about **18–20% water and CO₂, 20–21% energy** in every city.
 >
 > All three are expected, and the app tags those numbers `placeholder`.
 
@@ -109,18 +109,24 @@ Click a jump chip and the page should scroll to that group.
 
 ## Part B: The CLI on any computer (no GPU needed)
 
-This shows what a lab member sees in the terminal. To try it without leaving a lab on the public board, register with `--private`.
+This is what a lab member sees in the terminal. The steps below use **PowerShell on Windows**; on Linux or macOS use `source thirst-test/bin/activate` and `export THIRST_HOME=/tmp/thirst-home`.
 
-> **Clean up afterwards.** A test site stays in the live database. Only a maintainer with AWS access can delete it, so tell them the site id:
+Register **public** if you want to check your lab on the website afterwards (Part B8). Use `--private` to keep it off the board.
+
+> **Clean up afterwards.** A test lab stays in the live database. Only a maintainer with AWS access can delete it, so send them the `s_...` id:
 > ```
 > python scripts/seed.py --profile thirst --stage dev --delete-site <site_id>
 > ```
 
-### B1. Install
+### B1. Install into a fresh environment
 
-```
-pip install thirst
+```powershell
+cd $env:TEMP
+python -m venv thirst-test
+.\thirst-test\Scripts\Activate.ps1      # if blocked: call .\thirst-test\Scripts\thirst.exe instead of thirst
+pip install --no-cache-dir thirst
 thirst --version
+$env:THIRST_HOME = "$env:TEMP\thirst-home"   # keeps this test's config separate from ~/.thirst
 ```
 Expected: `thirst 0.3.1` (or newer).
 
@@ -146,15 +152,16 @@ What each line means:
 ### B3. Register the lab
 
 ```
-$ thirst register --name "Guide Test Lab" --city Chennai --cooling room_ac --gpus 1 --private
-Registered site s_bcuta4hrjn (division D1).
-Site page: https://main.dzxkrtlc7xqfx.amplifyapp.com/sites/s_bcuta4hrjn
-The site key was saved to C:\Users\you\.thirst\config.toml (private to your user). It is not shown again.
+$ thirst register --name "My Test Lab" --city Chennai --cooling room_ac --gpus 1
+Registered site s_cishi4ix3f (division D1).
+Site page: https://main.dzxkrtlc7xqfx.amplifyapp.com/sites/s_cishi4ix3f
+The site key was saved to C:\Users\you\AppData\Local\Temp\thirst-home\config.toml (private to your user). It is not shown again.
 ```
 
+- **Write down the `s_...` id.**
 - The key is never printed.
 - `--cooling` is one of `room_ac`, `air_chiller` or `evaporative`.
-- Leave out `--private` to appear on the leaderboard.
+- Add `--private` to stay off the leaderboard.
 
 Run `thirst doctor` again. Now **Config**, **API reachable** and **Your clock vs the server: 0 s apart** are `[ok]`.
 
@@ -174,6 +181,7 @@ Plan id: p_dipzk7zwnx. Assumptions: /assumptions
 - `--pausable` allows pauses. On Windows it prints "Pausing is not available on Windows, so the job will run without pauses."
 - `--alpha 0` means least CO₂ and `--alpha 1` means least water.
 - `--json` prints the full server answer.
+- The `/assumptions` at the end should be a full link (TODO 4.1.b).
 
 ### B5. See what a run would do
 
@@ -187,51 +195,70 @@ Dry run: nothing is started. The CLI would make these changes:
 
 The dry run shows hour slots (12:00–18:00) while the plan line shows exact times. That mismatch is known: `docs/TODO.md` 4.1.c.
 
-### B6. A real (short) run, without touching the GPU
+### B6. A real short run that follows the plan
 
-`--modelled` estimates the energy from the GPU model instead of reading the hardware. `--now` starts right away. This 2-minute "training" job just sleeps:
+`--modelled` estimates the energy from the GPU model instead of reading the hardware, so nothing on your GPU changes. Without `--now`, Thirst follows the plan. Today the plan starts right away, so this 2.5-minute "training" job starts at once:
 
 ```
-$ thirst run --now --modelled --gpu-model RTX-3050-Laptop --gpus 1 --hours 0.05 --deadline "2026-10-12 09:00" -- python -c "import time; print('training...', flush=True); time.sleep(120); print('done', flush=True)"
-Plan: start 12:48, full power (no cap), done by 12:51
+$ thirst run --modelled --gpu-model RTX-3050-Laptop --gpus 1 --hours 0.05 --deadline "2026-10-12 09:00" -- python -c "import time; print('training...', flush=True); time.sleep(150); print('done', flush=True)"
+Plan: start 13:28, cap 70%, done by 13:31
 training...
 done
-Thirst receipt j_5c5ke35mv4b7
-  Ran      11 Oct 12:48 to 12:50 IST (2 min) on 1 x NVIDIA GeForce RTX 3050 Laptop GPU, uncapped
+Thirst receipt j_nylqingnuen2
+  Ran      11 Oct 13:28 to 13:31 IST (2 min) on 1 x NVIDIA GeForce RTX 3050 Laptop GPU, uncapped
   Energy   0.00 kWh GPU (modelled)
   Water    0.0 L (modelled); if you had started right away: 0.0 L
   Carbon   0.00 kg CO2 (modelled); if you had started right away: 0.00 kg
-  Saved    0% water and 0% CO2 compared with starting right away (modelled)
-  Capture  You took 0% of the possible saving
-  Score    Site score 0 (Provisional)
-  Receipt  https://main.dzxkrtlc7xqfx.amplifyapp.com/receipts/s_bcuta4hrjn/j_5c5ke35mv4b7
+  Saved    20% water and 20% CO2 compared with starting right away (modelled)
+  Capture  You took 100% of the possible saving
+  Score    Site score 78.5 gold (Provisional)
+  Receipt  https://main.dzxkrtlc7xqfx.amplifyapp.com/receipts/s_cishi4ix3f/j_nylqingnuen2
 ```
 
 Why the receipt looks like this:
 - **`--modelled` needs `--gpu-model` and `--gpus`**, even when a GPU is present (`docs/TODO.md` 4.1.d). GPU ids are listed on the Assumptions page under GPUs.
-- **Zeros are expected.** A 2-minute job is a few Wh, which rounds to `0.00 kWh` (4.1.e). `--now` means you chose not to wait, so the saving and capture are 0%.
-- **The receipt link is 404 for a private site.** Private sites hide their receipts (4.1.f). For a public site, the link opens the receipt page.
-- **Your command's output still shows.** It also goes to a log under `~/.thirst/logs/`.
+- **Zeros are expected.** About 2.6 Wh rounds to `0.00 kWh` (4.1.e).
+- **20% saved but "uncapped".** The modelled meter assumes you followed the plan's 70% level, while the word "uncapped" describes the real GPU (4.1.g).
+- **The score is 78.5.** A = 50 (capture 100%) and C = 5 (public lab), so 55 / 70 × 100 = 78.57, which is Gold (Provisional). See [`SPEC.md`](../SPEC.md) §4.
+- **Your command's output still shows.** It also goes to a log under `$THIRST_HOME/logs/`.
 
-For a meaningful receipt, use a job of at least about 1 hour and let Thirst wait for the planned start (drop `--now`).
+To compare, add `--now`. The plan line then says `full power (no cap)`, the saving and capture are 0%, and the site score is 0 for that receipt.
 
-### B7. Saved receipts and the outbox
+### B7. Saved receipts, the outbox and Ctrl-C
 
 ```
-$ thirst receipt show j_5c5ke35mv4b7
-Thirst receipt j_5c5ke35mv4b7
-  ... (the same receipt, read from ~/.thirst/receipts/)
+$ thirst receipt show j_nylqingnuen2
+Thirst receipt j_nylqingnuen2
+  ... (the same receipt, read from $THIRST_HOME/receipts/)
 
 $ thirst sync
 Nothing to send: the outbox is empty.
 ```
 
-To test the offline path, turn off the network just before a short run ends:
-1. The receipt is saved on disk and the CLI says it is **queued**.
-2. Turn the network back on.
-3. `thirst sync` sends it and prints the result.
+- **Ctrl-C:** run B6 again and press Ctrl-C after `training...`. The job stops, and you still get a receipt marked as interrupted.
+- **Offline:** turn off the network just before a short run ends.
+  1. The receipt is saved on disk and the CLI says it is **queued**.
+  2. Turn the network back on.
+  3. `thirst sync` sends it.
+- **Ctrl-C while sending:** the CLI exits with code 130 and says to run `thirst sync`.
 
-If you press Ctrl-C while the receipt is being sent, the CLI exits with code 130 and says to run `thirst sync`.
+### B8. Check your lab on the website (public labs only)
+
+| Open | You should see |
+|---|---|
+| The **Site page** link from B3 | Your lab's name, Chennai and D1, a score of about **78.5 Gold (Provisional)**, a badge ladder with the points to Platinum, and **1 receipt** under Recent receipts |
+| The **Receipt** link from B6 | The run window, the GPU, energy tagged **modelled**, water and CO₂ against "if you had started right away", and capture **100%** |
+| **Leaderboard → D1** | Your lab at about **#3**, between the simulated demo labs. If it isn't there yet, refresh after a minute (the board is cached briefly). |
+
+For a `--private` lab, the site page shows no receipts and the receipt link returns "not found" (4.1.f).
+
+### B9. Clean up
+
+```powershell
+deactivate
+Remove-Item -Recurse -Force $env:TEMP\thirst-test, $env:TEMP\thirst-home
+```
+Then send the `s_...` id to a maintainer so the test lab is removed from the live board.
 
 ---
 
@@ -280,6 +307,7 @@ npm --prefix web ci
 python -m ruff check . && python -m mypy && python -m pytest -m "not gpu and not aws"
 npm --prefix web test -- --run && npm --prefix web run lint && npm --prefix web run build
 
+python scripts/gen_assumptions.py --check                     # ASSUMPTIONS.md matches the factor data
 python scripts/local_api.py                                   # real API on :3000, in-memory DB
 cd web && VITE_API_URL=http://127.0.0.1:3000 npm run dev       # site on :5173
 

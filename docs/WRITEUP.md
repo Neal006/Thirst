@@ -6,7 +6,9 @@
 |---|---|
 | Live site | https://main.dzxkrtlc7xqfx.amplifyapp.com |
 | API | https://l6y3i40hh4.execute-api.ap-south-1.amazonaws.com |
-| CLI | `pip install thirst` ([PyPI](https://pypi.org/project/thirst/)) |
+| CLI | `pip install thirst` ([PyPI](https://pypi.org/project/thirst/), 0.3.1) |
+| Score rules · every factor | [`SPEC.md`](../SPEC.md) · [`ASSUMPTIONS.md`](../ASSUMPTIONS.md) |
+| Try it yourself | [`docs/USER_TEST_GUIDE.md`](USER_TEST_GUIDE.md) |
 | Code | https://github.com/Neal006/Thirst (MIT) |
 | Video | _add the unlisted YouTube link_ |
 | Blog | _add the Builder Center link_ |
@@ -58,7 +60,7 @@ On the website:
 
 There are no servers, no GPUs on AWS, no NAT gateway and no provisioned concurrency. The GPU work runs on the lab's own machine.
 
-**Performance.** 50 live `POST /plan` calls: p50 363 ms, p95 463 ms, 0 failures (`docs/bench_plan.txt`, measured 2026-10-11).
+**Performance.** 50 live `POST /plan` calls: p50 219 ms, p95 383 ms, 0 failures (`docs/bench_plan.txt`, measured 2026-10-11).
 
 ## 4. Measured, modelled, and the limits we say out loud
 
@@ -71,7 +73,7 @@ There are no servers, no GPUs on AWS, no NAT gateway and no provisioned concurre
 | Coal water limits, city norms, water-stress categories | **Sourced** (MoEFCC, CPHEEO, WRI Aqueduct) |
 | Power-cap trade-off (speed and energy at 70/85/100%) | **Placeholder** until our own GPU sweep is measured |
 
-Status mix on the live Assumptions page: 30 design choices, 18 placeholders, 8 sourced, 1 calibrated.
+Status mix on the live Assumptions page: 30 design choices, 18 placeholders, 8 sourced, 1 calibrated. The same table is generated into [`ASSUMPTIONS.md`](../ASSUMPTIONS.md).
 
 **What this means for the numbers today.** A live plan on 2026-10-11 for 2 × RTX 4090, 6 hours of work, in Chennai, Delhi or Bengaluru picked the 70% power cap. Against starting right away, it showed:
 
@@ -112,7 +114,10 @@ All of these run in CI on every PR (`.github/workflows/ci.yml`):
 Separately, the Playwright suite runs against the live site:
 - **Coverage:** desktop and a 360 px phone, with axe accessibility checks.
 - **Safety:** a read-only guard blocks every request except GET and `POST /plan`.
-- **First run:** found contrast, list-markup and tap-target bugs, now fixed. Latest local run against the live API: 77 passed, 2 skipped (the slider probe, see §4).
+- **First run:** found contrast, list-markup and tap-target bugs, now fixed.
+- **After the last deploy, against the live site:** 74 passed, 4 skipped (data-dependent), and 1 flaky test that passed 12/12 on re-run.
+
+We also ran the whole user journey by hand from a fresh `pip install thirst`: register, plan, run, receipt, then the site and leaderboard pages ([`USER_TEST_GUIDE.md`](USER_TEST_GUIDE.md)). The CLI is released to PyPI by GitHub Actions with PyPI Trusted Publishing, so no PyPI token is stored anywhere.
 
 ## 6. AI tools used
 

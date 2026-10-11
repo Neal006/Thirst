@@ -1,5 +1,22 @@
 # Phase 01 — Foundations
 
+> **Status on 11 Oct 2026.**
+>
+> Done:
+> - 1.1–1.5: repo, skeleton, tooling, CI.
+> - 1.6: AWS account (profile `thirst`, ap-south-1), budget `thirst-monthly` ($50), SSM secret `/thirst/server_secret`, SAM CLI.
+>
+> Changed:
+> - **No Docker.** The Strands layer is built from manylinux aarch64 wheels by `scripts/build_layer.py`, so 1.6.b's Docker step was not needed.
+> - Bedrock access is **blocked for the account**, and an AWS Support case is needed.
+>
+> Open:
+> - 1.7.b–f real data: CSEP grid mix, Aqueduct stress, the power-cap sweep.
+> - 1.8 GPU-box checks.
+> - 1.9 team registration.
+>
+> See [`../TODO.md`](../TODO.md) §1–3.
+
 Owner: **all** (lead per step below) · Window: **Fri 9 Oct 09:00 to 10:30 IST** · Gate: **G0 Ready**
 Goal: everyone can write code, run tests, deploy to AWS, and reach every external data source by 10:30.
 Nothing in later phases should wait on accounts, installs or permissions.

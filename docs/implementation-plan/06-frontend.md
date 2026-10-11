@@ -1,5 +1,16 @@
 # Phase 06 — Frontend (Vite + React + TypeScript + Recharts)
 
+> **Status on 11 Oct 2026: ✅ done and live** (https://main.dzxkrtlc7xqfx.amplifyapp.com).
+> - Home page with live-data graphics (PR #2) and a game theme on the inner pages (PR #3).
+> - The React review leftovers and code-splitting: main chunk 810 → 249 kB, no mock chunk in production (PR #6).
+> - **6.11 Playwright + axe done** (PR #9): 74 pass, 4 skip and 1 flaky against the live site.
+> - Amplify takes manual zip deploys (`scripts/deploy_web.py`), so `amplify.yml` only applies if the app is ever Git-connected.
+>
+> Open:
+> - 6.3.j sentence box (needs Bedrock).
+> - 6.8 India finding (needs phase 03).
+> - 6.10 Lighthouse report.
+
 Owner: **C** · Window: **Fri 13:00 to Sat 17:00** · Gates: **M2** (Plan page on the live API by 18:00), **M5**
 Source: TRD §11, PRD §5 (F1 to F10), §6.1 (web flow), §7 (screens and words).
 Rule: **write for a busy student.** Short words, units always shown, every number tagged, works at **360 px**.
