@@ -7,7 +7,7 @@
 > | [01](01-foundations.md) Foundations | ✅ done; real data (1.7), GPU box (1.8) and team registration (1.9) open |
 > | [02](02-engine.md) Engine | ✅ done (317 tests, 99% coverage); placeholder data until 1.7 |
 > | [03](03-step0-notebook.md) Step 0 notebook | ⬜ not done |
-> | [04](04-cli-hardware.md) CLI | ✅ software done and reviewed, `thirst` 0.3.1 on PyPI; hardware checks open |
+> | [04](04-cli-hardware.md) CLI | ✅ software done and reviewed, `thirst` 0.3.2 on PyPI; hardware checks open |
 > | [05](05-backend-aws.md) Backend + AWS | ✅ deployed, smoke + bench green; Bedrock blocked for the account |
 > | [06](06-frontend.md) Frontend | ✅ done, including Playwright e2e + axe; 6.3.j, 6.8 and 6.10 open |
 > | [07](07-integration-qa-release.md) QA + release | ⚠️ docs done; the people items are in [`../SUBMISSION.md`](../SUBMISSION.md) |

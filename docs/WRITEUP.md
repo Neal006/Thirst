@@ -6,7 +6,7 @@
 |---|---|
 | Live site | https://main.dzxkrtlc7xqfx.amplifyapp.com |
 | API | https://l6y3i40hh4.execute-api.ap-south-1.amazonaws.com |
-| CLI | `pip install thirst` ([PyPI](https://pypi.org/project/thirst/), 0.3.1) |
+| CLI | `pip install thirst` ([PyPI](https://pypi.org/project/thirst/), 0.3.2) |
 | Score rules · every factor | [`SPEC.md`](../SPEC.md) · [`ASSUMPTIONS.md`](../ASSUMPTIONS.md) |
 | Try it yourself | [`docs/USER_TEST_GUIDE.md`](USER_TEST_GUIDE.md) |
 | Code | https://github.com/Neal006/Thirst (MIT) |

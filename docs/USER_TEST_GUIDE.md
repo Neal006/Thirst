@@ -2,7 +2,7 @@
 
 This guide walks through Thirst the way a student or lab head would meet it: first the website, then the `thirst` command on their own computer. Each step says **what to do**, **what you should see**, and **what counts as a problem**.
 
-The terminal outputs below are real. They were first captured on 2026-10-11 against the live service, on a Windows laptop with an RTX 3050 Laptop GPU, using `thirst` 0.3.1 from PyPI, and the project owner then ran the same steps. Part B was re-run for the CLI fixes on the `feat/web-ui-accessibility` branch, against the same API code run locally (`scripts/local_api.py`). Times, ids and numbers will differ for you, and the test labs shown were deleted afterwards.
+The terminal outputs below are real. They were first captured on 2026-10-11 against the live service, on a Windows laptop with an RTX 3050 Laptop GPU, using `thirst` 0.3.1 from PyPI, and the project owner then ran the same steps. Part B was re-run for the CLI fixes in 0.3.2, against the API code run locally (`scripts/local_api.py`) and then against the live API. Times, ids and numbers will differ for you, and the test labs shown were deleted afterwards.
 
 This version describes the website after the UX overhaul (`docs/implementation-plan/09-ux-overhaul.md`). If the live site still shows cobalt and yellow, that branch has not been deployed yet: use the previous version of this guide from `main`.
 
@@ -152,9 +152,9 @@ pip install --no-cache-dir thirst
 thirst --version
 $env:THIRST_HOME = "$env:TEMP\thirst-home"   # keeps this test's config separate from ~/.thirst
 ```
-Expected: `thirst 0.3.1` or newer.
+Expected: `thirst 0.3.2` or newer.
 
-The output below is from the CLI on the `feat/web-ui-accessibility` branch, which fixes the walkthrough problems in `docs/TODO.md` 4.1.a–g. Until those fixes are on PyPI (0.3.2), install them from a checkout with `pip install ./cli`. With 0.3.1 you will still see the old messages, noted under each step.
+The output below is from `thirst` 0.3.2, which fixes the walkthrough problems in `docs/TODO.md` 4.1.a–g. If you still have 0.3.1, run `pip install -U thirst`; the old 0.3.1 messages are noted under each step.
 
 ### B2. Check the setup before registering
 

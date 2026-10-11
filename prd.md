@@ -144,7 +144,7 @@ Cut in this order: F14 → F13 → F12 → F4 (keep slider, drop Pareto dots) �
 
 ### 6.2 CLI flow (lab member)
 
-1. `pip install thirst` (from PyPI; 0.3.1 since 11 Oct).
+1. `pip install thirst` (from PyPI; 0.3.2 since 11 Oct).
 2. `thirst register --name "CSE GPU Lab" --city Chennai --cooling room_ac --gpus 4` prints the site id and saves the token to `~/.thirst/config.toml`.
 3. `thirst run --hours 6 --deadline "2026-10-10 09:00" --pausable -- python train.py`
 4. CLI prints one line: "Plan: start 01:00, cap 85%, pause 04:00 to 05:00, done by 08:10". It waits.

@@ -40,5 +40,5 @@ Submit Sun 11 Oct, 14:00 to 16:00 IST. Status as of 2026-10-11 ~15:30 IST.
 
 - Bedrock access is blocked at the account level ("Operation not allowed" for every model). `/explain` returns the template until an AWS Support case clears it. Then set `BedrockModelId` in `samconfig.toml` and push to `main`.
 - Placeholder power-cap data: every plan picks 70%, and all 11 trade-off points are the same. After `feat/web-ui-accessibility` merges, the planner hides the slider and says why, until the sweep is measured.
-- The seven small CLI wording/UX issues from the live walkthroughs are fixed on `feat/web-ui-accessibility` ([`FIXLIST.md`](FIXLIST.md)). They reach `pip install thirst` with release 0.3.2.
-- PyPI `thirst` 0.3.1 is published (with the PR #7 fixes and the 31 new GPUs) through Trusted Publishing: future releases are `git tag cli-vX.Y.Z && git push origin cli-vX.Y.Z`, no token.
+- The seven small CLI wording/UX issues from the live walkthroughs are fixed and published in `thirst` 0.3.2 (PR #15, [`FIXLIST.md`](FIXLIST.md)).
+- PyPI `thirst` 0.3.2 is published (PR #7 fixes, the 31 new GPUs, the walkthrough fixes) through Trusted Publishing: future releases are `git tag cli-vX.Y.Z && git push origin cli-vX.Y.Z`, no token.

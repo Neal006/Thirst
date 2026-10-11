@@ -126,4 +126,4 @@ After merging `main` again (PRs #12 to #14), four files had lost PR #14's doc re
 - Bedrock access, SNS confirmation, the leaderboard precompute (changes the live write path during judging) (TODO 3.x).
 - Lighthouse on the live site (5.3).
 - Per-run restore markers (safety-critical, needs a GPU box to test) and `--offline` plans (TODO 4).
-- Releasing CLI 0.3.2: the version is bumped on the branch, the tag push after the merge is the owner's.
+- Releasing CLI 0.3.2: done. PR #15 merged and tag `cli-v0.3.2` published it to PyPI on 11 Oct.

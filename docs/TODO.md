@@ -2,7 +2,7 @@
 
 Status on **2026-10-11, 15:30 IST**:
 - The site and API are live on AWS. CI, Deploy and Publish CLI workflows are green.
-- PRs #1–#14 are merged, and `thirst` 0.3.1 is on PyPI.
+- PRs #1–#15 are merged, and `thirst` 0.3.2 is on PyPI.
 - The `feat/web-ui-accessibility` branch finishes every code and docs task that needed no person, hardware or AWS access (see §7). Its PR description is [`pr/ux-overhaul.md`](pr/ux-overhaul.md).
 - Submission window: **Sun 11 Oct 14:00–16:00 IST**.
 
@@ -78,7 +78,7 @@ These need the AWS account owner, or change the live data path while judges are 
 | 3.3 | Set `BedrockModelId=<model or inference profile id>` in `samconfig.toml` `parameter_overrides`, merge to `main` (auto-deploys) | dev, after 3.1 | `POST /explain {"plan_id": …}` returns `"source": "agent"` |
 | 3.4 | Confirm the SNS alarm email (check the inbox for "AWS Notification – Subscription Confirmation") | AWS owner | subscription shows Confirmed |
 | 3.6 | Leaderboard reads one Query per public site on a cache miss. Precompute a per-division item when receipts arrive. Left until after judging: it changes the DynamoDB write path of the live API (it is also the v0.5 "materialised leaderboard" in plan 7.11) | dev | one read per board load |
-| 3.7 | Tag the whole-project release for submission: `git tag v0.3.1 && git push origin v0.3.1` (plan 7.7.e). The CLI already has `cli-v0.3.1` | repo owner | tag on GitHub |
+| 3.7 | Tag the whole-project release for submission: `git tag v0.3.1 && git push origin v0.3.1` (plan 7.7.e). The CLI already has `cli-v0.3.1` and `cli-v0.3.2` | repo owner | tag on GitHub |
 | 3.8 | After the next merge, check that the Deploy run shows no Node 20 warning and that the new `e2e` job runs (both changed on `feat/web-ui-accessibility`, not yet run on GitHub) | dev | warning gone, `e2e` job green |
 
 ---
@@ -87,7 +87,7 @@ These need the AWS account owner, or change the live data path while judges are 
 
 | # | Task | Who | Why still open |
 |---|---|---|---|
-| 4.1 | **Release 0.3.2** so `pip install thirst` gets the fixes on `feat/web-ui-accessibility` (TODO 4.1.a–g and 4.2 items in §7). The version is already 0.3.2 on the branch (`cli/pyproject.toml`, `cli/thirst/__init__.py`). After the merge: `git tag cli-v0.3.2 && git push origin cli-v0.3.2` | repo owner | a tag push is the owner's call, after the branch merges |
+| 4.1 | ✅ **0.3.2 released** (tag `cli-v0.3.2`, 11 Oct): `pip install thirst` has the 4.1.a–g and 4.2 fixes | — | done |
 | 4.2 | Per-run restore markers. Today one shared `~/.thirst/restore.json` is used, and a second run refuses to start while it exists (exit 5), so two runs cannot fight over it | dev + GPU owner | safety-critical restore code: change it only when it can be tested on a real GPU (4.3) |
 | 4.3 | **Hardware checks on a real Linux GPU box** (plan 1.8 / 4.6.h): real NVML power limit and restore, `--fallback-clocks` (`MIN_LOCK_MHZ=210` is an assumption), SIGSTOP/SIGCONT on a live CUDA process, Ctrl-C mid-run restores the limit, an SSH disconnect restores the limit, and the laptop `[warn]` line in `thirst doctor` on a real laptop GPU | GPU owner | needs the hardware |
 | 4.4 | Plan 4.11: `thirst plan/run --offline` plans from bundled data | dev | needs the engine packaged with the CLI and an `unverified` receipt path. P2 |
@@ -159,7 +159,7 @@ Design changes to the model, each worth its own plan after the hackathon:
 - PR #9: Playwright e2e. The first run found contrast, list-markup and tap-target bugs, now fixed. Live: 74 pass, 4 skip, 1 flaky.
 - Deploy fixed: the OIDC role trusts the immutable subject claim (D38)
 - The home page says `pip install thirst` instead of the GitHub install line
-- `thirst` 0.3.1 published to PyPI by GitHub Actions (Trusted Publishing, no token)
+- `thirst` 0.3.1 and then 0.3.2 published to PyPI by GitHub Actions (Trusted Publishing, no token)
 - `ASSUMPTIONS.md` is generated from the live factor table (`make assumptions`, checked by a test). `SPEC.md` has the full score rules, and `web/README.md` replaces the Vite boilerplate
 - Two end-to-end user tests against the live site, with both test labs deleted
 - Docs PRs merged (#10, #11, #13, #14)

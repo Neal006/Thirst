@@ -33,7 +33,7 @@ Earlier:
 - [x] web | The main JS chunk was 810 kB, and the production build shipped an unused mock chunk. It is now 249 kB, with no mocks (PR #6).
 - [x] cli | Receipts were saved only after the network attempt. Now they are on disk first, and Ctrl-C while sending keeps them for `thirst sync` (PR #7).
 - [x] cli | An error while a job was paused skipped SIGCONT before SIGTERM; a crashed cap restore exited 0; SIGHUP killed the CLI with the cap still applied (PR #7).
-- [x] cli | PyPI had 0.3.0, without the fixes above or the 31 new GPUs, so an RTX 3050 Laptop wasn't recognised. 0.3.1 is now published via Trusted Publishing (PR #12).
+- [x] cli | PyPI had 0.3.0, without the fixes above or the 31 new GPUs, so an RTX 3050 Laptop wasn't recognised. 0.3.1 was published via Trusted Publishing (PR #12); 0.3.2 (PR #15) adds the walkthrough fixes.
 
 ## Metrics evidence (PRD §8.1)
 
