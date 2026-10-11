@@ -262,7 +262,7 @@ Checks: `make check` (or the commands in the [`Makefile`](Makefile) on Windows) 
 |---|---|
 | [`docs/USER_TEST_GUIDE.md`](docs/USER_TEST_GUIDE.md) | Test everything as a normal user, with real outputs |
 | [`docs/TODO.md`](docs/TODO.md) | Everything left, by priority |
-| [`docs/WRITEUP.md`](docs/WRITEUP.md) · [`docs/SUBMISSION.md`](docs/SUBMISSION.md) · [`docs/VIDEO_SCRIPT.md`](docs/VIDEO_SCRIPT.md) | Hackathon writeup, checklist, 3-minute video script |
+| [`docs/WRITEUP.md`](docs/WRITEUP.md) · [`docs/SUBMISSION.md`](docs/SUBMISSION.md) · [`docs/VIDEO_BRIEF.md`](docs/VIDEO_BRIEF.md) · [`docs/VIDEO_SCRIPT.md`](docs/VIDEO_SCRIPT.md) | Hackathon writeup, checklist, 3-minute video brief and shot-by-shot script |
 | [`SPEC.md`](SPEC.md) · [`ASSUMPTIONS.md`](ASSUMPTIONS.md) | The score rules · every factor with its value, status and source (generated) |
 | [`Idea.md`](Idea.md) · [`prd.md`](prd.md) · [`trd.md`](trd.md) | Why · what · how |
 | [`docs/implementation-plan/`](docs/implementation-plan/README.md) · [`AGENTS.md`](AGENTS.md) | Build plan with status · project memory for contributors and AI agents |
