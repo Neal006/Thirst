@@ -46,8 +46,9 @@ const GLOSSARY: readonly [string, string][] = [
   ['Pausing', 'Stopping the job during the thirstiest hours and resuming it later. Only for single-machine jobs.'],
   ['PUE', 'Total site power divided by the power of the GPUs and servers. Only asked for cooling towers.'],
   ['Receipt', 'After a real run with thirst run, what the job actually used, compared with starting right away.'],
+  ['Capture', 'Of the saving that was possible for a job, the share you actually took. Receipts add up to the site score.'],
   ['Measured or modelled', 'Measured numbers come from the GPU. Modelled numbers are calculated from those, and say so.'],
-  ['Lab size', 'The leaderboard groups labs by GPU count, so small labs compete with small labs.'],
+  ['Weight class (D1 to D4)', 'The leaderboard groups labs by GPU count, so a small college lab only competes with other small labs.'],
 ]
 
 function Glossary() {
@@ -68,14 +69,14 @@ function Glossary() {
 
 /** F6: every number the model uses, where it came from and how sure we are. */
 export function AssumptionsPage() {
-  usePageTitle('Method')
+  usePageTitle('Assumptions')
   const { state, reload } = useAssumptions()
   const groups = state.status === 'ready' ? groupFactors(state.data.factors) : []
   return (
     <div className="assumptions-page">
       <div className="page-head">
         <div>
-          <h1>Method</h1>
+          <h1>Assumptions</h1>
           <p className="lede">
             Energy is measured from the GPU when you use <code>thirst run</code>. Water and CO₂ are
             modelled from that energy. We use the average grid mix, not the marginal plant. We leave out

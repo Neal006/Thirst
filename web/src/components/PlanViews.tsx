@@ -86,7 +86,8 @@ function Timetable({ response, entry }: ViewProps) {
   return (
     <figure className="view-figure">
       <Legend />
-      <div className="table-scroll">
+      {/* Focusable so keyboard users can scroll it sideways on a phone (axe scrollable-region-focusable). */}
+      <div className="table-scroll" tabIndex={0} role="region" aria-label="Timetable, scrolls sideways">
         <table className="timetable">
           <caption className="visually-hidden">Timetable of the next 48 hours, by hour</caption>
           <thead>
@@ -141,7 +142,7 @@ function Hourly({ response, entry }: ViewProps) {
   const visible = showAll ? cells : cells.slice(0, 24)
   return (
     <figure className="view-figure">
-      <div className="table-scroll">
+      <div className="table-scroll" tabIndex={0} role="region" aria-label="Hourly forecast, scrolls sideways">
         <table className="data-table hourly">
           <caption className="visually-hidden">Hour by hour forecast</caption>
           <thead>

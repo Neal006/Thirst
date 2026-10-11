@@ -12,7 +12,7 @@
   --surface-sunk: #eff2ef;
   --text: var(--ink);
   --text-muted: #5b6662;
-  --text-faint: #566675;
+  --text-faint: #5f6a66;
   --border: #dfe4e0;
   --border-strong: #b9c2bd;
   --link: #0f6360;
@@ -29,7 +29,7 @@
   --sky: #8cc6c0;
   --signal: var(--window);
   --signal-soft: var(--window-soft);
-  --alarm: #c2452d;
+  --alarm: #b23a2a;
   --leaf: #2f8a57;
 
   /* chart colours, chosen to stay apart for colour-blind readers */
@@ -48,18 +48,18 @@
 
   --focus: #126e6b;
   --error-bg: #fbeeea;
-  --error-border: #c2452d;
+  --error-border: #b23a2a;
   --warn-bg: var(--window-soft);
   --warn-border: #b07d12;
   --highlight: var(--window-soft);
 
-  --tag-measured: #2f7a4f;
-  --tag-modelled: #4f6f6c;
-  --tag-placeholder: #8a6a1c;
-  --tag-sourced: #3f6f80;
-  --tag-calibrated: #6a5aa8;
-  --tag-design-choice: #6b7571;
-  --tag-unverified: #b23a2a;
+  --tag-measured: #276a43;
+  --tag-modelled: #3f6363;
+  --tag-placeholder: #7a5a10;
+  --tag-sourced: #36606f;
+  --tag-calibrated: #5a4a98;
+  --tag-design-choice: #56605c;
+  --tag-unverified: #a33325;
 
   --shadow: 0 1px 2px rgba(29, 35, 33, 0.05), 0 4px 16px -8px rgba(29, 35, 33, 0.12);
   --radius: 10px;
@@ -1140,19 +1140,19 @@ h3 {
   box-shadow: none;
 }
 
-/* quieter label chips: still there for every number, but no longer shouting */
+/* quieter label chips: still there for every number, but no longer shouting. Colours stay at
+   4.5:1 or better on the tinted chip (axe checks this in e2e), so no opacity tricks. */
 .tag {
-  padding: 0 5px;
+  padding: 0 6px;
   border: 0;
   border-radius: 4px;
-  font-size: 0.62rem;
-  background: color-mix(in srgb, currentColor 10%, var(--white));
-  opacity: 0.85;
-  transition: opacity 0.15s, background 0.15s;
+  font-size: 0.68rem;
+  background: color-mix(in srgb, currentColor 9%, var(--white));
+  transition: background 0.15s;
 }
 
 .tag:hover {
-  opacity: 1;
+  background: color-mix(in srgb, currentColor 16%, var(--white));
 }
 
 .tag-placeholder,
@@ -1947,5 +1947,26 @@ h3 {
   .view-tab {
     padding: 6px 9px;
     font-size: 0.85rem;
+  }
+}
+
+/* Four nav items on a 360 px phone: never break a word, share the row evenly. */
+.nav-link {
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+@media (max-width: 520px) {
+  .app-header nav {
+    width: 100%;
+  }
+
+  .nav-list {
+    justify-content: space-between;
+  }
+
+  .nav-link {
+    padding: 6px 8px;
+    font-size: 0.9rem;
   }
 }

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import time
-from datetime import UTC
+from datetime import timezone
 
 import pytest
 from thirst import meter as meter_mod
@@ -162,7 +162,7 @@ def test_an_interval_spanning_three_hours_fills_the_middle_one(nvml_api: FakeNvm
 
 def test_slot_hours_are_ist_whatever_the_wall_clock_zone(nvml_api: FakeNvml) -> None:
 
-    utc = UTC
+    utc = timezone.utc
     clock = FakeClock("2026-10-10 01:00:00")
     meter = meter_mod.Meter(
         nvml_api, (0,), wall=lambda: clock.wall().astimezone(utc), mono=clock.mono

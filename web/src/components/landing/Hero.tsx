@@ -22,7 +22,7 @@ function Meters({ response }: { response: PlanResponse }) {
   return (
     <dl className="meters">
       <div className="meter">
-        <dt>Best start, 6 h job</dt>
+        <dt>Best start</dt>
         <dd>
           <span className="meter-num">{formatClock(start)}</span>
         </dd>

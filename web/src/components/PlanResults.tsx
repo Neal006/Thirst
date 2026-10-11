@@ -10,6 +10,7 @@ import { ResultCard } from './ResultCard'
 import { Banner } from './ui/Banner'
 import { EmptyState } from './ui/EmptyState'
 import { Spinner } from './ui/Spinner'
+import { TagChip } from './TagChip'
 
 function staleText(age: number | null | undefined): string {
   if (typeof age !== 'number' || !Number.isFinite(age) || age < 0) {
@@ -69,7 +70,19 @@ export function PlanResults({ plan }: { plan: PlanController }) {
       <ResultCard response={response} entry={selected} />
       <PlanActions response={response} entry={selected} />
       <PlanViews response={response} entry={selected} />
-      {allSame(response.pareto) ? null : (
+      {allSame(response.pareto) ? (
+        <p className="card tradeoff-note muted">
+          <strong>Water or CO₂ first?</strong>{' '}
+          {response.tags.tau === 'placeholder' ? (
+            <>
+              With today's placeholder power-cap data every option gives the same plan, so there is nothing to
+              choose between yet <TagChip tag="placeholder" />
+            </>
+          ) : (
+            <>For this job every option gives the same plan, so there is nothing to choose between.</>
+          )}
+        </p>
+      ) : (
         <section className="card tradeoff" aria-labelledby="tradeoff-heading">
           <h3 id="tradeoff-heading">Water or CO₂ first?</h3>
           <AlphaSlider value={plan.alpha} onChange={plan.setAlpha} />

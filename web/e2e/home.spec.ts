@@ -8,7 +8,7 @@ test.describe('home page', () => {
 
     await test.step('header navigation is present', async () => {
       const nav = page.getByRole('navigation', { name: 'Main' })
-      for (const name of ['Plan', 'Leaderboard', 'Assumptions']) {
+      for (const name of ['Plan', 'Cities', 'Leaderboard', 'Assumptions']) {
         await expect(nav.getByRole('link', { name })).toBeVisible()
       }
     })

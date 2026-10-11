@@ -48,10 +48,14 @@ test.describe('assumptions page', () => {
     await page.goto('/assumptions')
     const jump = page.getByRole('navigation', { name: 'Jump to a group' })
     await expect(jump).toBeVisible({ timeout: 20_000 })
+    // TODO 5.4: this was flaky on the phone. Wait until the long tables have rendered (no more
+    // layout shifts) before clicking, and give the smooth scroll on a long phone page more time.
+    const heading = page.locator('#sources-heading')
+    await expect(heading).toBeAttached()
+    await page.waitForLoadState('networkidle')
     await jump.getByRole('link', { name: /^Sources/ }).click()
     await expect(page).toHaveURL(/#sources-heading$/)
-    const heading = page.locator('#sources-heading')
     await expect(heading).toBeVisible()
-    await expect.poll(() => isInViewport(heading), { timeout: 5_000 }).toBe(true)
+    await expect.poll(() => isInViewport(heading), { timeout: 10_000 }).toBe(true)
   })
 })

@@ -32,7 +32,7 @@ describe('Layout', () => {
       '/leaderboard',
     )
     expect(within(nav).getByRole('link', { name: 'Cities' })).toHaveAttribute('href', '/cities')
-    expect(within(nav).getByRole('link', { name: 'Method' })).toHaveAttribute(
+    expect(within(nav).getByRole('link', { name: 'Assumptions' })).toHaveAttribute(
       'href',
       '/assumptions',
     )

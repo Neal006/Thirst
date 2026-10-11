@@ -7,7 +7,7 @@ const NAV_ITEMS = [
   { to: '/plan', label: 'Plan', end: false },
   { to: '/cities', label: 'Cities', end: false },
   { to: '/leaderboard', label: 'Leaderboard', end: false },
-  { to: '/assumptions', label: 'Method', end: false },
+  { to: '/assumptions', label: 'Assumptions', end: false },
 ] as const
 
 /** The frame around every page: skip link, header with navigation, main area and footer. */

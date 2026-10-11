@@ -326,6 +326,40 @@ def test_web_url_prefix_is_used_when_given() -> None:
     assert "https://thirst.example.com/receipts/s_abcdefghij/j_abcdefghijkl" in text
 
 
+def test_a_short_job_shows_wh_ml_and_grams_instead_of_zeros() -> None:
+    # TODO 4.1.e: a 2-minute job used to print "0.00 kWh" and "0.0 L".
+    body = receipt.build_body(facts(), summary(*SEVEN))
+    small = json.loads(json.dumps(FIXTURE))
+    small["scoring"]["actual"].update({"E_gpu_kwh": 0.0042, "litres": 0.018, "C_kg": 0.0035})
+    small["scoring"]["base"].update({"litres": 0.02, "C_kg": 0.004})
+
+    text = receipt.format_scored(body, small)
+
+    assert "Energy   4.2 Wh GPU (measured)" in text
+    assert "Water    18 mL (modelled); if you had started right away: 20 mL" in text
+    assert "Carbon   4 g CO2 (modelled); if you had started right away: 4 g" in text
+    assert "0.00 kWh" not in text and "0.0 L" not in text
+
+
+def test_unit_switch_points() -> None:
+    assert receipt.energy_text(0.1) == "0.10 kWh"
+    assert receipt.energy_text(0.0999) == "99.9 Wh"
+    assert receipt.water_text(1.0) == "1.0 L"
+    assert receipt.water_text(0.5) == "500 mL"
+    assert receipt.carbon_text(0.1) == "0.10 kg"
+    assert receipt.carbon_text(0.05) == "50 g"
+
+
+def test_a_private_site_gets_no_receipt_link() -> None:
+    # TODO 4.1.f: private sites hide their receipts (D26), so the link would be a 404.
+    body = receipt.build_body(facts(), summary(*SEVEN))
+
+    text = receipt.format_scored(body, FIXTURE, web_url="https://thirst.example.com", public=False)
+
+    assert "/receipts/" not in text
+    assert "Private site" in text
+
+
 def test_local_receipt_shows_kwh_only_and_says_how_to_sync() -> None:
     body = receipt.build_body(facts(), summary(*SEVEN))
 

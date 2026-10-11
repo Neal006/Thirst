@@ -6,13 +6,15 @@ import argparse
 import logging
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from . import config, outbox, powercap, receipt
 from .context import ApiClient, Context
-from .errors import EXIT_BAD_ARGS, EXIT_GPU, EXIT_INTERRUPTED, CliError, GpuError
+from .errors import EXIT_BAD_ARGS, EXIT_GPU, EXIT_INTERRUPTED, CliError, ConfigError, GpuError
 from .gpus import child_environment
 from .jobsetup import JobGpus, detect_gpus, load_client, web_url
+from .ledger import IST
 from .meter import EnergyMeter, Meter
 from .modelled import ModelledMeter, load_bundled_sweep, power_model
 from .planning import build_plan_request, parse_deadline
@@ -67,11 +69,28 @@ def _plan_from_server(
     return plan_id, chosen, segments_from_plan(chosen.get("schedule") or [])
 
 
-def _print_dry_run(ctx: Context, segments: tuple[Segment, ...]) -> None:
+def _moment(value: Any) -> datetime | None:
+    try:
+        moment = datetime.fromisoformat(str(value))
+    except ValueError:
+        return None
+    return moment.astimezone(IST) if moment.tzinfo is not None else None
+
+
+def _print_dry_run(ctx: Context, segments: tuple[Segment, ...], chosen: dict[str, Any]) -> None:
+    """The changes in order. Slots are whole hours, but the first start and the planned end use
+    the plan's exact times so they match the plan line above (a job submitted at 12:47 starts at
+    12:47, not 12:00)."""
+    start, finish = _moment(chosen.get("start")), _moment(chosen.get("finish"))
     ctx.out("Dry run: nothing is started. The CLI would make these changes:")
     for step in transitions(segments):
+        when = step.when
+        if step.action == "start" and start is not None and start > when:
+            when = start
+        if step.action == "end" and finish is not None and finish < when:
+            when = finish
         text = _ACTIONS[step.action].format(level=round(step.level * 100))
-        ctx.out(f"  {step.when:%d %b %H:%M}  {text}")
+        ctx.out(f"  {when:%d %b %H:%M}  {text}")
 
 
 def _instruments(ctx: Context, args: argparse.Namespace, gpus: JobGpus, sleep: Any) -> _Instruments:
@@ -131,6 +150,13 @@ def _save_copy(
     return True
 
 
+def _site_is_public(ctx: Context) -> bool:
+    try:
+        return config.load(ctx.env).public
+    except ConfigError:
+        return True
+
+
 def _handle_receipt(
     ctx: Context,
     client: ApiClient,
@@ -156,7 +182,9 @@ def _handle_receipt(
     if copied:
         _save_copy(ctx, body, posted.response, status)
     if status == "posted" and posted.response:
-        text = receipt.format_scored(body, posted.response, web_url(ctx.env))
+        text = receipt.format_scored(
+            body, posted.response, web_url(ctx.env), public=_site_is_public(ctx)
+        )
     elif status == "queued":
         ctx.out(f"Note: {posted.message}")
         text = receipt.format_local(body, queued=True)
@@ -282,7 +310,8 @@ def cmd_run(args: argparse.Namespace, ctx: Context) -> int:
         if args.slot_seconds:
             segments = compress(segments, args.slot_seconds, ctx.wall())
         if args.dry_run:
-            _print_dry_run(ctx, segments)
+            # compressed test slots are not real times, so they are printed as they are
+            _print_dry_run(ctx, segments, {} if args.slot_seconds else chosen)
             return 0
         return _execute(ctx, args, client, cfg.site_id, plan_id, segments, gpus, decision)
     finally:

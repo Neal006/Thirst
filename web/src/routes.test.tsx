@@ -28,7 +28,7 @@ function renderAt(path: string, fetchImpl: FetchFn = distinctApi) {
 describe('routes', () => {
   it.each([
     ['/leaderboard', /^Leaderboard$/],
-    ['/assumptions', /^Method$/],
+    ['/assumptions', /^Assumptions$/],
     ['/sites/s_demoaaaaaa', /demo lab, chennai/i],
     ['/receipts/s_abcdefghij/j_abcdefghijkl', /^Your receipt$/],
   ])('deep link %s loads its page', async (path, heading) => {
@@ -51,8 +51,8 @@ describe('routes', () => {
     renderAt('/')
     await userEvent.click(screen.getByRole('link', { name: 'Leaderboard' }))
     expect(await screen.findByRole('heading', { level: 1, name: 'Leaderboard' })).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('link', { name: 'Method' }))
-    expect(await screen.findByRole('heading', { level: 1, name: 'Method' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('link', { name: 'Assumptions' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Assumptions' })).toBeInTheDocument()
     await userEvent.click(within(screen.getByRole('navigation', { name: /main/i })).getByRole('link', { name: 'Cities' }))
     expect(await screen.findByRole('heading', { level: 1, name: 'Compare cities' })).toBeInTheDocument()
   })

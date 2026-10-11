@@ -38,9 +38,10 @@ A loop of **plan → run → receipt → rating**:
 
 On the website:
 - **Home page:** a 24-hour "water clock" for your city, start-now vs plan beakers split into building and power-plant water, and a power-cap switch.
-- **Planner page:** the plan card and the Pareto slider.
+- **Planner page:** the plan card with a "why this time" line, the next 48 hours as a timetable, hourly list, calendar or chart, and a "Run this plan" box that copies the exact `thirst run` command, adds the run to a calendar or shares a link to the same job. The Pareto slider appears when the 11 options differ.
+- **Cities page:** the same job in six cities, so a lab can see where and when is cleanest.
 - **Leaderboard and lab score pages:** the weight classes and each lab's score and badge.
-- **Assumptions page:** lists every one of the 57 factors with its value, range, status and source.
+- **Assumptions page:** a short glossary, then every one of the 57 factors with its value, range, status and source.
 
 ## 3. Where AWS fits
 
@@ -85,7 +86,7 @@ Status mix on the live Assumptions page: 30 design choices, 18 placeholders, 8 s
 
 Almost all of that comes from the power cap, and the cap's speed/energy curve is a placeholder. Until our sweep replaces it:
 - Every plan picks 70%.
-- The water-vs-carbon slider has no visible effect, because all 11 trade-off points are the same.
+- All 11 trade-off points are the same, so the planner hides the water-vs-carbon slider and says why.
 
 We show this on screen (`tau: placeholder` tags) instead of hiding it.
 

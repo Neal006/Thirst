@@ -43,7 +43,7 @@ export function BoardPreview() {
         <div>
           <p className="eyebrow">Leaderboard</p>
           <h2 id="board-title" className="section-title">
-            Labs score for when they run, not where
+            Score the choice, not the climate
           </h2>
         </div>
       </div>

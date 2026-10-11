@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mockFetch } from '../api/mocks/mockFetch'
 import { calledPaths, fetchSpy, jsonReply, renderWithApi, type FetchFn } from '../test/api'
-import { distinctPlan } from '../test/planFixture'
+import { BASE_PLAN, distinctPlan } from '../test/planFixture'
 import { PlanPage } from './PlanPage'
 
 afterEach(() => {
@@ -241,5 +241,15 @@ describe('PlanPage opened from a link', () => {
   it('ignores a city it does not know', async () => {
     renderWithApi(<PlanPage />, { path: '/plan?city=Atlantis' })
     expect(await screen.findByLabelText(/^city/i)).toHaveDisplayValue('Chennai')
+  })
+})
+
+describe('PlanPage when every trade-off option is the same plan', () => {
+  it('hides the slider and says why, with a placeholder chip (TODO 5.7)', async () => {
+    await planIt(fetchSpy(distinctApi(BASE_PLAN)))
+    expect(screen.queryByRole('slider')).not.toBeInTheDocument()
+    const note = screen.getByText(/every option gives the same plan/i).closest('p') as HTMLElement
+    expect(note).toHaveTextContent(/placeholder power-cap data/i)
+    expect(within(note).getByRole('link', { name: /placeholder/i })).toBeInTheDocument()
   })
 })

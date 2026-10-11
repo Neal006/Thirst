@@ -20,7 +20,8 @@ export function LeaderboardPage() {
       <div className="page-head">
         <div>
           <h1>Leaderboard</h1>
-          <p className="lede">Labs ranked by how much water and CO₂ they saved in the last 30 days.</p>
+          <p className="lede">Labs ranked by how much of the possible saving they took.</p>
+          <p className="muted board-window">Last 30 days · {division}</p>
         </div>
         {state.status === 'ready' ? (
           <dl className="head-stats">
@@ -35,7 +36,7 @@ export function LeaderboardPage() {
           </dl>
         ) : null}
       </div>
-      <p className="pick-label">Lab size</p>
+      <p className="pick-label">Pick your weight class</p>
       <DivisionTabs value={division} onChange={(d) => setParams({ division: d })} />
       {state.status === 'loading' ? <Spinner label="Loading the board…" lines={4} /> : null}
       {state.status === 'error' ? (

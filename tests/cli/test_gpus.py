@@ -45,6 +45,16 @@ def test_child_environment_does_not_modify_its_input() -> None:
     assert base == {"PATH": "x"}
 
 
+def test_child_environment_never_passes_the_site_key_to_the_job() -> None:
+    base = {"THIRST_TOKEN": "a" * 64, "PATH": "x"}
+
+    env = gpus.child_environment(base)
+
+    assert "THIRST_TOKEN" not in env
+    assert env["PATH"] == "x"
+    assert base["THIRST_TOKEN"] == "a" * 64  # the CLI itself still has it
+
+
 def test_child_environment_asks_python_not_to_buffer_the_tee() -> None:
     assert gpus.child_environment({})["PYTHONUNBUFFERED"] == "1"
     assert gpus.child_environment({"PYTHONUNBUFFERED": "0"})["PYTHONUNBUFFERED"] == "0"

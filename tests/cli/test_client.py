@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -342,7 +342,7 @@ def test_server_time_comes_from_the_date_header() -> None:
 
     when = make_client(server).get_server_time()
 
-    assert when == datetime(2025, 10, 10, 4, 0, tzinfo=UTC)
+    assert when == datetime(2025, 10, 10, 4, 0, tzinfo=timezone.utc)
     assert server.requests[0].url.path == "/assumptions"
 
 

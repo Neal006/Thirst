@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__, config, ids
-from .errors import CliError
+from .errors import CliError, ConfigError
 from .ledger import IST, SlotEnergy, floor_hour
 from .meter import MeterSummary
 
@@ -201,20 +201,37 @@ def _saved_text(actual: Mapping[str, Any], base: Mapping[str, Any]) -> str | Non
     return " and ".join(parts) + " compared with starting right away (modelled)"
 
 
+SMALL_KWH = 0.1  # below this, show Wh so a short job does not print "0.00 kWh"
+SMALL_LITRES = 1.0
+SMALL_KG = 0.1
+
+
+def energy_text(kwh: float) -> str:
+    return f"{kwh * 1000:.1f} Wh" if abs(kwh) < SMALL_KWH else f"{kwh:.2f} kWh"
+
+
+def water_text(litres: float) -> str:
+    return f"{litres * 1000:.0f} mL" if abs(litres) < SMALL_LITRES else f"{litres:.1f} L"
+
+
+def carbon_text(kg: float) -> str:
+    return f"{kg * 1000:.0f} g" if abs(kg) < SMALL_KG else f"{kg:.2f} kg"
+
+
 def _footprint_rows(scoring: Mapping[str, Any], tag: str) -> list[str]:
     actual, base = scoring.get("actual") or {}, scoring.get("base") or {}
     rows = []
     if "E_gpu_kwh" in actual:
-        rows.append(_row("Energy", f"{actual['E_gpu_kwh']:.2f} kWh GPU ({tag})"))
+        rows.append(_row("Energy", f"{energy_text(actual['E_gpu_kwh'])} GPU ({tag})"))
     if "litres" in actual:
-        text = f"{actual['litres']:.1f} L (modelled)"
+        text = f"{water_text(actual['litres'])} (modelled)"
         if "litres" in base:
-            text += f"; if you had started right away: {base['litres']:.1f} L"
+            text += f"; if you had started right away: {water_text(base['litres'])}"
         rows.append(_row("Water", text))
     if "C_kg" in actual:
-        text = f"{actual['C_kg']:.2f} kg CO2 (modelled)"
+        text = f"{carbon_text(actual['C_kg'])} CO2 (modelled)"
         if "C_kg" in base:
-            text += f"; if you had started right away: {base['C_kg']:.2f} kg"
+            text += f"; if you had started right away: {carbon_text(base['C_kg'])}"
         rows.append(_row("Carbon", text))
     saved = _saved_text(actual, base)
     if saved:
@@ -230,8 +247,17 @@ def _score_text(site_score: Mapping[str, Any] | None) -> str:
     return f"Site score {site_score['value']:g}{badge}{tag}"
 
 
-def format_scored(body: Mapping[str, Any], response: Mapping[str, Any], web_url: str = "") -> str:
-    """The terminal receipt from the server's scored response."""
+def format_scored(
+    body: Mapping[str, Any],
+    response: Mapping[str, Any],
+    web_url: str = "",
+    *,
+    public: bool = True,
+) -> str:
+    """The terminal receipt from the server's scored response.
+
+    A private site's receipts are hidden on the website (D26), so no link is printed for it.
+    """
     lines = _header(body) + _footprint_rows(response.get("scoring") or {}, _tag(body))
     capture = response.get("capture")
     if response.get("no_room") or capture is None:
@@ -239,7 +265,9 @@ def format_scored(body: Mapping[str, Any], response: Mapping[str, Any], web_url:
     else:
         lines.append(_row("Capture", f"You took {round(capture * 100)}% of the possible saving"))
     lines.append(_row("Score", _score_text(response.get("site_score"))))
-    if response.get("url"):
+    if not public:
+        lines.append(_row("Receipt", "Private site: receipts are kept off the website"))
+    elif response.get("url"):
         lines.append(_row("Receipt", web_url.rstrip("/") + str(response["url"])))
     return "\n".join(lines) + "\n"
 
@@ -247,7 +275,7 @@ def format_scored(body: Mapping[str, Any], response: Mapping[str, Any], web_url:
 def format_local(body: Mapping[str, Any], *, queued: bool, note: str = "") -> str:
     """The local-only receipt (kWh from our own meter) when nothing was scored."""
     lines = _header(body)
-    lines.append(_row("Energy", f"{_total_kwh(body):.2f} kWh GPU ({_tag(body)})"))
+    lines.append(_row("Energy", f"{energy_text(_total_kwh(body))} GPU ({_tag(body)})"))
     if note:
         lines.append(_row("Status", note))
     elif queued:
@@ -287,13 +315,20 @@ def load_receipt(job_id: str) -> dict[str, Any]:
     return data
 
 
+def _saved_site_is_public() -> bool:
+    try:
+        return config.load().public
+    except ConfigError:
+        return True
+
+
 def render_saved(job_id: str) -> str:
     """Text for ``thirst receipt show <job_id>``."""
     saved = load_receipt(job_id)
     body, response, status = saved["body"], saved.get("response"), saved.get("status")
     web_url = os.environ.get("THIRST_WEB_URL", config.DEFAULT_WEB_URL)
     if isinstance(response, dict):
-        return format_scored(body, response, web_url)
+        return format_scored(body, response, web_url, public=_saved_site_is_public())
     if status == "duplicate":
         return format_local(body, queued=False, note="The server already had this receipt.")
     return format_local(body, queued=status == "queued")
