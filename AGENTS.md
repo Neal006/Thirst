@@ -105,7 +105,7 @@ The engine is pure Python with no AWS imports; the solver decides and the AI onl
 - Repo was renamed `thrist` → `Thirst` on GitHub (D2 done); old URLs redirect. Still private until submission (D3). Test labs created on the live site are removed with `scripts/seed.py --delete-site <id>`.
 - CLI release: bump `cli/pyproject.toml` + `cli/thirst/__init__.py`, merge, then `git tag cli-vX.Y.Z && git push origin cli-vX.Y.Z`; `.github/workflows/publish-cli.yml` checks the tag matches and publishes via PyPI Trusted Publishing (publisher: Neal006/Thirst, workflow publish-cli.yml, no environment). PyPI's JSON API can lag a few minutes; the simple index updates first.
 - e2e: `npm --prefix web run e2e` hits the live site by default (read-only guard: only GET and POST /plan). For a local build use `vite preview --port 5173` (5173 is the only local origin in `AllowedOrigins`) and `E2E_BASE_URL=http://localhost:5173`.
-- Contrast tokens are WCAG AA on white, paper and sunk backgrounds (axe checks them in e2e); keep new text colours ≥ 4.5:1 and links ≥ 24 px tall.
+- Contrast tokens are WCAG AA on white, paper and sunk backgrounds (axe checks them in e2e); keep new text colours ≥ 4.5:1 and links ≥ 24 px tall. The a11y spec waits for entrance animations and runs with reduced motion, so it audits the settled page (mid fade-in colours and scroll-reveal overlaps were false alarms); a real failure there is a real bug.
 - The git-workflow `pr-status.sh` script fails on Windows (`jq: Argument list too long`); use `gh pr checks <n>`. Auto mode may block `gh pr merge` and IAM changes: hand those to the user.
 
 ## Decisions Log

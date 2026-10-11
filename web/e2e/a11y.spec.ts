@@ -30,7 +30,20 @@ function format(findings: readonly Finding[]): string {
   return findings.map((f) => `[${f.impact}] ${f.id}: ${f.help}\n    ${f.nodes.join('\n    ')}`).join('\n')
 }
 
+/** Let entrance animations finish (looping ones are left alone), so axe sees the colours people see. */
+async function settle(page: Page): Promise<void> {
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
+        .map((a) => a.finished.catch(() => undefined)),
+    ),
+  )
+}
+
 async function audit(page: Page, label: string): Promise<void> {
+  await settle(page)
   const findings = await seriousViolations(page)
   if (findings.length > 0) {
     test.info().annotations.push({ type: 'a11y', description: `${label}: ${findings.map((f) => f.id).join(', ')}` })
@@ -39,6 +52,10 @@ async function audit(page: Page, label: string): Promise<void> {
 }
 
 test.describe('accessibility (axe, serious and critical)', () => {
+  // Scroll-reveal transitions briefly overlap neighbours; the site honours reduced motion, so the
+  // audit sees the settled layout (the colours and sizes are the same either way).
+  test.use({ reducedMotion: 'reduce' })
+
   for (const entry of PAGES) {
     test(`${entry.path}`, async ({ page }) => {
       await page.goto(entry.path)
