@@ -18,7 +18,7 @@ import './landing.css'
 
 const LEGEND: readonly FactorStatus[] = ['measured', 'modelled', 'sourced', 'calibrated', 'placeholder']
 
-const INSTALL = 'pip install "git+https://github.com/Neal006/Thirst#subdirectory=cli"'
+const INSTALL = 'pip install thirst'
 const REGISTER = 'thirst register --name "CSE GPU Lab" --city Chennai --cooling room_ac --gpus 4'
 
 export function LandingPage() {
