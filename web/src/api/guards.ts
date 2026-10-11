@@ -8,6 +8,7 @@ import type {
   PlanResponse,
   ReceiptResponse,
   SiteResponse,
+  ExplainResponse,
 } from './types'
 
 type Obj = Record<string, unknown>
@@ -88,6 +89,16 @@ const isParetoEntry = (e: unknown, i: number): boolean =>
   isPlanEntry(e) &&
   isNum((e as Obj).alpha) &&
   Math.abs((e as Obj).alpha as number - i / (PARETO_ENTRIES - 1)) < ALPHA_TOLERANCE
+
+export function isExplainResponse(v: unknown): v is ExplainResponse {
+  return (
+    isObj(v) &&
+    isStr((v as any).explanation) &&
+    isStr((v as any).source) &&
+    ('note' in v ? (v as any).note === null || isStr((v as any).note) : false) &&
+    ('form' in v ? (v as any).form === null || isObj((v as any).form) : false)
+  )
+}
 
 export function isPlanResponse(v: unknown): v is PlanResponse {
   return (

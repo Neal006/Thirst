@@ -8,8 +8,13 @@ import { PHONE_QUERY, useMediaQuery } from '../hooks/useMediaQuery'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useAssumptions } from '../hooks/useAssumptions'
 import { usePlan } from '../hooks/usePlan'
+<<<<<<< HEAD
+import { defaultValues, type JobFormValues } from '../lib/jobForm'
+import { JobSentenceBox } from '../components/JobSentenceBox'
+=======
 import { defaultValues, validateJobForm, valuesFromQuery, type JobFormValues } from '../lib/jobForm'
 import { readRecent, type RecentPlan } from '../lib/recentPlans'
+>>>>>>> upstream/main
 
 /** Jobs planned before in this browser, one click to open them again. */
 function RecentPlans() {
@@ -89,19 +94,18 @@ export function PlanPage() {
             Compare cities
           </Link>
         </div>
-        <JobForm
-          key={search}
-          gpus={gpus}
-          cities={cities}
-          busy={plan.status === 'loading'}
-          onSubmit={plan.submit}
-          getDraft={() =>
-            (draft.current?.search === search ? draft.current.values : undefined) ?? linkValues()?.values
-          }
-          onValuesChange={(values) => {
-            draft.current = { search, values }
-          }}
-        />
+<JobForm
+  key={search}
+  gpus={gpus}
+  cities={cities}
+  busy={plan.status === 'loading'}
+  onSubmit={plan.submit}
+  getDraft={() => (draft.current?.search === search ? draft.current.values : undefined) ?? linkValues()?.values}
+  onValuesChange={(values) => {
+    draft.current = { search, values }
+  }}
+/>
+<JobSentenceBox />
       </>
     )
   }

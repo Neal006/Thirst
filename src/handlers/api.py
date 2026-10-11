@@ -402,6 +402,7 @@ def get_assumptions() -> Response[str]:
     return _json(200, assumptions.build(load_factors()), cache="max-age=300")
 
 
+
 # ---------------------------------------------------------------------- entry point
 
 

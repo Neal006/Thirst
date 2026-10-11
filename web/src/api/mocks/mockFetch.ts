@@ -92,6 +92,17 @@ export async function mockFetch(input: RequestInfo | URL, init?: RequestInit): P
   const parts = url.pathname.split('/').filter(Boolean)
 
   if (method === 'POST' && url.pathname === '/plan') return plan(init)
+  if (method === 'POST' && url.pathname === '/explain') {
+    const body = parseBody(init)
+    const text = typeof body.text === 'string' ? body.text : ''
+    // simple deterministic mock: echo back a placeholder explanation
+    return reply(200, {
+      explanation: `Explanation for: ${text.substring(0, 50)}`,
+      source: 'template',
+      note: 'agent_disabled',
+      form: null,
+    })
+  }
   if (method === 'GET' && url.pathname === '/assumptions') return reply(200, MOCK_ASSUMPTIONS)
   if (method === 'GET' && url.pathname === '/leaderboard') {
     return leaderboard(url.searchParams.get('division') ?? 'D1')
@@ -99,6 +110,31 @@ export async function mockFetch(input: RequestInfo | URL, init?: RequestInit): P
   if (method === 'GET' && parts.length === 2 && parts[0] === 'sites') return site(parts[1])
   if (method === 'GET' && parts.length === 3 && parts[0] === 'receipts') {
     return receipt(parts[1], parts[2])
+  }
+  if (method === 'POST' && url.pathname === '/parse-sentence') {
+    const body = parseBody(init)
+    const sentence = typeof body.sentence === 'string' ? body.sentence : ''
+    const result: any = { work_hours: null, gpu_count: null, city: null, workload: null, found: [] }
+    // hours
+    const hMatch = sentence.match(/(\d+(?:\.\d+)?)\s*(hours?|hrs?)/i)
+    if (hMatch) { result.work_hours = parseFloat(hMatch[1]); result.found.push('work_hours') }
+    // gpu count
+    const gMatch = sentence.match(/(\d+)\s*[xX]\s*\d+/)
+    if (gMatch) { result.gpu_count = parseInt(gMatch[1]); result.found.push('gpu_count') }
+    // city list
+    const cities = ['Chennai','Bengaluru','Hyderabad','Mumbai','Delhi','Pune']
+    for (const city of cities) {
+      const re = new RegExp(`\\b${city}\\b`, 'i')
+      if (re.test(sentence)) { result.city = city; result.found.push('city'); break }
+    }
+    // workload keywords
+    const workloads = ['lora','training','inference','finetune','fine‑tune']
+    for (const kw of workloads) {
+      const re = new RegExp(`\\b${kw}\\b`, 'i')
+      if (re.test(sentence)) { result.workload = kw; result.found.push('workload'); break }
+    }
+    result.found = Array.from(new Set(result.found)).sort()
+    return reply(200, result)
   }
   return failure(404, 'not_found', "We couldn't find that page of the API.")
 }

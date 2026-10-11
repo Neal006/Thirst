@@ -9,7 +9,9 @@ export type Tag =
   | 'sourced'
   | 'calibrated'
   | 'unverified'
-
+  | 'template'
+  | 'ai_generated'
+  | 'input'
 /** [low, central, high] factor sets. */
 export type Triple = [number, number, number]
 /** [min %, max %] as whole numbers. */
@@ -93,6 +95,13 @@ export interface PlanInputs {
   alpha: number
   force_now: boolean
   site_id: string | null
+}
+
+export interface ExplainResponse {
+  explanation: string
+  source: string
+  note: string | null
+  form: Record<string, any> | null
 }
 
 export interface PlanResponse {

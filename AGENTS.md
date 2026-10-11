@@ -123,8 +123,9 @@ The engine is pure Python with no AWS imports; the solver decides and the AI onl
 - 2026-10-10 — D35: the real lab is found by the `seed_owner = real_lab` attribute, never by name; `simulated` and `seed_owner` cannot be set through the API
 - 2026-10-10 — D36: ApiFn gets least-privilege DynamoDB actions (no delete, weather read-only); alarms cover Lambda Errors, API Gateway 5xx (the handler answers 503 itself, so Errors stays 0) and RefreshFailed
 - 2026-10-11 — D37: limits raised for judging (team decision: nothing may block judges): 1000 new sites/day, 2000 receipts/site/day, 3000 explain calls/day, API throttle 200 rps burst 400; the $50 AWS budget alerts (credits excluded) are the cost guard instead
-- 2026-10-11 — D38: the deploy role trusts both OIDC subject forms (`repo:Neal006/Thirst:ref:refs/heads/main` and the immutable `repo:Neal006@176215022/Thirst@1411286480:ref:refs/heads/main`) — the repo uses GitHub's immutable subject claim, so the old form alone failed with "Not authorized to perform sts:AssumeRoleWithWebIdentity"
-- 2026-10-11 — D39: pages other than home load through react-router `lazy` (main chunk 810 → 249 kB); route tests wait up to 5 s for the planner chunk
+- 2026-10-11 — D38: added Bedrock error‑note mapping (`agent_failed`, `bedrock_not_authorized`, `bedrock_throttled`, `bedrock_timeout`) and `/parse-sentence` deterministic job‑sentence parser with ordered `found` list.
+- 2026-10-11 — D39: the deploy role trusts both OIDC subject forms (`repo:Neal006/Thirst:ref:refs/heads/main` and the immutable `repo:Neal006@176215022/Thirst@1411286480:ref:refs/heads/main`) — the repo uses GitHub's immutable subject claim, so the old form alone failed with "Not authorized to perform sts:AssumeRoleWithWebIdentity"
+- 2026-10-11 — D40: pages other than home load through react-router `lazy` (main chunk 810 → 249 kB); route tests wait up to 5 s for the planner chunk
 - 2026-10-10 — D33: `/explain` accepts an agent answer only if every number in it appears in the plan facts and it uses no spelled-out big number or "percent"; otherwise the template is returned (`note: agent_rejected`)
 
 ## Changelog
