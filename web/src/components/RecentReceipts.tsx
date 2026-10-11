@@ -26,7 +26,7 @@ function Row({ siteId, receipt }: { siteId: string; receipt: ReceiptRow }) {
       <td data-label="GPU energy">
         <Amount value={receipt.kwh} unit="kWh" tag={isMeasuredMethod(receipt.method) ? 'measured' : 'modelled'} />
       </td>
-      <td data-label="Saving taken">
+      <td data-label="Capture">
         <CaptureCell receipt={receipt} />
       </td>
       <td>
@@ -68,7 +68,7 @@ export function RecentReceipts({
             <tr>
               <th scope="col">Finished</th>
               <th scope="col">GPU energy</th>
-              <th scope="col">Saving taken</th>
+              <th scope="col">Capture</th>
               <th scope="col"><span className="visually-hidden">Receipt</span></th>
             </tr>
           </thead>
