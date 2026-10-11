@@ -136,6 +136,19 @@ describe('api client', () => {
     expect(await pending).toMatchObject({ code: 'aborted' })
   })
 
+  it('does not even send a request when the signal is already aborted', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    // A fetch that would hang forever: only the pre-check can end this call.
+    const fetchImpl = vi.fn(() => new Promise<Response>(() => {}))
+    const client = createClient({ baseUrl: 'https://api.test', fetchImpl })
+
+    const failure = await client.get('/assumptions', undefined, controller.signal).catch((e: unknown) => e)
+
+    expect(failure).toMatchObject({ code: 'aborted' })
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
   it('refuses to be built without a base URL', () => {
     expect(() => createClient({ baseUrl: '' })).toThrow(/VITE_API_URL/)
   })

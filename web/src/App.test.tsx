@@ -5,6 +5,9 @@ import App from './App'
 import { clientWith, fetchSpy } from './test/api'
 import { appRoutes } from './routes'
 
+// Pages load on first visit; the planner chunk (charts) can take over a second cold in jsdom.
+const PAGE_LOAD = { timeout: 5000 }
+
 afterEach(() => {
   vi.unstubAllEnvs()
 })
@@ -20,7 +23,7 @@ describe('App', () => {
   it('shows the planner at /plan', async () => {
     const router = createMemoryRouter(appRoutes, { initialEntries: ['/plan'] })
     render(<App client={clientWith(fetchSpy())} router={router} />)
-    expect(await screen.findByRole('heading', { level: 1, name: /when should your gpu job run/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: /when should your gpu job run/i }, PAGE_LOAD)).toBeInTheDocument()
     expect(await screen.findByLabelText(/gpu model/i)).toBeInTheDocument()
   })
 

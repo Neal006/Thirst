@@ -5,10 +5,16 @@ import { createClient, type ApiClient } from './client'
 
 const MOCK_BASE_URL = 'http://mock.thirst.local'
 
-/** Loaded on first use, so the fixtures are not part of the main bundle. */
+/**
+ * Loaded on first use, so the fixtures are not part of the main bundle. `import.meta.env.DEV` is
+ * false in a production build, so the bundler drops the import and no mock chunk is emitted.
+ */
 async function lazyMockFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const { mockFetch } = await import('./mocks/mockFetch')
-  return mockFetch(input, init)
+  if (import.meta.env.DEV) {
+    const { mockFetch } = await import('./mocks/mockFetch')
+    return mockFetch(input, init)
+  }
+  throw new Error('Mock data is only available in a development build.')
 }
 
 const text = (value: unknown): string => (typeof value === 'string' ? value : '')

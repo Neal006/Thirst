@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ApiClient } from '../api/client'
 import { useApi } from '../api/context'
 import { errorMessage, isAborted } from '../api/errors'
@@ -18,19 +18,26 @@ interface Settled<T> {
 }
 
 /**
- * Runs `load` when it, `key` or the client changes (or after `reload`). The result belongs to the
- * key it was made for, so a stale answer is never shown for a new key. Wrap `load` in useCallback
- * (or define it outside the component) so it only changes with `key`.
+ * Runs `load` when `key` or the client changes (or after `reload`). The result belongs to the
+ * key it was made for, so a stale answer is never shown for a new key. `load` is kept in a ref and
+ * read when the request starts, so a caller that passes a new function every render cannot make
+ * it loop: put everything the request depends on into `key`.
  */
 export function useLoad<T>(load: Loader<T>, key: string) {
   const api = useApi()
   const [attempt, setAttempt] = useState(0)
   const [settled, setSettled] = useState<Settled<T> | null>(null)
   const requestKey = `${key}#${attempt}`
+  const loadRef = useRef(load)
+
+  // Declared before the request effect, so the request below sees this render's `load`.
+  useEffect(() => {
+    loadRef.current = load
+  })
 
   useEffect(() => {
     const controller = new AbortController()
-    load(api, controller.signal)
+    loadRef.current(api, controller.signal)
       .then((data) => {
         if (!controller.signal.aborted) {
           setSettled({ requestKey, value: { status: 'ready', data } })
@@ -41,7 +48,7 @@ export function useLoad<T>(load: Loader<T>, key: string) {
         setSettled({ requestKey, value: { status: 'error', message: errorMessage(error) } })
       })
     return () => controller.abort()
-  }, [api, load, requestKey])
+  }, [api, requestKey])
 
   const reload = useCallback(() => setAttempt((n) => n + 1), [])
   const state: Loadable<T> = settled?.requestKey === requestKey ? settled.value : LOADING

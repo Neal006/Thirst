@@ -116,6 +116,25 @@ describe('LeaderboardPage', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
   })
 
+  describe('with malformed rows the guard refuses the whole answer', () => {
+    const base = leaderboardFixture.rows[0]
+    const cases: Array<[string, unknown]> = [
+      ['a row that is null', null],
+      ['a row that is a string', 'not a row'],
+      ['a score that is text', { ...base, score: '99' }],
+      ['a missing site id', { ...base, site_id: undefined }],
+      ['a monthly footprint that is null', { ...base, monthly_absolute: null }],
+      ['a monthly litre figure that is text', { ...base, monthly_absolute: { ...base.monthly_absolute, litres: 'lots' } }],
+      ['a receipts count that is missing', { ...base, receipts: undefined }],
+    ]
+    it.each(cases)('%s', async (_name, bad) => {
+      renderBoard('/leaderboard', withRows([base, bad]))
+      expect(await screen.findByRole('alert')).toHaveTextContent(/could not read/i)
+      expect(screen.queryByRole('table')).not.toBeInTheDocument()
+      expect(document.body).not.toHaveTextContent(/demo lab/i)
+    })
+  })
+
   it('shows no NaN or undefined for odd numbers', async () => {
     const base = leaderboardFixture.rows[0]
     const rows = [{ ...base, monthly_absolute: { ...base.monthly_absolute, litres: 0 }, flex_share: 0 }]

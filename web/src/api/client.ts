@@ -8,6 +8,7 @@ const MAX_SERVER_MESSAGE = 300
 
 const TRY_AGAIN = 'Something went wrong on our side. Please try again in a minute.'
 const TOO_SLOW = 'That took too long. Please try again.'
+const CANCELLED = 'The request was cancelled.'
 const OFFLINE = 'We could not reach the server. Check your connection and try again.'
 
 export type ErrorCode = string
@@ -71,6 +72,7 @@ export function createClient(options: ClientOptions): ApiClient {
     body: unknown,
     external?: AbortSignal,
   ): Promise<T> {
+    if (external?.aborted) throw new ApiError(0, 'aborted', CANCELLED)
     const doFetch = options.fetchImpl ?? fetch
     const controller = new AbortController()
     let timedOut = false
@@ -92,7 +94,7 @@ export function createClient(options: ClientOptions): ApiClient {
       } catch (error) {
         if (timedOut) throw new ApiError(0, 'timeout', TOO_SLOW)
         if (error instanceof DOMException && error.name === 'AbortError') {
-          throw new ApiError(0, 'aborted', 'The request was cancelled.')
+          throw new ApiError(0, 'aborted', CANCELLED)
         }
         throw new ApiError(0, 'network', OFFLINE)
       }

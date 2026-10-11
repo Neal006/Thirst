@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { Route, Routes } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import receiptFixture from '../api/mocks/fixtures/receipt_response.json'
@@ -51,6 +51,30 @@ describe('ReceiptPage', () => {
     expect(await screen.findByText(/you took/i)).toHaveTextContent(
       /you took about 96% modelled.*of the possible saving/i,
     )
+  })
+
+  it('says a negative capture in words: more than the base plan, never "you took -20%"', async () => {
+    renderReceipt(withReceipt({ capture: -0.2 }))
+    expect(await screen.findByText(/more than the base plan/i)).toBeInTheDocument()
+    expect(screen.queryByText(/you took/i)).not.toBeInTheDocument()
+    expect(document.body).not.toHaveTextContent(/-\s?20|−\s?20/)
+    expect(document.querySelector('.meter-bar')).toBeNull()
+  })
+
+  it('names the site in the tab title once the site is known', async () => {
+    renderReceipt(async (input, init) =>
+      String(input).includes('/sites/')
+        ? mockFetch(new URL('/sites/s_demoaaaaaa', String(input)).toString(), init)
+        : mockFetch(input, init),
+    )
+    await screen.findByRole('heading', { name: 'What you did' })
+    await waitFor(() => expect(document.title).toMatch(/^Receipt - Demo Lab, Chennai.* - Thirst$/))
+  })
+
+  it('falls back to a plain title when the site cannot be loaded', async () => {
+    renderReceipt()
+    await screen.findByRole('heading', { name: 'What you did' })
+    expect(document.title).toBe('Receipt - Thirst')
   })
 
   it('says when there was no room to shift', async () => {

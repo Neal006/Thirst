@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useApi } from '../api/context'
 import { checked, errorMessage, isAborted } from '../api/errors'
 import { isPlanResponse } from '../api/guards'
@@ -35,6 +35,15 @@ export function usePlan() {
   const alphaRef = useRef(INITIAL.alpha)
   const requestId = useRef(0)
   const controller = useRef<AbortController | null>(null)
+
+  // Leaving the page cancels the request that is still running, and its answer is dropped.
+  useEffect(
+    () => () => {
+      controller.current?.abort()
+      requestId.current += 1
+    },
+    [],
+  )
 
   const run = useCallback(
     (body: PlanRequestBody) => {

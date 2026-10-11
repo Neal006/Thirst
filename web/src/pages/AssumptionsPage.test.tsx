@@ -5,8 +5,16 @@ import { mockFetch } from '../api/mocks/mockFetch'
 import { fetchSpy, jsonReply, renderWithApi, type FetchFn } from '../test/api'
 import { AssumptionsPage } from './AssumptionsPage'
 
+// jsdom has no scrollIntoView; a test that installs one must put things back as they were.
+const originalScrollIntoView = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView')
+
 afterEach(() => {
   vi.restoreAllMocks()
+  if (originalScrollIntoView) {
+    Object.defineProperty(Element.prototype, 'scrollIntoView', originalScrollIntoView)
+  } else {
+    Reflect.deleteProperty(Element.prototype, 'scrollIntoView')
+  }
 })
 
 const renderPage = (path = '/assumptions', fetchImpl: FetchFn = mockFetch) =>
@@ -62,12 +70,16 @@ describe('AssumptionsPage', () => {
 
   it('highlights and scrolls to the row named in the address', async () => {
     const scroll = vi.fn()
-    Element.prototype.scrollIntoView = scroll
+    Object.defineProperty(Element.prototype, 'scrollIntoView', { configurable: true, writable: true, value: scroll })
     renderPage('/assumptions#tau_70')
     await screen.findByRole('heading', { name: 'Cooling' })
     expect(document.getElementById('tau_70')).toHaveClass('is-target')
     expect(document.getElementById('cop_rated_room_ac')).not.toHaveClass('is-target')
     expect(scroll).toHaveBeenCalled()
+  })
+
+  it('leaves no scrollIntoView behind after the test above', () => {
+    expect(Element.prototype.scrollIntoView).toBe(originalScrollIntoView?.value)
   })
 
   it('has an anchor for every kind of label, so the chips land somewhere', async () => {

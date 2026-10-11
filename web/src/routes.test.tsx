@@ -10,6 +10,9 @@ import { clientWith, fetchSpy, jsonReply, type FetchFn } from './test/api'
 import { findUntaggedNumbers } from './test/honesty'
 import { distinctPlan } from './test/planFixture'
 
+// Pages load on first visit; the planner chunk (charts) can take over a second cold in jsdom.
+const PAGE_LOAD = { timeout: 5000 }
+
 const distinctApi: FetchFn = async (input, init) =>
   new URL(String(input)).pathname === '/plan' ? jsonReply(200, distinctPlan()) : mockFetch(input, init)
 
@@ -41,7 +44,7 @@ describe('routes', () => {
 
   it('opens the planner at /plan', async () => {
     renderAt('/plan')
-    expect(await screen.findByRole('heading', { level: 1, name: /when should your gpu job run/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: /when should your gpu job run/i }, PAGE_LOAD)).toBeInTheDocument()
   })
 
   it('moves between pages with the navigation', async () => {
@@ -114,7 +117,7 @@ describe('a page that crashes', () => {
     const spy = quietly()
     renderBroken()
     await userEvent.click(await screen.findByRole('link', { name: /go to the planner/i }))
-    expect(await screen.findByRole('heading', { level: 1, name: /when should your gpu job run/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: /when should your gpu job run/i }, PAGE_LOAD)).toBeInTheDocument()
     spy.mockRestore()
   })
 })
