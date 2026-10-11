@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { ReceiptView } from '../components/ReceiptView'
 import { Banner } from '../components/ui/Banner'
 import { Spinner } from '../components/ui/Spinner'
@@ -14,8 +14,15 @@ export function ReceiptPage() {
   usePageTitle(site.status === 'ready' ? `Receipt - ${site.data.site.name}` : 'Receipt')
   return (
     <div className="receipt-page">
-      <p className="eyebrow">Water receipt · {jobId}</p>
-      <h1>Your receipt</h1>
+      <div className="page-head">
+        <div>
+          <h1>Your receipt</h1>
+          <p className="muted">Job {jobId}</p>
+        </div>
+        <Link className="btn btn-primary" to="/plan">
+          Plan your next job <span className="btn-arrow" aria-hidden="true">→</span>
+        </Link>
+      </div>
       {state.status === 'loading' ? <Spinner label="Loading your receipt…" lines={5} /> : null}
       {state.status === 'error' ? (
         <Banner kind="error" actionLabel="Try again" onAction={reload}>

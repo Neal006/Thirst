@@ -24,7 +24,7 @@
   display: block;
   height: 10px;
   margin: 6px 0;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--border);
   background: repeating-linear-gradient(90deg, var(--white) 0 calc(10% - 1px), var(--border) calc(10% - 1px) 10%);
 }
 
@@ -56,8 +56,8 @@
 
 .page-head h1 {
   font-size: clamp(2.6rem, 1.6rem + 4.4vw, 4.6rem);
-  font-weight: 900;
-  font-stretch: 62%;
+  font-weight: 750;
+  font-stretch: 100%;
   line-height: 0.9;
   margin: 0 0 10px;
 }
@@ -65,7 +65,7 @@
 .head-stats {
   display: flex;
   margin: 0;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--border);
   background: var(--white);
 }
 
@@ -81,22 +81,20 @@
 .head-stats dt {
   font-family: var(--mono);
   font-size: 0.66rem;
-  text-transform: uppercase;
   color: var(--text-muted);
 }
 
 .head-stats dd {
   margin: 0;
   font-size: 2rem;
-  font-weight: 900;
-  font-stretch: 65%;
+  font-weight: 750;
+  font-stretch: 100%;
   line-height: 1;
 }
 
 .pick-label {
   font-family: var(--mono);
   font-size: 0.7rem;
-  text-transform: uppercase;
   color: var(--text-muted);
   margin: 0 0 6px;
 }
@@ -120,11 +118,11 @@
 
 .classes-pick .class:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: var(--shadow);
 }
 
 .classes-pick .class.is-here {
-  box-shadow: 4px 4px 0 var(--ink);
+  box-shadow: var(--shadow);
 }
 
 @media (max-width: 560px) {
@@ -140,7 +138,7 @@
 /* ---------- leaderboard table ---------- */
 
 .board-table {
-  border: 1px solid var(--ink);
+  border: 1px solid var(--border);
 }
 
 .board-table td {
@@ -152,8 +150,8 @@
   display: inline-block;
   min-width: 1.4em;
   font-size: 2rem;
-  font-weight: 900;
-  font-stretch: 62%;
+  font-weight: 750;
+  font-stretch: 100%;
   line-height: 1;
   color: var(--text-faint);
 }
@@ -174,7 +172,7 @@
   margin-left: 4px;
   vertical-align: 0.5em;
   transform: rotate(45deg);
-  border: 1px solid var(--ink);
+  border: 1px solid var(--border);
 }
 
 .medal-1 .rank-num::after {
@@ -234,8 +232,8 @@
 }
 
 .score-card {
-  border: 1px solid var(--ink);
-  box-shadow: 6px 6px 0 var(--cobalt-soft);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
 }
 
 .score-hero {
@@ -254,7 +252,7 @@
   position: relative;
   height: 14px;
   margin: 30px 0 8px;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--border);
   background: var(--surface-sunk);
 }
 
@@ -277,7 +275,6 @@
   font-family: var(--mono);
   font-size: 0.6rem;
   font-weight: 500;
-  text-transform: uppercase;
   color: var(--text-muted);
 }
 
@@ -318,14 +315,14 @@
 
 .tiles .range-value {
   font-size: 1.35rem;
-  font-stretch: 75%;
+  font-stretch: 100%;
 }
 
 /* ---------- receipt page ---------- */
 
 .capture-card {
-  border: 1px solid var(--ink);
-  box-shadow: 6px 6px 0 var(--signal);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
 }
 
 .capture-card .meter-bar {
@@ -334,7 +331,7 @@
 
 .three-ways > section:last-child {
   border-color: var(--ink);
-  box-shadow: 5px 5px 0 var(--cobalt-soft);
+  box-shadow: var(--shadow);
 }
 
 .three-ways > section:first-child {
@@ -343,8 +340,7 @@
 
 .three-ways h2 {
   font-size: 1.05rem;
-  text-transform: uppercase;
-  font-stretch: 80%;
+  font-stretch: 100%;
 }
 
 /* ---------- assumptions ---------- */
@@ -371,7 +367,7 @@
   display: flex;
   height: 22px;
   margin: 8px 0 12px;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--border);
   overflow: hidden;
 }
 
@@ -418,7 +414,7 @@
 
 .mix-legend b {
   font-size: 1.2rem;
-  font-stretch: 70%;
+  font-stretch: 100%;
 }
 
 .jump {
@@ -461,7 +457,6 @@
 .assume-main .card > h2,
 .assume-side .card > h2 {
   font-size: 1.1rem;
-  text-transform: uppercase;
   letter-spacing: 0.02em;
   padding-bottom: 8px;
   border-bottom: 2px solid var(--ink);
@@ -506,8 +501,7 @@
 .chart-head h3 {
   margin: 0;
   font-size: 1rem;
-  text-transform: uppercase;
-  font-stretch: 80%;
+  font-stretch: 100%;
 }
 
 .chart-units {
@@ -524,8 +518,7 @@
 }
 
 .alpha-card label strong {
-  text-transform: uppercase;
-  font-stretch: 80%;
+  font-stretch: 100%;
 }
 
 .alpha-end {
@@ -533,7 +526,7 @@
   font-size: 0.75rem;
   font-weight: 600;
   padding: 2px 6px;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--border);
 }
 
 .alpha-end-co2 {
@@ -555,4 +548,19 @@
 .badge,
 .data-table th {
   white-space: nowrap;
+}
+
+
+/* Monsoon refresh: calmer page titles */
+.page-head h1 {
+  font-size: clamp(1.9rem, 1.4rem + 1.8vw, 2.7rem);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+  margin: 0 0 6px;
+}
+
+.head-stats dd,
+.rank-num {
+  font-weight: 700;
 }

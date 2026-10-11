@@ -43,6 +43,9 @@ class Config:
     api_url: str
     site_id: str
     token: str = field(repr=False)
+    # False for a --private site: its receipts are hidden on the website (D26), so the CLI does
+    # not print a link that would 404. Older config files have no key and count as public.
+    public: bool = True
 
 
 def thirst_home(env: Mapping[str, str] | None = None) -> Path:
@@ -149,6 +152,7 @@ def load(env: Mapping[str, str] | None = None) -> Config:
             api_url=_text(url, "api_url"),
             site_id=_text(site, "site_id"),
             token=_text(token, "token"),
+            public=data.get("public") is not False,
         )
     )
 
@@ -172,7 +176,12 @@ def write_private(path: Path, text: str) -> None:
 def save(cfg: Config) -> Path:
     """Validate and write the config. Returns the path."""
     good = validated(cfg)
-    body = {"api_url": good.api_url, "site_id": good.site_id, "token": good.token}
+    body = {
+        "api_url": good.api_url,
+        "site_id": good.site_id,
+        "token": good.token,
+        "public": good.public,
+    }
     path = config_path()
     write_private(path, tomli_w.dumps(body))
     return path

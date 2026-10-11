@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { DivisionTabs } from '../components/DivisionTabs'
 import { LeaderboardTable } from '../components/LeaderboardTable'
 import { Banner } from '../components/ui/Banner'
@@ -6,7 +6,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { Spinner } from '../components/ui/Spinner'
 import { useLeaderboard } from '../hooks/useLeaderboard'
 import { usePageTitle } from '../hooks/usePageTitle'
-import { divisionLabel, parseDivision } from '../lib/divisions'
+import { parseDivision } from '../lib/divisions'
 
 export function LeaderboardPage() {
   usePageTitle('Leaderboard')
@@ -19,11 +19,9 @@ export function LeaderboardPage() {
     <div className="board-page">
       <div className="page-head">
         <div>
-          <p className="eyebrow">Last 30 days · {division}</p>
           <h1>Leaderboard</h1>
-          <p className="muted">
-            Score over the last 30 days. Scores are provisional until building efficiency is rated.
-          </p>
+          <p className="lede">Labs ranked by how much of the possible saving they took.</p>
+          <p className="muted board-window">Last 30 days · {division}</p>
         </div>
         {state.status === 'ready' ? (
           <dl className="head-stats">
@@ -49,9 +47,11 @@ export function LeaderboardPage() {
       {state.status === 'ready' && state.data.rows.length === 0 ? (
         <EmptyState title="No sites in this division yet" className="empty-board">
           <p>
-            Register a site and send a receipt to appear here. The {divisionLabel(division).toLowerCase()} podium is
-            empty: first receipt takes first place.
+            No labs in this group have sent a receipt yet. The first one takes first place.
           </p>
+          <Link className="btn btn-primary" to="/plan">
+            Plan your first job
+          </Link>
         </EmptyState>
       ) : null}
       {state.status === 'ready' && state.data.rows.length > 0 ? (

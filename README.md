@@ -4,11 +4,11 @@
 
 <p align="center">
   <a href="https://github.com/Neal006/Thirst/actions/workflows/ci.yml"><img src="https://github.com/Neal006/Thirst/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/made%20for-WeMakeDevs%20%C3%97%20AWS-ffcc00?labelColor=0b1620" alt="Made for WeMakeDevs x AWS">
-  <img src="https://img.shields.io/badge/track-02%20Heat%20%26%20Water-0a5cff?labelColor=0b1620" alt="Track 02 Heat and Water">
-  <img src="https://img.shields.io/badge/licence-MIT-0b1620" alt="MIT licence">
-  <a href="https://pypi.org/project/thirst/"><img src="https://img.shields.io/pypi/v/thirst?label=pip%20install%20thirst&color=0a5cff&labelColor=0b1620" alt="PyPI"></a>
-  <a href="https://main.dzxkrtlc7xqfx.amplifyapp.com"><img src="https://img.shields.io/badge/live-website-ffcc00?labelColor=0b1620" alt="Live website"></a>
+  <img src="https://img.shields.io/badge/made%20for-WeMakeDevs%20%C3%97%20AWS-f0b43c?labelColor=1d2321" alt="Made for WeMakeDevs x AWS">
+  <img src="https://img.shields.io/badge/track-02%20Heat%20%26%20Water-126e6b?labelColor=1d2321" alt="Track 02 Heat and Water">
+  <img src="https://img.shields.io/badge/licence-MIT-1d2321" alt="MIT licence">
+  <a href="https://pypi.org/project/thirst/"><img src="https://img.shields.io/pypi/v/thirst?label=pip%20install%20thirst&color=126e6b&labelColor=1d2321" alt="PyPI"></a>
+  <a href="https://main.dzxkrtlc7xqfx.amplifyapp.com"><img src="https://img.shields.io/badge/live-website-f0b43c?labelColor=1d2321" alt="Live website"></a>
 </p>
 
 <h3 align="center">Run your GPU job at the right hour and the right speed.<br>Take less water from India's thirstiest cities. Prove it with a receipt.</h3>
@@ -31,7 +31,7 @@ Nobody running a 6-hour training job sees this. Thirst makes it visible, gives y
   <tr>
     <td width="50%" valign="top">
       <img src="docs/readme/clock.png" alt="The water clock">
-      <p><b>🕒 The water clock</b><br>Your city's next 24 hours on one dial. Long blue wedges mean thirsty hours. The yellow <b>RUN</b> arc is the best window.</p>
+      <p><b>🕒 The water clock</b><br>Your city's next 24 hours on one dial. Longer teal wedges mean thirstier hours. The amber <b>RUN</b> arc is the best window.</p>
     </td>
     <td width="50%" valign="top">
       <img src="docs/readme/beakers.png" alt="Start now vs Thirst plan">
@@ -41,7 +41,7 @@ Nobody running a 6-hour training job sees this. Thirst makes it visible, gives y
   <tr>
     <td valign="top">
       <img src="docs/readme/plan.png" alt="The planner">
-      <p><b>📋 One sentence, one plan</b><br><i>"Start at 02:00, GPU at 70%, done by 08:40. Saves 21 to 22% water."</i> A slider trades water against carbon.</p>
+      <p><b>📋 One sentence, one plan</b><br><i>"Start at 02:00, GPU at 70%, done by 08:40."</i> One line says why that time. Read the next 48 hours as a timetable, an hourly list, a calendar or a chart.</p>
     </td>
     <td valign="top">
       <img src="docs/readme/powercap.png" alt="The power-cap switch">
@@ -56,6 +56,16 @@ Nobody running a 6-hour training job sees this. Thirst makes it visible, gives y
     <td valign="top">
       <img src="docs/readme/site.png" alt="A lab's score page">
       <p><b>🥇 Your lab's score</b><br>A 0 to 100 score, a badge, and how many points to the next one.</p>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <img src="docs/readme/actions.png" alt="Run this plan: command, calendar and share link">
+      <p><b>▶️ Run it, schedule it, share it</b><br>Copy the exact <code>thirst run</code> command, add the run to your calendar with a reminder, or send a link that reopens the same job. Your last five plans stay one click away.</p>
+    </td>
+    <td valign="top">
+      <img src="docs/readme/cities.png" alt="Compare cities">
+      <p><b>🗺️ Compare cities</b><br>The same job in six Indian cities: best start, a 48-hour strip, water for the job and the saving, with room AC or a cooling tower.</p>
     </td>
   </tr>
 </table>
@@ -112,7 +122,7 @@ Thirst receipt j_tksft2nswiku
 | `thirst run --now …` | Start right away (still measured, still a receipt) |
 | `thirst run --dry-run …` | Show what would happen, start nothing |
 | `thirst run --no-cap …` | Laptop GPU that can't be capped? Run measured but uncapped |
-| `thirst run --modelled --gpu-model RTX-4090 --gpus 2 …` | No NVIDIA GPU? Thirst estimates the energy and says so on the receipt |
+| `thirst run --modelled …` | Thirst estimates the energy and says so on the receipt. It uses the detected GPU. With no NVIDIA GPU, add `--gpu-model RTX-4090 --gpus 2` (ids are on the Assumptions page) |
 | `thirst doctor` | Checks your setup: GPU, power-cap permission, clock, API |
 | `thirst sync` · `thirst receipt show <job_id>` | Send receipts saved while offline · print a saved receipt |
 
@@ -126,7 +136,7 @@ Full walk-through with real outputs: [`docs/USER_TEST_GUIDE.md`](docs/USER_TEST_
 |---|---|
 | ✅ Live | Website, API and hourly weather refresh on AWS; `pip install thirst` (0.3.1); 42 GPU models |
 | ✅ Tested | ~1,800 unit and integration tests in CI; Playwright on desktop and phone against the live site, with axe accessibility checks |
-| ⚠️ Placeholder | The power-cap speed/energy curve is still a placeholder until we measure it on a desktop GPU. So every plan picks 70% and the water/carbon slider changes nothing yet. The app labels it. |
+| ⚠️ Placeholder | The power-cap speed/energy curve is still a placeholder until we measure it on a desktop GPU. So every plan picks 70%, all 11 water/carbon options are the same plan, and the planner hides the slider and says why. The app labels it. |
 | ⏳ Pending | AI explanations on Amazon Bedrock (account access pending; a template explanation is served meanwhile) |
 
 What's left, in detail: [`docs/TODO.md`](docs/TODO.md).
@@ -174,11 +184,11 @@ Your score asks one question: *of the saving that was possible for this job, how
 
 | Label | Meaning |
 |---|---|
-| ![measured](https://img.shields.io/badge/-measured-087a46) | Read from the hardware on your machine |
-| ![modelled](https://img.shields.io/badge/-modelled-0a4fe0) | Calculated from a model; the Assumptions page shows how |
-| ![sourced](https://img.shields.io/badge/-sourced-0a7280) | Taken from a published source we cite |
-| ![calibrated](https://img.shields.io/badge/-calibrated-6438d4) | Adjusted so the model matches a published yearly figure |
-| ![placeholder](https://img.shields.io/badge/-placeholder-8a6200) | A stand-in until we measure the real value |
+| ![measured](https://img.shields.io/badge/-measured-276a43) | Read from the hardware on your machine |
+| ![modelled](https://img.shields.io/badge/-modelled-3f6363) | Calculated from a model; the Assumptions page shows how |
+| ![sourced](https://img.shields.io/badge/-sourced-36606f) | Taken from a published source we cite |
+| ![calibrated](https://img.shields.io/badge/-calibrated-5a4a98) | Adjusted so the model matches a published yearly figure |
+| ![placeholder](https://img.shields.io/badge/-placeholder-7a5a10) | A stand-in until we measure the real value |
 
 Click any label in the app to see its value, its range and its source.
 
@@ -190,7 +200,7 @@ Click any label in the app to see its value, its range and its source.
 
 <details>
 <summary><b>Do I need an NVIDIA GPU?</b></summary>
-No. Use <code>--modelled</code> and Thirst estimates the energy from your GPU model. The receipt says "modelled" and doesn't earn measurement points.
+No. Use <code>--modelled --gpu-model RTX-4090 --gpus 1</code> (any id from the Assumptions page) and Thirst estimates the energy from that GPU model. The receipt says "modelled" and doesn't earn measurement points.
 </details>
 
 <details>

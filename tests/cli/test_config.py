@@ -35,6 +35,21 @@ def test_save_then_load_round_trips(home: Path) -> None:
     assert config.load() == make_config()
 
 
+def test_a_private_site_is_remembered(home: Path) -> None:
+    config.save(config.Config(api_url=URL, site_id=SITE, token=TOKEN, public=False))
+
+    assert config.load().public is False
+
+
+def test_an_older_config_without_the_public_key_counts_as_public(home: Path) -> None:
+    config.config_path().parent.mkdir(parents=True, exist_ok=True)
+    config.config_path().write_text(
+        f'api_url = "{URL}"\nsite_id = "{SITE}"\ntoken = "{TOKEN}"\n', encoding="utf-8"
+    )
+
+    assert config.load().public is True
+
+
 def test_default_home_is_dot_thirst_in_the_user_home(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -89,7 +104,8 @@ def test_missing_config_asks_to_register(home: Path) -> None:
 
 def test_corrupt_toml_gives_a_plain_error(home: Path) -> None:
     home.mkdir(parents=True)
-    (home / "config.toml").write_text(f'token = "{TOKEN}\nthis is = = not toml', encoding="utf-8")
+    config.config_path().parent.mkdir(parents=True, exist_ok=True)
+    config.config_path().write_text(f'token = "{TOKEN}\nthis is = = not toml', encoding="utf-8")
 
     with pytest.raises(ConfigError) as err:
         config.load()
@@ -104,7 +120,8 @@ def test_missing_key_is_named(home: Path, missing: str) -> None:
     del values[missing]
     home.mkdir(parents=True)
     body = "".join(f'{k} = "{v}"\n' for k, v in values.items())
-    (home / "config.toml").write_text(body, encoding="utf-8")
+    config.config_path().parent.mkdir(parents=True, exist_ok=True)
+    config.config_path().write_text(body, encoding="utf-8")
 
     with pytest.raises(ConfigError) as err:
         config.load()
@@ -129,7 +146,8 @@ def test_invalid_values_are_rejected_without_echoing_the_token(
     values = {"api_url": URL, "site_id": SITE, "token": TOKEN, field: bad}
     home.mkdir(parents=True)
     body = "".join(f'{k} = "{v}"\n' for k, v in values.items())
-    (home / "config.toml").write_text(body, encoding="utf-8")
+    config.config_path().parent.mkdir(parents=True, exist_ok=True)
+    config.config_path().write_text(body, encoding="utf-8")
 
     with pytest.raises(ConfigError) as err:
         config.load()
@@ -223,7 +241,8 @@ def test_env_url_override_with_cleartext_is_refused(
 def test_a_cleartext_url_in_the_file_is_refused(home: Path) -> None:
     home.mkdir(parents=True)
     body = f'api_url = "http://api.example.com"\nsite_id = "{SITE}"\ntoken = "{TOKEN}"\n'
-    (home / "config.toml").write_text(body, encoding="utf-8")
+    config.config_path().parent.mkdir(parents=True, exist_ok=True)
+    config.config_path().write_text(body, encoding="utf-8")
 
     with pytest.raises(ConfigError) as err:
         config.load()

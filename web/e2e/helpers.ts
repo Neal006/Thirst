@@ -4,6 +4,7 @@ import { expect, type Locator, type Page } from '@playwright/test'
 export const PAGES = [
   { path: '/', heading: /every gpu hour drinks water/i },
   { path: '/plan', heading: /when should your gpu job run/i },
+  { path: '/cities', heading: /^compare cities$/i },
   { path: '/leaderboard', heading: /^leaderboard$/i },
   { path: '/assumptions', heading: /^assumptions$/i },
 ] as const
@@ -56,3 +57,18 @@ export async function openFirstSiteFromBoard(page: Page): Promise<string> {
   await page.waitForURL(/\/sites\/[^/]+$/)
   return new URL(page.url()).pathname
 }
+
+/**
+ * The water/carbon slider only shows when the 11 Pareto options differ. With the placeholder
+ * power-cap sweep they are all the same plan, so the page shows a short note instead (TODO 5.7).
+ * Returns false (and checks the note is there) when the slider is hidden.
+ */
+export async function hasTradeoffSlider(page: Page): Promise<boolean> {
+  const slider = page.getByRole('slider')
+  const note = page.getByText(/every option gives the same plan/i)
+  await expect(slider.or(note).first()).toBeVisible()
+  return (await slider.count()) > 0
+}
+
+export const IDENTICAL_PARETO =
+  'the 11 Pareto options are identical (placeholder power-cap sweep), so the page hides the slider and says why'

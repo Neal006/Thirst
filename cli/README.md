@@ -39,7 +39,7 @@ Thirst receipt j_tksft2nswiku
 | `thirst run --dry-run` | Shows what would happen, starts nothing |
 | `thirst run --now` | Starts right away (still measured, still a receipt) |
 | `thirst run --no-cap` | Never touches the power limit (laptops usually don't allow it); energy is still measured |
-| `thirst run --modelled --gpu-model <id> --gpus <n>` | No NVIDIA GPU: estimates energy instead and labels it "modelled". GPU ids are listed on the [Assumptions page](https://main.dzxkrtlc7xqfx.amplifyapp.com/assumptions). |
+| `thirst run --modelled` | Estimates energy instead of reading the GPU and labels it "modelled". It uses the detected GPU. With no NVIDIA GPU add `--gpu-model <id> --gpus <n>` (ids are on the [Assumptions page](https://main.dzxkrtlc7xqfx.amplifyapp.com/assumptions)). |
 | `thirst doctor` / `thirst doctor --restore` | Checks the setup / puts back a power limit left behind by a crash |
 | `thirst sync` | Sends receipts that were saved while offline |
 | `thirst receipt show <job_id>` | Prints a saved receipt again |

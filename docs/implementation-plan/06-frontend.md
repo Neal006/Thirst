@@ -5,6 +5,7 @@
 > - The React review leftovers and code-splitting: main chunk 810 → 249 kB, no mock chunk in production (PR #6).
 > - **6.11 Playwright + axe done** (PR #9): 74 pass, 4 skip and 1 flaky against the live site.
 > - Amplify takes manual zip deploys (`scripts/deploy_web.py`), so `amplify.yml` only applies if the app is ever Git-connected.
+> - Phase 09 UX overhaul on `feat/web-ui-accessibility` ([`09-ux-overhaul.md`](09-ux-overhaul.md)): plan views, run box, share links, Cities page, glossary, Monsoon theme, and e2e for all of it. Deploy runs the e2e suite after each deploy.
 >
 > Open:
 > - 6.3.j sentence box (needs Bedrock).

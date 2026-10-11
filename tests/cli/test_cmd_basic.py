@@ -57,6 +57,7 @@ def test_register_private_site(rig: CliRig) -> None:
     rig.main(*register_args("--private"))
 
     assert rig.api.sites[0]["public"] is False
+    assert config.load().public is False  # so receipts print no link that would 404
 
 
 def test_register_needs_an_api_url(rig: CliRig, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -140,6 +141,15 @@ def test_plan_prints_the_one_line_plan_and_savings(rig: CliRig) -> None:
     assert "Plan: start 01:00, cap 85%, done by 02:00" in rig.text
     assert "14 to 29%" in rig.text and "9 to 18%" in rig.text and "10 to 13%" in rig.text
     assert rig.nvml_opens == 0  # nothing needed the GPU
+
+
+def test_plan_prints_a_full_assumptions_link(rig: CliRig) -> None:
+    # TODO 4.1.b: "/assumptions" on its own cannot be clicked in a terminal.
+    rig.register()
+
+    rig.main(*plan_args("--gpu-model", "RTX-4090", "--gpus", "2"))
+
+    assert "Assumptions: https://main.dzxkrtlc7xqfx.amplifyapp.com/assumptions" in rig.text
 
 
 def test_plan_sends_the_site_and_the_job(rig: CliRig) -> None:
@@ -407,6 +417,20 @@ def test_doctor_accepts_sudo_when_nvml_has_no_permission(rig: CliRig) -> None:
     assert "sudo" in rig.text
 
 
+def test_doctor_on_a_laptop_gpu_warns_instead_of_failing(rig: CliRig) -> None:
+    # TODO 4.1.a: laptops report the power limit as [N/A]; that is not a broken setup.
+    rig.register()
+    rig.nvml.limit_unreadable = True
+
+    code = rig.main("doctor")
+
+    assert code == 0
+    assert "[warn] GPU power cap permission" in rig.text
+    assert "laptops" in rig.text and "--no-cap" in rig.text
+    assert "[FAIL]" not in rig.text
+    assert rig.nvml.set_calls == []
+
+
 def test_doctor_names_the_leftover_restore_marker(rig: CliRig) -> None:
     rig.register()
     config.write_private(config.restore_marker_path(), json.dumps({"GPU-aaaa": 300_000}))
@@ -511,6 +535,21 @@ def test_sweep_writes_the_measured_numbers(rig: CliRig, tmp_path: Path) -> None:
     assert entry["levels"]["0.85"]["tau"] == pytest.approx(0.95, rel=1e-3)
     assert "85%: tau 0.950, eps 0.900" in rig.text
     assert rig.nvml.gpus[0].current_limit_mw == 450_000  # the cap is back
+
+
+def test_running_the_sweep_twice_reports_the_median(rig: CliRig, tmp_path: Path) -> None:
+    # Plan 4.5.d / TODO 2.2: the second run is combined with the first, not swapped in.
+    sweep_rig(rig)
+    out = tmp_path / "powercap_sweep.json"
+    rig.main("sweep", "--idle-seconds", "10", "--out", str(out))
+    sweep_rig(rig)
+
+    code = rig.main("sweep", "--idle-seconds", "10", "--out", str(out))
+
+    assert code == 0
+    entry = json.loads(out.read_text(encoding="utf-8"))["gpus"]["RTX-4090"]
+    assert entry["runs"] == 2
+    assert "Combined with the earlier runs (2 in all)" in rig.text
 
 
 def test_sweep_keeps_other_gpus_in_the_file(rig: CliRig, tmp_path: Path) -> None:

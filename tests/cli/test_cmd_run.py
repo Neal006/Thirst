@@ -143,6 +143,21 @@ def test_dry_run_prints_the_transitions_and_starts_nothing(ready: CliRig) -> Non
         assert expected in ready.text
 
 
+def test_dry_run_uses_the_plans_exact_start_and_finish(ready: CliRig) -> None:
+    # TODO 4.1.c: the plan line says 01:47 and 03:20, so the dry run must not say 01:00 and 04:00.
+    plan = plan_response(rows=(("run", 0.7), ("run", 0.7), ("run", 0.7)))
+    plan["chosen"]["start"] = "2026-10-10T01:47:00+05:30"
+    plan["chosen"]["finish"] = "2026-10-10T03:20:00+05:30"
+    ready.api.plan_result = plan
+
+    code = ready.main(*run_args("--dry-run"))
+
+    assert code == 0
+    assert "10 Oct 01:47  start the command at 70% power" in ready.text
+    assert "10 Oct 03:20  planned end" in ready.text
+    assert "01:00  start" not in ready.text
+
+
 def test_dry_run_does_not_need_a_gpu_when_the_flags_say_what_it_is(ready: CliRig) -> None:
     ready.nvml_error = GpuError("No NVIDIA GPU was found on this machine.")
 
@@ -452,12 +467,25 @@ def test_modelled_run_needs_no_gpu_and_is_tagged_modelled(ready: CliRig) -> None
     assert ready.nvml.set_calls == []
 
 
-def test_modelled_run_needs_the_gpu_flags(ready: CliRig) -> None:
+def test_modelled_run_without_a_gpu_needs_the_gpu_flags(ready: CliRig) -> None:
+    ready.nvml_error = GpuError("No NVIDIA GPU was found on this machine.")
+
     code = ready.main(*run_args("--modelled"))
 
     assert code == 2
     assert "--gpu-model" in ready.errors
     assert ready.api.plan_payloads == []
+
+
+def test_modelled_run_uses_the_detected_gpu_when_the_flags_are_left_out(ready: CliRig) -> None:
+    # TODO 4.1.d: the README example `thirst run --modelled ...` has no GPU flags.
+    code = ready.main(*run_args("--modelled"))
+
+    assert code == 0
+    assert ready.api.plan_payloads[0]["gpu_count"] == len(ready.nvml.gpus)
+    body = ready.api.receipts[0]
+    assert body["method"] == "modelled"
+    assert ready.nvml.set_calls == []  # modelled never touches the power limit
 
 
 # ------------------------------------------------------------ bad setups

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import type { CityRow, PlanResponse } from '../../api/types'
 import type { Loadable } from '../../hooks/useLoad'
 import { formatClock } from '../../lib/format'
-import { bestVsWorstPct, cheapestStart, co2PerKwh, stressWords, waterPerKwh } from '../../lib/landing'
+import { bestVsWorstPct, co2PerKwh, stressWords, waterPerKwh } from '../../lib/landing'
 import { TagChip } from '../TagChip'
 import { WaterClock } from './WaterClock'
 
@@ -17,24 +17,24 @@ interface HeroProps {
 
 function Meters({ response }: { response: PlanResponse }) {
   const day = response.series.slice(0, 24)
-  const best = cheapestStart(day, waterPerKwh)
+  const start = response.chosen.start
   const { tags } = response
   return (
     <dl className="meters">
       <div className="meter">
         <dt>Best start</dt>
         <dd>
-          <span className="meter-num">{best >= 0 ? formatClock(day[best].slot) : '--:--'}</span>
+          <span className="meter-num">{formatClock(start)}</span>
         </dd>
       </div>
       <div className="meter">
-        <dt>Water / kWh, best vs worst hours</dt>
+        <dt>Water, best vs worst hour</dt>
         <dd>
           <span className="meter-num">−{bestVsWorstPct(day, waterPerKwh)}%</span> <TagChip tag={tags.water} />
         </dd>
       </div>
       <div className="meter">
-        <dt>CO₂ / kWh, best vs worst hours</dt>
+        <dt>CO₂, best vs worst hour</dt>
         <dd>
           <span className="meter-num">−{bestVsWorstPct(day, co2PerKwh)}%</span> <TagChip tag={tags.co2} />
         </dd>
@@ -49,21 +49,20 @@ export function Hero({ cities, cityRows, city, onCity, forecast, reload }: HeroP
   return (
     <section className="hero" aria-labelledby="hero-title">
       <div className="hero-copy">
-        <p className="eyebrow hero-in">Water + carbon planner for GPU jobs · India</p>
         <h1 id="hero-title" className="hero-title hero-in" style={{ '--d': '60ms' } as React.CSSProperties}>
           Every GPU hour drinks water <em>twice</em>.
         </h1>
         <p className="hero-sub hero-in" style={{ '--d': '140ms' } as React.CSSProperties}>
-          Thirst picks <b>when</b> and <b>how fast</b> to run your job, then proves the saving with a
-          receipt.
+          Thirst tells you <b>when</b> and <b>how fast</b> to run your GPU job so it uses less water
+          and CO₂.
         </p>
         <div className="hero-actions hero-in" style={{ '--d': '220ms' } as React.CSSProperties}>
           <Link className="btn btn-primary btn-lg" to={`/plan?city=${encodeURIComponent(city)}`}>
             Plan a job <span className="btn-arrow" aria-hidden="true">→</span>
           </Link>
-          <a className="btn btn-ghost btn-lg" href="#how">
-            How it works
-          </a>
+          <Link className="btn btn-ghost btn-lg" to="/cities">
+            Compare cities
+          </Link>
         </div>
         <div className="hero-in" style={{ '--d': '300ms' } as React.CSSProperties}>
           {forecast.status === 'ready' ? <Meters response={forecast.data} /> : <div className="meters meters-empty" aria-hidden="true" />}
@@ -106,11 +105,11 @@ export function Hero({ cities, cityRows, city, onCity, forecast, reload }: HeroP
             <i className="swatch swatch-co2" aria-hidden="true" /> CO₂ / kWh
           </span>
           <span>
-            <i className="swatch swatch-run" aria-hidden="true" /> best 3 h
+            <i className="swatch swatch-run" aria-hidden="true" /> cleanest 3 h
           </span>
           {meta ? (
             <span className="clock-stress">
-              stress <b>{stressWords(meta.stress_category)}</b> <TagChip tag={meta.status} />
+              water stress <b>{stressWords(meta.stress_category)}</b> <TagChip tag={meta.status} />
             </span>
           ) : null}
         </figcaption>

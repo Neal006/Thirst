@@ -39,6 +39,34 @@ function StatusMix({ factors }: { factors: readonly AssumptionRow[] }) {
   )
 }
 
+const GLOSSARY: readonly [string, string][] = [
+  ['Water per kWh', 'Litres of water behind one kWh of GPU energy: water to cool the room (on site) plus water used by the power plants (from the grid).'],
+  ['Water stress', 'How scarce water is in a city. A litre used in a dry city counts for more, so the plan weighs it more.'],
+  ['GPU power level', 'Running the GPU below full power. The job takes a little longer but needs less energy for the same work.'],
+  ['Pausing', 'Stopping the job during the thirstiest hours and resuming it later. Only for single-machine jobs.'],
+  ['PUE', 'Total site power divided by the power of the GPUs and servers. Only asked for cooling towers.'],
+  ['Receipt', 'After a real run with thirst run, what the job actually used, compared with starting right away.'],
+  ['Capture', 'Of the saving that was possible for a job, the share you actually took. Receipts add up to the site score.'],
+  ['Measured or modelled', 'Measured numbers come from the GPU. Modelled numbers are calculated from those, and say so.'],
+  ['Weight class (D1 to D4)', 'The leaderboard groups labs by GPU count, so a small college lab only competes with other small labs.'],
+]
+
+function Glossary() {
+  return (
+    <section id="glossary" className="card glossary" aria-labelledby="glossary-heading">
+      <h2 id="glossary-heading">Words we use</h2>
+      <dl>
+        {GLOSSARY.map(([term, meaning]) => (
+          <div key={term}>
+            <dt>{term}</dt>
+            <dd>{meaning}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  )
+}
+
 /** F6: every number the model uses, where it came from and how sure we are. */
 export function AssumptionsPage() {
   usePageTitle('Assumptions')
@@ -48,7 +76,6 @@ export function AssumptionsPage() {
     <div className="assumptions-page">
       <div className="page-head">
         <div>
-          <p className="eyebrow">Open book</p>
           <h1>Assumptions</h1>
           <p className="lede">
             Energy is measured from the GPU when you use <code>thirst run</code>. Water and CO₂ are
@@ -57,6 +84,7 @@ export function AssumptionsPage() {
           </p>
         </div>
       </div>
+      <Glossary />
       {state.status === 'loading' ? <Spinner label="Loading the assumptions…" lines={6} /> : null}
       {state.status === 'error' ? (
         <Banner kind="error" actionLabel="Try again" onAction={reload}>

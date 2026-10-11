@@ -90,9 +90,17 @@ def resolve_model(names: Sequence[str], override: str | None) -> GpuModel:
     return next(iter(models.values()))
 
 
+# The site key signs receipts. The user's training script has no use for it, so it never sees it.
+_SECRET_VARS = ("THIRST_TOKEN",)
+
+
 def child_environment(base: Mapping[str, str]) -> dict[str, str]:
-    """A copy of the environment for the user's command (never changes ``base``)."""
-    env = dict(base)
+    """A copy of the environment for the user's command (never changes ``base``).
+
+    ``THIRST_TOKEN`` is removed (TODO 4.2): a third-party script or a log of its environment must
+    not be able to leak the site key.
+    """
+    env = {key: value for key, value in base.items() if key not in _SECRET_VARS}
     env.setdefault(ORDER_VAR, PCI_ORDER)
     env.setdefault("PYTHONUNBUFFERED", "1")  # so tee'd output appears as the job prints it
     return env

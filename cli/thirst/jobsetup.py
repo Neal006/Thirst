@@ -39,11 +39,29 @@ def _flag_model(gpu_model: str | None) -> str | None:
     return None if gpu_model in (None, "", "auto") else gpu_model
 
 
-def _modelled_gpus(gpu_model: str | None, gpus: int | None) -> JobGpus:
+_MODELLED_NEEDS_FLAGS = (
+    "--modelled needs --gpu-model and --gpus, because no NVIDIA GPU could be detected. "
+    "GPU ids are listed on the Assumptions page under GPUs."
+)
+
+
+def _modelled_gpus(ctx: Context, gpu_model: str | None, gpus: int | None) -> JobGpus:
+    """The GPU to model: the flags if both are given, else whatever NVML can see (TODO 4.1.d).
+
+    The energy is still modelled either way; NVML is only asked for the model name and count.
+    """
     override = _flag_model(gpu_model)
-    if override is None or gpus is None:
-        raise CliError("--modelled needs --gpu-model and --gpus, because there is no GPU to ask.")
-    return JobGpus(resolve_model([], override), gpus, None, ())
+    if override is not None and gpus is not None:
+        return JobGpus(resolve_model([], override), gpus, None, ())
+    try:
+        api = ctx.open_nvml()
+    except GpuError:
+        raise CliError(_MODELLED_NEEDS_FLAGS) from None
+    try:
+        found = _read_job_gpus(api, ctx.env, override, gpus, need_hardware=False)
+    finally:
+        api.shutdown()
+    return JobGpus(found.model, found.count, None, ())
 
 
 def detect_gpus(
@@ -60,7 +78,7 @@ def detect_gpus(
     is closed again before this returns.
     """
     if modelled:
-        return _modelled_gpus(gpu_model, gpus)
+        return _modelled_gpus(ctx, gpu_model, gpus)
     override = _flag_model(gpu_model)
     if not need_hardware and override is not None and gpus is not None:
         return JobGpus(resolve_model([], override), gpus, None, ())

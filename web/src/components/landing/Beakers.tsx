@@ -106,9 +106,9 @@ function Stage({ response }: { response: PlanResponse }) {
             →
           </span>
           <span className="delta-num">
-            <Range range={chosen.savings_ranges.water_pct} unit="%" tag={tags.water} label="less stress-weighted water" />
+            <Range range={chosen.savings_ranges.water_pct} unit="%" tag={tags.water} label="less water" />
           </span>
-          <span className="delta-cap">less stress-weighted water</span>
+          <span className="delta-cap">less water</span>
         </div>
         <Beaker
           entry={chosen}

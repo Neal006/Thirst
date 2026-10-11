@@ -80,6 +80,7 @@ These moves apply in **both** team sizes. They take about 4 h off B's Friday cri
 | 06 | [06-frontend.md](06-frontend.md) | C | Fri 13:00 to Sat 17:00 | React app: Plan, Receipt, Leaderboard, Site, Assumptions; charts; slider; Amplify deploy |
 | 07 | [07-integration-qa-release.md](07-integration-qa-release.md) | All | Sat 09:00 to Sun 16:00 | E2E, clean-machine test, security pass, docs, video, blog, submission, post-hackathon roadmap |
 | 08 | [08-reference-contracts.md](08-reference-contracts.md) | All (read) | n/a | JSON file schemas, API contract with validation rules, error codes, env vars, DynamoDB item shapes, test vectors |
+| 09 | [09-ux-overhaul.md](09-ux-overhaul.md) | Web | Sun 11 Oct | User-test fixes, plan views and actions, Cities page, Monsoon theme, CLI walkthrough fixes (TODO 4.1), e2e for the new screens |
 
 ---
 

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
@@ -53,6 +53,8 @@ describe('routes', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Leaderboard' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('link', { name: 'Assumptions' }))
     expect(await screen.findByRole('heading', { level: 1, name: 'Assumptions' })).toBeInTheDocument()
+    await userEvent.click(within(screen.getByRole('navigation', { name: /main/i })).getByRole('link', { name: 'Cities' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Compare cities' })).toBeInTheDocument()
   })
 
   it('sets the tab title for each page', async () => {
@@ -145,7 +147,7 @@ describe('G5: no number with a unit is shown without a tag (plan 6.4.c)', () => 
   it('the home page with the live forecast, facts and the board preview', async () => {
     renderAt('/')
     await honest(async () => {
-      await screen.findAllByText('Best start')
+      await screen.findAllByText('Cleanest hour')
       await screen.findByText('Start now')
       await screen.findByRole('list', { name: /top small labs/i })
     })

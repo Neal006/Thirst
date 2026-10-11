@@ -12,6 +12,7 @@ import { RouteError } from './pages/RouteError'
 const lazyPage = (load: () => Promise<ComponentType>) => async () => ({ Component: await load() })
 
 const planPage = lazyPage(async () => (await import('./pages/PlanPage')).PlanPage)
+const citiesPage = lazyPage(async () => (await import('./pages/CitiesPage')).CitiesPage)
 const receiptPage = lazyPage(async () => (await import('./pages/ReceiptPage')).ReceiptPage)
 const leaderboardPage = lazyPage(async () => (await import('./pages/LeaderboardPage')).LeaderboardPage)
 const sitePage = lazyPage(async () => (await import('./pages/SitePage')).SitePage)
@@ -36,6 +37,7 @@ export function createAppRoutes(extraPages: RouteObject[] = []): RouteObject[] {
           children: [
             { index: true, element: <LandingPage /> },
             { path: 'plan', lazy: planPage },
+            { path: 'cities', lazy: citiesPage },
             { path: 'receipts/:siteId/:jobId', lazy: receiptPage },
             { path: 'leaderboard', lazy: leaderboardPage },
             { path: 'sites/:siteId', lazy: sitePage },

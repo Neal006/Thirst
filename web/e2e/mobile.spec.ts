@@ -1,5 +1,13 @@
 import { expect, test } from './fixtures'
-import { expectHeading, horizontalOverflow, openFirstSiteFromBoard, PAGES, submitDefaultPlan } from './helpers'
+import {
+  expectHeading,
+  hasTradeoffSlider,
+  horizontalOverflow,
+  IDENTICAL_PARETO,
+  openFirstSiteFromBoard,
+  PAGES,
+  submitDefaultPlan,
+} from './helpers'
 
 const PHONE_WIDTH = 360
 
@@ -18,6 +26,17 @@ test.describe('phone viewport (360 x 740)', () => {
     })
   }
 
+  test('the four header links each fit on one line', async ({ page }) => {
+    await page.goto('/')
+    const nav = page.getByRole('navigation', { name: 'Main' })
+    for (const name of ['Plan', 'Cities', 'Leaderboard', 'Assumptions']) {
+      const box = await nav.getByRole('link', { name }).boundingBox()
+      expect(box, `${name} link is on screen`).not.toBeNull()
+      // One line of nav text is about 36 px tall with its padding; a word broken over two lines is ~60.
+      expect(box?.height ?? 0, `${name} must not wrap onto a second line`).toBeLessThan(48)
+    }
+  })
+
   test('/plan after a result has no horizontal scroll', async ({ page }) => {
     await submitDefaultPlan(page)
     await page.waitForLoadState('networkidle')
@@ -26,6 +45,7 @@ test.describe('phone viewport (360 x 740)', () => {
 
   test('/plan slider still works on the phone', async ({ page, diag }) => {
     await submitDefaultPlan(page)
+    test.skip(!(await hasTradeoffSlider(page)), IDENTICAL_PARETO)
     const slider = page.getByRole('slider')
     await slider.scrollIntoViewIfNeeded()
     await slider.fill('1')

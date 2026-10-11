@@ -17,6 +17,7 @@ import atexit
 import json
 import logging
 import math
+import shutil
 import signal
 import subprocess
 import threading
@@ -53,11 +54,28 @@ SmiRunner = Callable[[list[str]], int]
 Sleeper = Callable[[float], None]
 
 
+_ABSOLUTE_TOOLS = ("nvidia-smi", "sudo")
+
+
+def absolute_argv(argv: list[str]) -> list[str]:
+    """``argv`` with ``nvidia-smi`` and ``sudo`` replaced by their full paths (TODO 4.2).
+
+    A bare name is looked up in ``PATH`` by whoever runs it, so a writable directory early in
+    ``PATH`` could stand in for ``nvidia-smi`` while the CLI holds a power cap. A full path also
+    matches sudoers entries, which name the binary by path. Unknown tools are left as they are.
+    """
+    resolved = []
+    for part in argv:
+        found = shutil.which(part) if part in _ABSOLUTE_TOOLS else None
+        resolved.append(found or part)
+    return resolved
+
+
 def run_command(argv: list[str]) -> int:
     """Run ``argv`` (no shell); exit code, or 124 (timeout), 126 (OS error), 127 (not found)."""
     try:
         done = subprocess.run(  # noqa: S603 - fixed argument list, never a shell
-            argv, capture_output=True, timeout=COMMAND_TIMEOUT_S, check=False
+            absolute_argv(argv), capture_output=True, timeout=COMMAND_TIMEOUT_S, check=False
         )
     except FileNotFoundError:
         return 127

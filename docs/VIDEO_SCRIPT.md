@@ -9,6 +9,8 @@
 
 **How the timing works.** The voice-over is about 400 words, which is about 2:40 at a calm 150 words a minute. That leaves about 10 s of slack. If a take runs long, cut the *italic* phrases first.
 
+**Which version of the site.** This script follows the site after the UX overhaul (`docs/implementation-plan/09-ux-overhaul.md`: teal and amber, a Cities page, a "Run this plan" box). If you record before that branch is deployed, the old site has cobalt and yellow and no "Run this plan" box: skip the 0:50 copy moment in shot 3 and say "the yellow arc" in shot 2.
+
 **Honesty rules for the voice:**
 - Say "about", "modelled" and "ranges" exactly where the script does.
 - Never say a single litre figure.
@@ -56,9 +58,9 @@
      ```
      - **Duration:** about 2.5 minutes in real time.
      - **Receipt:** "Saved 20% water and 20% CO2", "You took 100% of the possible saving", "Site score 78.5 gold (Provisional)".
-     - **Short job:** energy prints as `0.00 kWh`. For bigger numbers on screen, use `--gpu-model RTX-4090 --gpus 2 --hours 1` with a 1-hour sleep, then speed it up.
+     - **Short job:** with 0.3.1, energy prints as `0.00 kWh`. The CLI on `feat/web-ui-accessibility` (0.3.2 once released) prints Wh, mL and g instead, and says "modelled at 70% (plan level)". For bigger numbers on screen, use `--gpu-model RTX-4090 --gpus 2 --hours 1` with a 1-hour sleep, then speed it up.
      - **Voice-over:** say **"modelled"**.
-     - **Private lab:** with `--private` (as registered above) the receipt link returns "not found". Don't open it on camera. If you want to show the receipt page, register the recording lab without `--private`.
+     - **Private lab:** with `--private` (as registered above), 0.3.1 prints a receipt link that returns "not found", and 0.3.2 prints no link. Don't open it on camera. If you want to show the receipt page, register the recording lab without `--private`.
 5. Run `clear` before each terminal shot.
 
 ### Audio
@@ -71,12 +73,12 @@
 
 | # | Time | Screen | Action on screen | Voice-over (read exactly) | Caption |
 |---|---|---|---|---|---|
-| 1 | **0:00–0:14** | Tab 1, home page, top | Hold still on the headline **"Every GPU hour drinks water twice."** At 0:08, slowly move the mouse over the two meters. | "Every hour a GPU trains a model, it uses water twice: at the building that cools it, and at the power plant that feeds it. In Chennai, that water is already scarce." | Every GPU hour drinks water twice |
-| 2 | **0:14–0:34** | Tab 1, water clock, then beakers | 0:14 hover the yellow **RUN** arc. 0:20 switch the city Chennai → Delhi → back to Chennai. 0:26 scroll to **"Where the water goes"** and click **Data centre · cooling tower**. | "Thirst makes it visible. This dial is Chennai's next twenty-four hours from today's live forecast. Long blue wedges are thirsty hours; the yellow arc is the best window. Same job, two start times. *And with a cooling tower, the water is taken twice.*" | Live forecast · best window · water taken twice |
-| 3 | **0:34–1:08** | Tab 2, planner | 0:34 click the **Overnight fine-tune** preset. 0:38 click **Plan**. 0:40 the plan card appears: hover the sentence, then the **18 to 19%** range, then a `modelled` chip. 0:52 scroll to the speed knob on the home page, or move the slider on the plan page. 1:00 click **100% → 85% → 70%** on the home page power-cap switch. | "A student plans a job: two RTX 4090s, six hours of work, done by nine in the morning. In about a second: start now, run the GPU at seventy percent, finish well before the deadline, with about eighteen to nineteen percent less water and CO2. Those are ranges, and they are modelled. Most of that saving is the speed knob: a slightly slower GPU uses less energy for the same work. That's a real cut, not just a shift." | Plan in ~1 s · ranges, not single numbers · 70% power = real energy cut |
-| 4A | **1:08–1:18** | Terminal, live | Type `pip install thirst` (already installed, it returns fast). Then type `thirst plan --hours 6 --deadline "<tomorrow> 09:00"` and wait for the plan output. | "On the GPU machine, it's one package and one command." | `pip install thirst` |
+| 1 | **0:00–0:14** | Tab 1, home page, top | Hold still on the headline **"Every GPU hour drinks water twice."** At 0:08, slowly move the mouse over the meters (**Best start**, then the two "best vs worst hour" meters). | "Every hour a GPU trains a model, it uses water twice: at the building that cools it, and at the power plant that feeds it. In Chennai, that water is already scarce." | Every GPU hour drinks water twice |
+| 2 | **0:14–0:34** | Tab 1, water clock, then beakers | 0:14 hover the amber **RUN** arc. 0:20 switch the city Chennai → Delhi → back to Chennai. 0:26 scroll to **"Where the water goes"** and click **Data centre · cooling tower**. | "Thirst makes it visible. This dial is Chennai's next twenty-four hours from today's live forecast. Longer teal wedges are thirstier hours; the amber arc is the cleanest window. Same job, two start times. *And with a cooling tower, the water is taken twice.*" | Live forecast · best window · water taken twice |
+| 3 | **0:34–1:08** | Tab 2, planner | 0:34 click the **Overnight fine-tune** quick fill. 0:38 click **Plan**. 0:40 the plan card appears: hover the sentence, then the amber "why this time" line, then the range (e.g. **19 to 20%**), then a `modelled` chip. 0:50 scroll a little: the **Timetable** shows the amber run hours. In **Run this plan**, click **Copy**. 1:00 cut to the home page power-cap switch and click **100% → 85% → 70%**. | "A student plans a job: two RTX 4090s, six hours of work, done by nine in the morning. In about a second: start now, run the GPU at seventy percent, finish well before the deadline, with about eighteen to twenty percent less water and CO2. Those are ranges, and they are modelled. Most of that saving is the speed knob: a slightly slower GPU uses less energy for the same work. That's a real cut, not just a shift." | Plan in ~1 s · ranges, not single numbers · 70% power = real energy cut |
+| 4A | **1:08–1:18** | Terminal, live | Type `pip install thirst` (already installed, it returns fast). Then paste the command copied in shot 3, change `run` to `plan` and drop `-- python train.py`, and wait for the plan output. | "On the GPU machine, it's one package, and the planner hands you the exact command." | `pip install thirst` |
 | 4B | **1:18–1:40** | Terminal, pre-recorded run, sped up 10–30× | Show `thirst run … -- python train.py`. The plan line appears, then the job output, then the **receipt** block. Hold 3 s on the receipt. Zoom into the **Energy** and **Water** lines. | "thirst run waits for the right hour, lowers the GPU power limit, runs your script, and always puts the limit back, even on Ctrl-C or a dropped SSH session. Then you get a signed receipt: energy *measured* from the GPU, water and CO2 modelled from it." (If you use the modelled fallback, say: "energy here is modelled, because this laptop can't be capped; on a lab GPU it's measured.") | Always restores the GPU limit · signed receipt |
-| 5 | **1:40–2:04** | Tab 3 leaderboard → Tab 4 site page | 1:40 hover the **D1** tab, then the top three medal rows and their **(simulated)** labels. 1:52 click **Demo Lab, Chennai** and hover the score ring and the badge ladder ("points to Platinum"). | "Receipts add up to a score: of the saving that was possible, how much did you take? We score the choice, not the climate, and labs compete in weight classes, so a four-GPU college lab never faces a data centre. These demo labs are simulated." | Fair score · weight classes · demo labs simulated |
+| 5 | **1:40–2:04** | Tab 3 leaderboard → Tab 4 site page | 1:40 hover the **Small labs** weight-class tab (D1), then the top three medal rows and their **(simulated)** labels. 1:52 click **Demo Lab, Chennai** and hover the score ring and the badge ladder ("points to Platinum"). | "Receipts add up to a score: of the saving that was possible, how much did you take? We score the choice, not the climate, and labs compete in weight classes, so a four-GPU college lab never faces a data centre. These demo labs are simulated." | Fair score · weight classes · demo labs simulated |
 | 6 | **2:04–2:40** | Tab 6 diagram (4 s), then quick cuts of tabs 7→11 (~3 s each), Tab 13 (3 s), Tab 12 (3 s) | Diagram: point at each box as you name it. Console: cut on each service name in the voice-over. CloudFormation resources list, then the Lambda functions, the DynamoDB tables, the EventBridge hourly schedule, the Amplify app, `explain.py` `_invents_numbers`, and the GitHub Deploy run (green). | "It all runs serverless on AWS. Amplify hosts the site. API Gateway and AWS Lambda run the planner and the scoring. Amazon DynamoDB keeps the weather, plans and receipts. EventBridge Scheduler refreshes the forecast every hour. An optional explainer on Amazon Bedrock, built with the Strands Agents SDK, puts a plan into plain words, and its answer is thrown away if it invents a number. AWS SAM deploys it all from GitHub, with no stored keys." | Amplify · API Gateway · Lambda · DynamoDB · EventBridge · Bedrock + Strands · SAM |
 | 7 | **2:40–2:52** | Tab 5, Assumptions | Hover the **How sure we are** bar, then click a `placeholder` chip. | "And every number wears a label: measured, modelled, sourced, or placeholder. Today our power-cap curve is still a placeholder, and we say so." | Every number wears a label |
 | 8 | **2:52–2:57** | End card (a still image or a slide) | Static: **Thirst**, the site URL, `pip install thirst`, `github.com/Neal006/Thirst`, "team hello_world · WeMakeDevs × AWS". | "Thirst. Run at the right hour, and the right speed, and prove it." | — |
@@ -89,7 +91,7 @@ Total: **2:57**. If the export is 2:58 or more, trim shot 6, not the AWS names.
 
 ### Shot 1 · Hook (0:00–0:14)
 - Start recording on tab 1, already scrolled to the top and fully loaded, with the mouse parked off-screen.
-- The meters (**Water / kWh, best vs worst hours**, **CO₂ / kWh …**) must have finished animating before 0:08.
+- The meters (**Best start**, **Water, best vs worst hour**, **CO₂, best vs worst hour**) must have finished loading before 0:08.
 - *Optional opener:* 3 s of credited, openly licensed footage of a water tanker queue before the home page. If you use it, take those 3 s from shot 2's pause.
 
 ### Shot 2 · Water clock (0:14–0:34)
@@ -98,8 +100,10 @@ Total: **2:57**. If the export is 2:58 or more, trim shot 6, not the AWS names.
 - The **Room AC / Data centre · cooling tower** toggle sits above the beakers. When clicked, the building-water layer appears in both beakers.
 
 ### Shot 3 · Planner (0:34–1:08)
-- The plan card text will read something like *"Start 13:05, GPU at 70%, done by 19:45"*. Read the times you see as "start now" only if the card says it starts within the hour. Otherwise say "start at <time>".
-- **Don't** linger on the water/carbon slider: today it doesn't change the plan (placeholder data). Use the home page power-cap switch for the "speed knob" moment.
+- The plan card text will read something like *"Start now, GPU at 70%, done by 21:11"*. Say "start now" only if the card says so. Otherwise say "start at <time>".
+- Read the saving range that is on the card. If it is not 18 to 20%, change the words to match.
+- The water/carbon slider is hidden today, with a note saying every option gives the same plan (placeholder data). Don't point at it. Use the home page power-cap switch for the "speed knob" moment.
+- The **Copy** click at 0:50 sets up shot 4A: the same command goes into the terminal.
 - If the plan takes more than 2 s, cut the wait in the edit.
 
 ### Shot 4 · Terminal (1:08–1:40)
@@ -126,7 +130,7 @@ Total: **2:57**. If the export is 2:58 or more, trim shot 6, not the AWS names.
 - Clicking a `placeholder` chip scrolls to that factor and highlights it.
 
 ### Shot 8 · End card (2:52–2:57)
-- Make it in Canva or Slides at 1920 × 1080, using the site's colours (cobalt `#0a5cff`, yellow `#ffcc00`, ink `#0b1620`) and the Archivo font.
+- Make it in Canva or Slides at 1920 × 1080, using the site's colours (background `#f7f8f6`, teal `#126e6b`, amber `#f0b43c`, ink `#1d2321`) and the Archivo font.
 
 ---
 
@@ -158,7 +162,7 @@ Thirst makes it visible. This dial is Chennai's next 24 hours from today's live 
 
 4
 00:00:24,000 --> 00:00:34,000
-Long blue wedges are thirsty hours; the yellow arc is the best window. Same job, two start times.
+Longer teal wedges are thirstier hours; the amber arc is the cleanest window. Same job, two start times.
 
 5
 00:00:34,000 --> 00:00:44,000
@@ -166,7 +170,7 @@ A student plans a job: two RTX 4090s, six hours of work, done by 9 in the mornin
 
 6
 00:00:44,000 --> 00:00:56,000
-In about a second: run the GPU at 70%, finish before the deadline, with about 18–19% less water and CO2. Ranges, and modelled.
+In about a second: run the GPU at 70%, finish before the deadline, with about 18–20% less water and CO2. Ranges, and modelled.
 
 7
 00:00:56,000 --> 00:01:08,000
@@ -174,7 +178,7 @@ Most of that saving is the speed knob: a slightly slower GPU uses less energy fo
 
 8
 00:01:08,000 --> 00:01:18,000
-On the GPU machine, it's one package and one command.
+On the GPU machine, it's one package, and the planner hands you the exact command.
 
 9
 00:01:18,000 --> 00:01:30,000

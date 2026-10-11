@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures'
-import { expectHeading, submitDefaultPlan } from './helpers'
+import { expectHeading, hasTradeoffSlider, IDENTICAL_PARETO, submitDefaultPlan } from './helpers'
 
 /** Matches a range such as "12 to 18%", "12–18 %" or "1.2-1.8 kg". */
 const RANGE = /\d+(?:[.,]\d+)?\s*(?:–|—|-|to)\s*[−-]?\d+(?:[.,]\d+)?/
@@ -45,6 +45,7 @@ test.describe('plan flow', () => {
 
   test('moving the slider changes its label at once and sends no /plan request', async ({ page, diag }) => {
     await submitDefaultPlan(page)
+    test.skip(!(await hasTradeoffSlider(page)), IDENTICAL_PARETO)
     const slider = page.getByRole('slider')
     await expect(slider).toBeVisible()
     expect(diag.planRequests).toHaveLength(1)
@@ -92,6 +93,7 @@ test.describe('plan flow', () => {
 
   test('the slider works with the keyboard', async ({ page, diag }) => {
     await submitDefaultPlan(page)
+    test.skip(!(await hasTradeoffSlider(page)), IDENTICAL_PARETO)
     const slider = page.getByRole('slider')
     await slider.focus()
     await expect(slider).toBeFocused()
@@ -111,6 +113,75 @@ test.describe('plan flow', () => {
     await expect(slider).toHaveValue('0.9')
 
     expect(diag.planRequests.length, 'keyboard moves must not call POST /plan').toBe(1)
+  })
+
+  test('the plan reads four ways and the views agree on the run hours', async ({ page, diag }) => {
+    await submitDefaultPlan(page)
+    const views = page.getByRole('region', { name: 'Next 48 hours' })
+    const tabs = views.getByRole('tablist', { name: 'View' })
+
+    await test.step('the timetable is the default and marks run hours', async () => {
+      await expect(tabs.getByRole('tab', { name: 'Timetable' })).toHaveAttribute('aria-selected', 'true')
+      await expect(views.getByRole('table', { name: /timetable/i })).toBeVisible()
+      expect(await views.locator('td.is-run').count(), 'some hours should be marked as run hours').toBeGreaterThan(0)
+    })
+
+    await test.step('hourly, calendar and chart each render', async () => {
+      await tabs.getByRole('tab', { name: 'Hourly' }).click()
+      await expect(views.getByRole('table', { name: /hour by hour/i })).toBeVisible()
+      await expect(views.getByText('Runs').first()).toBeVisible()
+      await tabs.getByRole('tab', { name: 'Calendar' }).click()
+      await expect(views.getByRole('img', { name: /calendar/i })).toBeVisible()
+      await tabs.getByRole('tab', { name: 'Chart' }).click()
+      await expect(views.locator('svg').first()).toBeVisible()
+    })
+
+    await test.step('arrow keys move between tabs', async () => {
+      await tabs.getByRole('tab', { name: 'Chart' }).focus()
+      await page.keyboard.press('ArrowRight')
+      await expect(tabs.getByRole('tab', { name: 'Timetable' })).toBeFocused()
+      await expect(tabs.getByRole('tab', { name: 'Timetable' })).toHaveAttribute('aria-selected', 'true')
+    })
+
+    expect(diag.planRequests, 'switching views must not call POST /plan').toHaveLength(1)
+  })
+
+  test('the run box gives a command, a calendar file and a share link that reopens the job', async ({
+    page,
+    context,
+    diag,
+  }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+    await submitDefaultPlan(page)
+    const box = page.getByRole('region', { name: 'Run this plan' })
+
+    await test.step('the command matches the CLI syntax', async () => {
+      await expect(box.locator('code')).toContainText(/^thirst run --hours [\d.]+ --deadline "\d{4}-\d{2}-\d{2} \d{2}:\d{2}"/)
+      await expect(box.locator('code')).toContainText('-- python train.py')
+    })
+
+    await test.step('the calendar file downloads with one event', async () => {
+      const [download] = await Promise.all([
+        page.waitForEvent('download'),
+        box.getByRole('button', { name: 'Add to calendar' }).click(),
+      ])
+      expect(download.suggestedFilename()).toBe('thirst-plan.ics')
+    })
+
+    const link = await test.step('the share link names the whole job', async () => {
+      await box.getByRole('button', { name: 'Copy share link' }).click()
+      await expect(box.getByRole('status').last()).toContainText(/link copied|the link is/i)
+      const copied = await page.evaluate(() => navigator.clipboard.readText()).catch(() => '')
+      return copied
+    })
+    expect(diag.planRequests).toHaveLength(1)
+
+    test.skip(!link.includes('/plan?'), 'the clipboard could not be read in this browser')
+    await test.step('opening the share link plans the same job straight away', async () => {
+      await page.goto(link.replace(/^https?:\/\/[^/]+/, ''))
+      await expect(page.getByRole('heading', { name: 'Your plan' })).toBeVisible({ timeout: 20_000 })
+      await expect(page.getByRole('navigation', { name: 'Recent plans' })).toBeVisible()
+    })
   })
 
   test('bad input shows an error and sends no request', async ({ page, diag }) => {
